@@ -6,6 +6,7 @@ export default {
   props: {
     limit: { type: Number, default: 0 },
     heading: { type: String, default: 'Anstehende Wartungen' },
+    showActions: { type: Boolean, default: false },
   },
   data() { return { tasks: [], loading: false, error: '' } },
   computed: {
@@ -82,6 +83,11 @@ export default {
         <p class="help">{{ label(task.vehicleId) }}</p>
       </div>
       <span class="hm-maintenance-status">{{ task.status }}</span>
+      <div v-if="showActions" class="hm-maintenance-actions">
+        <b-button size="is-small" @click="$emit('edit', task)">Bearbeiten</b-button>
+        <b-button size="is-small" type="is-primary" @click="$emit('complete', task)">Erledigt</b-button>
+        <b-button size="is-small" type="is-danger" outlined @click="$emit('remove', task)">Löschen</b-button>
+      </div>
     </div>
     <router-link v-if="limit && count > limit" :to="{ name: 'maintenance' }" class="hm-maintenance-more">Alle {{ count }} Wartungen ansehen</router-link>
   </section>
