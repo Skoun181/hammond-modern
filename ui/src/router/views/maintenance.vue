@@ -34,6 +34,7 @@ export default {
   },
   mounted() {
     this.showForm = this.$route.query.neu === '1'
+    if (this.showForm) this.scrollToForm()
     this.$store.dispatch('vehicles/fetchVehicles').then(() => {
       if (this.vehicles.length && !this.form.vehicleId) this.form.vehicleId = this.vehicles[0].id
     }).catch(() => { this.error = 'Fahrzeuge konnten nicht geladen werden.' })
