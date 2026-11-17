@@ -1,6 +1,5 @@
 <script>
 import Layout from '@layouts/main.vue'
-import QuickEntryDisplay from '@components/quickEntryDisplay.vue'
 import store from '@state/store'
 
 import { mapState } from 'vuex'
@@ -12,7 +11,7 @@ export default {
   page: {
     title: 'Tankung hinzufügen',
   },
-  components: { Layout, QuickEntryDisplay },
+  components: { Layout },
   props: {
     vehicle: {
       type: Object,
@@ -31,7 +30,6 @@ export default {
       authError: null,
       tryingToCreate: false,
       showMore: false,
-      quickEntry: null,
       myVehicles: [],
       users: [],
       fuelSubTypes: [],
@@ -43,11 +41,9 @@ export default {
       receiptLoading: false,
       receiptError: '',
       receiptNotice: '',
-      receiptPreview: '',
       receiptFields: [],
       selectedVehicle: this.vehicle,
       fillupModel: this.fillup,
-      processQuickEntry: false,
     }
   },
 
@@ -72,11 +68,6 @@ export default {
     },
     'fillupModel.perUnitPrice': function(old, newOne) {
       this.fillupModel.totalAmount = round(this.fillupModel.fuelQuantity * this.fillupModel.perUnitPrice, 2)
-    },
-    quickEntry: function(newOne, old) {
-      if (old == null && newOne !== null) {
-        this.processQuickEntry = true
-      }
     },
   },
   mounted() {
@@ -134,7 +125,7 @@ export default {
           this.receiptFields.push('Gesamtbetrag')
         }
         this.receiptNotice = this.receiptFields.length
-          ? 'Erkannt: ' + this.receiptFields.join(', ') + '. Bitte alle Angaben sorgfältig kontrollieren.'
+          ? 'Erkannt: ' + this.receiptFields.join(', ') + '. ' + (fields.amountEstimated ? 'Der Kraftstoffbetrag wurde aus Liter × Literpreis berechnet; andere Einkäufe auf dem Bon sind nicht enthalten. ' : '') + 'Bitte alle Angaben inklusive Datum kontrollieren.'
           : 'Keine Felder zuverlässig erkannt. Bitte Werte selbst eingeben.'
       } catch (error) {
         this.receiptError = (error.response && error.response.data && error.response.data.error) ||
@@ -207,11 +198,6 @@ export default {
               duration: 3000,
             })
             this.fillupModel = this.getEmptyFillup()
-            if (this.processQuickEntry) {
-              store.dispatch('vehicles/setQuickEntryAsProcessed', { id: this.quickEntry.id }).then((data) => {
-                this.quickEntry = null
-              })
-            }
           })
           .catch((ex) => {
             this.$buefy.toast.open({
@@ -234,9 +220,6 @@ export default {
               duration: 3000,
             })
             this.fillupModel = this.getEmptyFillup()
-            if (this.processQuickEntry) {
-              store.dispatch('vehicles/setQuickEntryAsProcessed', { id: this.quickEntry.id }).then((data) => {})
-            }
           })
           .catch((ex) => {
             this.$buefy.toast.open({
@@ -259,28 +242,25 @@ export default {
   <Layout>
     <div class="has-text-centered">
       <div class="columns">
-        <div class="column is-two-thirds">
+        <div class="column">
           <h1 class="title">Tankung hinzufügen</h1>
           <h1 class="subtitle">
             {{ [selectedVehicle.nickname, selectedVehicle.registration, selectedVehicle.make, selectedVehicle.model].join(' | ') }}
           </h1>
-        </div>
-        <div class="column is-one-thirds">
-          <QuickEntryDisplay v-model="quickEntry" :user="user" />
         </div>
       </div>
     </div>
     <div v-if="!fillup.id" class="box">
       <h2 class="title is-5">Tankbeleg scannen</h2>
       <p class="help">Auf dem Handy die Kamera öffnen oder ein vorhandenes Foto auswählen. Die Texterkennung läuft lokal auf deinem Hammond-Server. Das Foto wird nur für die Erkennung verarbeitet und nicht gespeichert.</p>
-      <label class="button is-primary" for="receipt-camera">📷 Beleg fotografieren / hochladen</label>
+      <label class="button is-primary hm-camera-button" for="receipt-camera">📷 Beleg fotografieren / hochladen</label>
       <input id="receipt-camera" type="file" accept="image/jpeg,image/png" capture="environment" style="position:absolute;width:1px;height:1px;opacity:0" :disabled="receiptLoading" @change="recognizeReceipt">
       <p v-if="receiptLoading" class="help">Beleg wird erkannt…</p>
       <b-notification v-if="receiptError" type="is-danger" :closable="false">{{ receiptError }}</b-notification>
       <b-notification v-if="receiptNotice" type="is-info" :closable="false">{{ receiptNotice }}</b-notification>
       <p class="help">Datum, Tankstelle, Menge und Preise werden nur übernommen, wenn ein passender Wert erkannt wurde. Vor dem Speichern prüfen.</p>
     </div>
-    <form class="" @submit.prevent="createFillup">
+    <form class="hm-fillup-form" @submit.prevent="createFillup">
       <b-field label="Fahrzeug">
         <b-select v-model="selectedVehicle" placeholder="Vehicle" required expanded :disabled="fillup.id">
           <option v-for="option in myVehicles" :key="option.id" :value="option">
@@ -332,7 +312,7 @@ export default {
           </option>
         </b-select>
       </b-field>
-      <b-field :label="'Price per ' + vehicle.fuelUnitDetail.short + '*'"
+      <b-field :label="'Preis pro ' + vehicle.fuelUnitDetail.short + '*'"
         ><p class="control">
           <span class="button is-static">{{ me.currency }}</span>
         </p>
@@ -377,9 +357,6 @@ export default {
           <b-input v-model="fillupModel.comments" type="textarea" expanded></b-input>
         </b-field>
       </fieldset>
-      <b-field>
-        <b-switch v-if="quickEntry" v-model="processQuickEntry">Mark selected Quick Entry as processed</b-switch>
-      </b-field>
       <br />
       <b-field>
         <b-button tag="input" native-type="submit" :disabled="tryingToCreate" type="is-primary" label="Tankung hinzufügen" expanded> </b-button>
