@@ -52,7 +52,15 @@ func parseReceipt(text string) gin.H {
    }
   }
   if fields["fillingStation"] == "" && receiptStation.MatchString(line) && len(line)<80 {
-   fields["fillingStation"]=line
+   lower:=strings.ToLower(line)
+   if !strings.Contains(lower,"coupon") && !strings.Contains(lower,".de") && !strings.Contains(lower,"www") && !strings.Contains(lower,"fax") {
+    found:=receiptStation.FindStringSubmatch(line)
+    if len(found)>1 && strings.EqualFold(found[1],"hem") {
+     fields["fillingStation"]="HEM Tankstelle"
+    } else {
+     fields["fillingStation"]=line
+    }
+   }
   }
   if liters==0 {
    if m:=receiptQuantity.FindStringSubmatch(line);m!=nil {
@@ -111,14 +119,22 @@ func RegisterReceiptController(router *gin.RouterGroup) {
   if err!=nil {c.Status(500);return}
   processed.Close();defer os.Remove(processed.Name())
   ctx,cancel:=context.WithTimeout(c.Request.Context(),30*time.Second);defer cancel()
-  // Reduce shadows and enlarge receipt text before OCR. No outside service is contacted.
-  preprocess:=exec.CommandContext(ctx,"convert",input.Name(),"-colorspace","Gray","-auto-level","-resize","200%","-sharpen","0x1",processed.Name())
-  if err=preprocess.Run();err!=nil {c.JSON(422,gin.H{"error":"Bildaufbereitung fehlgeschlagen"});return}
+  // Two local OCR passes: high contrast improves the date;
+  // neutral contrast helps recognize precise fuel prices.
+  contrast:=exec.CommandContext(ctx,"convert",input.Name(),"-colorspace","Gray","-contrast-stretch","2%x2%","-brightness-contrast","0x45","-resize","200%","-unsharp","2x1.2+1.2+0.05",processed.Name())
+  if err=contrast.Run();err!=nil {c.JSON(422,gin.H{"error":"Bildaufbereitung fehlgeschlagen"});return}
   ocr:=exec.CommandContext(ctx,"tesseract",processed.Name(),"stdout","-l","deu+eng","--psm","6")
   var stderr bytes.Buffer
   ocr.Stderr=&stderr
-  output,err:=ocr.Output()
+  high,err:=ocr.Output()
   if err!=nil {c.JSON(422,gin.H{"error":"Texterkennung fehlgeschlagen. Bitte manuell eintragen."});return}
-  c.JSON(200,gin.H{"suggestions":parseReceipt(string(output)),"notice":"Erkannte Daten und Kraftstoffbetrag anhand des Originalbons prüfen. Das Bild wird nach der Verarbeitung gelöscht."})
+  neutral:=exec.CommandContext(ctx,"convert",input.Name(),"-colorspace","Gray","-auto-level","-resize","200%","-sharpen","0x1",processed.Name())
+  if err=neutral.Run();err!=nil {c.JSON(422,gin.H{"error":"Bildaufbereitung fehlgeschlagen"});return}
+  ocr2:=exec.CommandContext(ctx,"tesseract",processed.Name(),"stdout","-l","deu+eng","--psm","6")
+  ocr2.Stderr=&stderr
+  standard,err:=ocr2.Output()
+  if err!=nil {c.JSON(422,gin.H{"error":"Texterkennung fehlgeschlagen. Bitte manuell eintragen."});return}
+  combined:=string(high)+"\n"+string(standard)
+  c.JSON(200,gin.H{"suggestions":parseReceipt(combined),"notice":"Erkannte Daten und Kraftstoffbetrag anhand des Originalbons prüfen. Das Bild wird nach der Verarbeitung gelöscht."})
  })
 }
