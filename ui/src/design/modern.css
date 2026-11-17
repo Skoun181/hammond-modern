@@ -169,3 +169,46 @@ body { font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
  .hm-vehicle-table .pagination { flex-wrap:wrap; gap:10px; }
 }
 @media (max-width:390px) { .hm-vehicle-stats { grid-template-columns:1fr; } }
+
+/* Buefy 0.x mobile cards use .table.has-mobile-cards, NOT .table.mobile-cards.
+   Bulma's default responsive table rules otherwise force white rows. */
+@media screen and (max-width: 768px) {
+  .hm-main .b-table.hm-vehicle-table .table-wrapper,
+  .hm-main .b-table.hm-vehicle-table .table.has-mobile-cards,
+  .hm-main .b-table.hm-vehicle-table .table.has-mobile-cards tbody {
+    background: transparent !important;
+    color: var(--hm-text) !important;
+  }
+  .hm-main .b-table.hm-vehicle-table .table.has-mobile-cards tr:not(.detail):not(.is-empty):not(.table-footer) {
+    display: block;
+    background: var(--hm-input) !important;
+    color: var(--hm-text) !important;
+    border: 1px solid var(--hm-border) !important;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 12px;
+    box-shadow: none !important;
+  }
+  .hm-main .b-table.hm-vehicle-table .table.has-mobile-cards tr:not(.detail):not(.is-empty):not(.table-footer) td {
+    background: var(--hm-input) !important;
+    color: var(--hm-text) !important;
+    border-color: var(--hm-border) !important;
+    overflow-wrap: anywhere;
+  }
+  .hm-main .b-table.hm-vehicle-table .table.has-mobile-cards tr:not(.detail):not(.is-empty):not(.table-footer) td:before {
+    color: var(--hm-muted) !important;
+    opacity: 1 !important;
+  }
+  .hm-main .b-table.hm-vehicle-table .table.has-mobile-cards tr:not(.detail):not(.is-empty):not(.table-footer) td strong,
+  .hm-main .b-table.hm-vehicle-table .table.has-mobile-cards tr:not(.detail):not(.is-empty):not(.table-footer) td span {
+    color: var(--hm-text) !important;
+  }
+  .hm-main .b-table.hm-vehicle-table .table.has-mobile-cards tr:not(.detail):not(.is-empty):not(.table-footer):hover,
+  .hm-main .b-table.hm-vehicle-table .table.has-mobile-cards tr:not(.detail):not(.is-empty):not(.table-footer):hover td {
+    background: var(--hm-surface) !important;
+  }
+  .hm-main .b-table.hm-vehicle-table .table.has-mobile-cards td .button.is-ghost {
+    background: transparent !important;
+    color: var(--hm-accent) !important;
+  }
+}
