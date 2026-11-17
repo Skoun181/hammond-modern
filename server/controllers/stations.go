@@ -25,7 +25,7 @@ type cachedStations struct {
 	expiry time.Time
 }
 
-var stationClient = &http.Client{Timeout: 8 * time.Second}
+var stationClient = &http.Client{Timeout: 12 * time.Second}
 
 // Searches by German postcode. No request-per-keystroke; API key stays server-side.
 func RegisterStationController(router *gin.RouterGroup) {
@@ -60,7 +60,7 @@ func RegisterStationController(router *gin.RouterGroup) {
 			c.JSON(502, gin.H{"error": "Geocodierung fehlgeschlagen"})
 			return
 		}
-		req.Header.Set("User-Agent", "HammondModern/1.0 (self-hosted vehicle administration)")
+		req.Header.Set("User-Agent", "HammondModern/1.0 (+https://github.com/Skoun181/hammond-modern)")
 		resp, err := stationClient.Do(req)
 		if err != nil {
 			c.JSON(502, gin.H{"error": "Postleitzahl-Suche nicht erreichbar"})
