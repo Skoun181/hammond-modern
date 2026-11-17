@@ -80,3 +80,21 @@ go test ./controllers -run TestParseReceipt -v
 ```
 
 **Hinweis:** In dieser Umgebung wurden keine vollständigen Docker-/Browser-End-to-End-Tests ausgeführt. Erst wenn die Tests auf dem Debian-LXC bestanden sind, sollte über eine Aktualisierung des Stable-Branches entschieden werden.
+
+## Dashboard-/Mobil-Update und OCR-Nachbesserung
+
+- Die Quick-Entry-Navigation, die Quick-Entry-Vue-Seiten und die Quick-Entry-API-Routen sind im Entwicklungsbranch entfernt. Die historischen SQLite-Tabellen bleiben zur Sicherheit bestehen; bestehende Anhänge werden nicht gelöscht.
+- Im Dashboard steht stattdessen die Wartungsübersicht mit den nächsten vier offenen Terminen.
+- Das Wartungscenter zeigt dieselbe Übersicht. Das Bearbeitungsformular erscheint erst nach „Neue Wartung hinzufügen“ oder „Bearbeiten“.
+- Der Dashboard-Button für Tankungen bietet bei mehreren Fahrzeugen eine Fahrzeugauswahl.
+- Schmale iPhone-Ansichten: kleinere Innenabstände, umbruchfähige Eingabezeilen, Karten und Buttons.
+- Für iPhone-Bonfotos werden vor lokaler Tesseract-OCR zwei kontrastangepasste Versionen erstellt. Der Beleg wird weder in der App gespeichert noch an externe OCR-Server geschickt.
+- OCR-Ergebnisse werden nur als Entwurf in das Formular eingetragen. Gerade das Datum unbedingt mit dem Beleg vergleichen: Eine optische Verwechslung von „15“ und „13“ ist möglich.
+- Wenn andere Artikel auf dem Kassenbon stehen, berechnet die Erkennung den Kraftstoffbetrag aus Litern und Literpreis, anstatt die gesamte Einkaufssumme zu übernehmen.
+
+### Beispiel: HEM-Beleg mit weiteren Einkäufen
+
+Das für die Fehlersuche verwendete Beispiel zeigt 41,00 Liter zu 1,869 EUR/Liter (= 76,63 EUR Kraftstoffkosten), während die gesamte Kartenzahlung 78,24 EUR beträgt. Der Gesamtbetrag **darf nicht** als Tankkosten gespeichert werden.
+
+Der tatsächliche Foto-Scan und die mobilen Layoutänderungen müssen auf der iPhone-/LXC-Testinstallation erst bestätigt werden; ein synthetischer Textparser-Test ist kein Ende-zu-Ende-Kameratest. Private Belegfotos bitte nicht ins öffentliche Repository committen.
+
