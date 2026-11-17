@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/akhilrex/hammond/common"
 	"github.com/akhilrex/hammond/db"
 	"github.com/akhilrex/hammond/models"
 	"github.com/akhilrex/hammond/service"
