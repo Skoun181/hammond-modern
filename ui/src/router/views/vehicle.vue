@@ -39,13 +39,14 @@ export default {
       title: '',
       stats: null,
       users: [],
+      drivers: [],
       dateRangeOptions: [
-        { label: 'This week', value: 'this_week' },
-        { label: 'This month', value: 'this_month' },
-        { label: 'Past 30 days', value: 'past_30_days' },
-        { label: 'Past 3 months', value: 'past_3_months' },
-        { label: 'This year', value: 'this_year' },
-        { label: 'All Time', value: 'all_time' },
+        { label: 'Diese Woche', value: 'this_week' },
+        { label: 'Dieser Monat', value: 'this_month' },
+        { label: 'Letzte 30 Tage', value: 'past_30_days' },
+        { label: 'Letzte 3 Monate', value: 'past_3_months' },
+        { label: 'Dieses Jahr', value: 'this_year' },
+        { label: 'Gesamter Zeitraum', value: 'all_time' },
       ],
       dateRangeOption: 'past_30_days',
     }
@@ -65,27 +66,27 @@ export default {
             value: x.currency,
           },
           {
-            label: 'Total Expenditure',
+            label: 'Gesamtausgaben',
             value: this.formatCurrency(x.expenditureTotal, x.currency),
           },
           {
-            label: 'Fillup Costs',
+            label: 'Tankkosten',
             value: `${this.formatCurrency(x.expenditureFillups, x.currency)} (${x.countFillups})`,
           },
           {
-            label: 'Other Expenses',
+            label: 'Weitere Ausgaben',
             value: `${this.formatCurrency(x.expenditureExpenses, x.currency)} (${x.countExpenses})`,
           },
           {
-            label: 'Avg Fillup Expense',
+            label: 'Ø Kosten je Tankung',
             value: `${this.formatCurrency(x.avgFillupCost, x.currency)}`,
           },
           {
-            label: 'Avg Fillup Qty',
+            label: 'Ø Tankmenge',
             value: `${x.avgFuelQty} ${this.vehicle.fuelUnitDetail.short}`,
           },
           {
-            label: 'Avg Fuel Cost',
+            label: 'Ø Kraftstoffpreis',
             value: `${this.formatCurrency(x.avgFuelPrice, x.currency)} per ${this.vehicle.fuelUnitDetail.short}`,
           },
         ]
@@ -100,8 +101,18 @@ export default {
     this.fetchAttachments()
     this.fetchVehicleStats()
     this.fetchVehicleUsers()
+    axios.get('/api/drivers').then(response => { this.drivers = response.data }).catch(() => { this.drivers = [] })
   },
   methods: {
+    driverName(id) { const driver = this.drivers.find(d => d.id === id); return driver ? driver.name : (id ? 'Gelöschter / fremder Fahrer' : 'Nicht angegeben') },
+    async downloadInvoice(id) {
+      if (!id) return
+      try {
+        const response = await axios.get('/api/invoices/' + id + '/file', { responseType: 'blob' })
+        const url = window.URL.createObjectURL(response.data)
+        const link = document.createElement('a'); link.href = url; link.download = 'werkstattrechnung'; document.body.appendChild(link); link.click(); link.remove(); window.URL.revokeObjectURL(url)
+      } catch (error) { this.$buefy.toast.open({ message: 'Rechnung nicht verfügbar.', type: 'is-danger' }) }
+    },
     fetchAttachments() {
       store
         .dispatch('vehicles/fetchAttachmentsByVehicleId', { vehicleId: this.vehicle.id })
@@ -263,6 +274,7 @@ export default {
         props: { vehicle: this.vehicle },
         onCancel: (x) => {
           this.fetchVehicleUsers()
+    axios.get('/api/drivers').then(response => { this.drivers = response.data }).catch(() => { this.drivers = [] })
         },
       })
     },
@@ -322,8 +334,8 @@ export default {
         </p>
       </div>
       <div class="column is-one-third buttons has-text-centered">
-        <b-button type="is-primary" tag="router-link" :to="`/vehicles/${vehicle.id}/fillup`">Add Fillup</b-button>
-        <b-button type="is-primary" tag="router-link" :to="`/vehicles/${vehicle.id}/expense`">Add Expense</b-button>
+        <b-button type="is-primary" tag="router-link" :to="`/vehicles/${vehicle.id}/fillup`">Tankung hinzufügen</b-button>
+        <b-button type="is-primary" tag="router-link" :to="`/vehicles/${vehicle.id}/expense`">Ausgabe hinzufügen</b-button>
         <b-button
           v-if="vehicle.isOwner"
           tag="router-link"
@@ -353,13 +365,13 @@ export default {
       </div>
     </div>
     <div class="box">
-      <h1 class="title is-4">Past Fillups</h1>
+      <h1 class="title is-4">Tankvorgänge</h1>
 
       <b-table :data="fillups" hoverable mobile-cards :detailed="isMobile" detail-key="id" paginated per-page="10">
-        <b-table-column v-slot="props" field="date" label="Date" :td-attrs="columnTdAttrs" sortable date>
+        <b-table-column v-slot="props" field="date" label="Datum" :td-attrs="columnTdAttrs" sortable date>
           {{ formatDate(props.row.date) }}
         </b-table-column>
-        <b-table-column v-slot="props" field="fuelSubType" label="Fuel Sub Type" :td-attrs="columnTdAttrs">
+        <b-table-column v-slot="props" field="fuelSubType" label="Kraftstoffsorte" :td-attrs="columnTdAttrs">
           {{ props.row.fuelSubType }}
         </b-table-column>
         <b-table-column v-slot="props" field="fuelQuantity" label="Qty." :td-attrs="hiddenMobile" numeric>
@@ -382,16 +394,19 @@ export default {
         <b-table-column v-if="!isMobile" v-slot="props" field="totalAmount" label="Total" :td-attrs="hiddenMobile" sortable numeric>
           {{ `${formatCurrency(props.row.totalAmount, props.row.currency)}` }}
         </b-table-column>
-        <b-table-column v-slot="props" width="20" field="isTankFull" label="Tank Full" :td-attrs="hiddenMobile">
+        <b-table-column v-slot="props" width="20" field="isTankFull" label="Vollgetankt" :td-attrs="hiddenMobile">
           <b-icon pack="fas" :icon="props.row.isTankFull ? 'check' : 'times'" type="is-info"> </b-icon>
         </b-table-column>
-        <b-table-column v-slot="props" field="odoReading" label="Odometer Reading" :td-attrs="hiddenMobile" numeric>
+        <b-table-column v-slot="props" field="odoReading" label="Kilometerstand" :td-attrs="hiddenMobile" numeric>
           {{ `${props.row.odoReading} ${me.distanceUnitDetail.short}` }}
         </b-table-column>
-        <b-table-column v-slot="props" field="fillingStation" label="Fillup Station" :td-attrs="hiddenMobile">
+        <b-table-column v-slot="props" field="fillingStation" label="Tankstelle" :td-attrs="hiddenMobile">
           {{ `${props.row.fillingStation}` }}
         </b-table-column>
-        <b-table-column v-slot="props" field="userId" label="By" :td-attrs="hiddenMobile">
+        <b-table-column v-slot="props" field="driverId" label="Getankt von" :td-attrs="hiddenMobile">
+          {{ driverName(props.row.driverId) }}
+        </b-table-column>
+        <b-table-column v-slot="props" field="userId" label="Erfasst von" :td-attrs="hiddenMobile">
           {{ `${props.row.user.name}` }}
         </b-table-column>
         <b-table-column v-slot="props">
@@ -410,7 +425,7 @@ export default {
             <b-icon pack="fas" icon="trash" type="is-danger"> </b-icon
           ></b-button>
         </b-table-column>
-        <template v-slot:empty> No Fillups so far</template>
+        <template v-slot:empty> Noch keine Tankvorgänge</template>
         <template v-slot:detail="props">
           <p>{{ props.row.id }}</p>
         </template>
@@ -418,21 +433,31 @@ export default {
     </div>
     <br />
     <div class="box">
-      <h1 class="title is-4">Past Expenses</h1>
+      <h1 class="title is-4">Werkstatt & Ausgaben</h1>
 
       <b-table :data="expenses" hoverable mobile-cards paginated per-page="10">
-        <b-table-column v-slot="props" field="date" label="Date" :td-attrs="columnTdAttrs" date>
+        <b-table-column v-slot="props" field="date" label="Datum" :td-attrs="columnTdAttrs" date>
           {{ formatDate(props.row.date) }}
         </b-table-column>
         <b-table-column v-slot="props" field="expenseType" label="Expense Type">
           {{ `${props.row.expenseType}` }}
         </b-table-column>
 
-        <b-table-column v-slot="props" field="amount" label="Total" :td-attrs="hiddenMobile" sortable numeric>
+        <b-table-column v-slot="props" field="workshop" label="Werkstatt">
+          {{ props.row.workshop || '–' }}
+        </b-table-column>
+        <b-table-column v-slot="props" field="workPerformed" label="Durchgeführte Arbeiten">
+          {{ props.row.workPerformed || '–' }}
+        </b-table-column>
+        <b-table-column v-slot="props" field="invoiceAttachmentId" label="Rechnung">
+          <a v-if="props.row.invoiceAttachmentId" href="#" @click.prevent="downloadInvoice(props.row.invoiceAttachmentId)">Herunterladen</a>
+          <span v-else>–</span>
+        </b-table-column>
+        <b-table-column v-slot="props" field="amount" label="Gesamtbetrag" :td-attrs="hiddenMobile" sortable numeric>
           {{ `${formatCurrency(props.row.amount, props.row.currency)}` }}
         </b-table-column>
 
-        <b-table-column v-slot="props" field="odoReading" label="Odometer Reading" :td-attrs="columnTdAttrs" numeric>
+        <b-table-column v-slot="props" field="odoReading" label="Kilometerstand" :td-attrs="columnTdAttrs" numeric>
           {{ `${props.row.odoReading} ${me.distanceUnitDetail.short}` }}
         </b-table-column>
 

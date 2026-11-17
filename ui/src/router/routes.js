@@ -35,6 +35,7 @@ export default [
     component: () => lazyLoadView(import('@views/home.vue')),
     props: (route) => ({ user: store.state.auth.currentUser || {} }),
   },
+  { path: '/drivers', name: 'drivers', component: () => lazyLoadView(import('@views/drivers.vue')), meta: { authRequired: true } },
   {
     path: '/initialize',
     name: 'initialize',

@@ -48,6 +48,7 @@ type CreateFillupRequest struct {
 	HasMissedFillup *bool        `form:"hasMissedFillup" json:"HasMissedFillup"`
 	Comments        string       `form:"comments" json:"comments" `
 	FillingStation  string       `form:"fillingStation" json:"fillingStation"`
+	DriverID        string       `form:"driverId" json:"driverId"`
 	UserID          string       `form:"userId" json:"userId" binding:"required"`
 	Date            time.Time    `form:"date" json:"date" binding:"required" time_format:"2006-01-02"`
 	FuelSubType     string       `form:"fuelSubType" json:"fuelSubType"`
@@ -67,10 +68,13 @@ type CreateExpenseRequest struct {
 	Amount     float32 `form:"amount" json:"amount"`
 	OdoReading int     `form:"odoReading" json:"odoReading"`
 
-	Comments    string    `form:"comments" json:"comments" `
-	ExpenseType string    `form:"expenseType" json:"expenseType"`
-	UserID      string    `form:"userId" json:"userId" binding:"required"`
-	Date        time.Time `form:"date" json:"date" binding:"required" time_format:"2006-01-02"`
+	Comments            string    `form:"comments" json:"comments" `
+	ExpenseType         string    `form:"expenseType" json:"expenseType"`
+	Workshop            string    `form:"workshop" json:"workshop"`
+	WorkPerformed       string    `form:"workPerformed" json:"workPerformed"`
+	InvoiceAttachmentID string    `form:"invoiceAttachmentId" json:"invoiceAttachmentId"`
+	UserID              string    `form:"userId" json:"userId" binding:"required"`
+	Date                time.Time `form:"date" json:"date" binding:"required" time_format:"2006-01-02"`
 }
 
 type CreateVehicleAttachmentModel struct {

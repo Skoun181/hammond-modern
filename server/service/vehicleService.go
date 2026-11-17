@@ -136,6 +136,7 @@ func CreateFillup(model models.CreateFillupRequest) (*db.Fillup, error) {
 		HasMissedFillup: model.HasMissedFillup,
 		Comments:        model.Comments,
 		FillingStation:  model.FillingStation,
+		DriverID:        model.DriverID,
 		UserID:          model.UserID,
 		Date:            model.Date,
 		Currency:        user.Currency,
@@ -160,16 +161,19 @@ func CreateExpense(model models.CreateExpenseRequest) (*db.Expense, error) {
 	}
 
 	expense := db.Expense{
-		VehicleID:    model.VehicleID,
-		Amount:       model.Amount,
-		OdoReading:   model.OdoReading,
-		ExpenseType:  model.ExpenseType,
-		Comments:     model.Comments,
-		UserID:       model.UserID,
-		Date:         model.Date,
-		Currency:     user.Currency,
-		DistanceUnit: user.DistanceUnit,
-		Source:       "API",
+		VehicleID:           model.VehicleID,
+		Amount:              model.Amount,
+		OdoReading:          model.OdoReading,
+		ExpenseType:         model.ExpenseType,
+		Workshop:            model.Workshop,
+		WorkPerformed:       model.WorkPerformed,
+		InvoiceAttachmentID: model.InvoiceAttachmentID,
+		Comments:            model.Comments,
+		UserID:              model.UserID,
+		Date:                model.Date,
+		Currency:            user.Currency,
+		DistanceUnit:        user.DistanceUnit,
+		Source:              "API",
 	}
 
 	tx := db.DB.Create(&expense)
@@ -197,6 +201,7 @@ func UpdateFillup(fillupId string, model models.UpdateFillupRequest) error {
 		HasMissedFillup: model.HasMissedFillup,
 		Comments:        model.Comments,
 		FillingStation:  model.FillingStation,
+		DriverID:        model.DriverID,
 		UserID:          model.UserID,
 		FuelSubType:     model.FuelSubType,
 		Date:            model.Date,
@@ -209,13 +214,16 @@ func UpdateExpense(fillupId string, model models.UpdateExpenseRequest) error {
 		return err
 	}
 	return db.DB.Model(&toUpdate).Updates(db.Expense{
-		VehicleID:   model.VehicleID,
-		Amount:      model.Amount,
-		OdoReading:  model.OdoReading,
-		ExpenseType: model.ExpenseType,
-		Comments:    model.Comments,
-		UserID:      model.UserID,
-		Date:        model.Date,
+		VehicleID:           model.VehicleID,
+		Amount:              model.Amount,
+		OdoReading:          model.OdoReading,
+		ExpenseType:         model.ExpenseType,
+		Workshop:            model.Workshop,
+		WorkPerformed:       model.WorkPerformed,
+		InvoiceAttachmentID: model.InvoiceAttachmentID,
+		Comments:            model.Comments,
+		UserID:              model.UserID,
+		Date:                model.Date,
 	}).Error
 }
 

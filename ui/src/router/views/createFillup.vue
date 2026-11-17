@@ -10,7 +10,7 @@ import { format } from 'date-fns'
 
 export default {
   page: {
-    title: 'Create Fillup',
+    title: 'Tankung hinzufügen',
   },
   components: { Layout, QuickEntryDisplay },
   props: {
@@ -35,6 +35,11 @@ export default {
       myVehicles: [],
       users: [],
       fuelSubTypes: [],
+      drivers: [],
+      stationPostal: '',
+      stations: [],
+      stationLoading: false,
+      stationError: '',
       selectedVehicle: this.vehicle,
       fillupModel: this.fillup,
       processQuickEntry: false,
@@ -73,6 +78,7 @@ export default {
     this.myVehicles = this.vehicles
     this.selectedVehicle = this.vehicle
     this.fetchVehicleUsers()
+    axios.get('/api/drivers').then((r) => { this.drivers = r.data }).catch(() => { this.drivers = [] })
     this.fetchVehicleFuelSubTypes()
     if (!this.fillup.id) {
       this.fillupModel = this.getEmptyFillup()
@@ -80,6 +86,17 @@ export default {
     }
   },
   methods: {
+    async searchStations() {
+      if (!/^\d{5}$/.test(this.stationPostal)) { this.stationError = 'Bitte eine fünfstellige PLZ eingeben.'; return }
+      this.stationLoading = true
+      this.stationError = ''
+      try { const response = await axios.get('/api/stations', { params: { plz: this.stationPostal } }); this.stations = response.data }
+      catch (error) { this.stationError = (error.response && error.response.data && error.response.data.error) || 'Tankstellensuche nicht verfügbar.' }
+      finally { this.stationLoading = false }
+    },
+    chooseStation(station) {
+      this.fillupModel.fillingStation = [station.brand || station.name, station.street, station.place].filter(Boolean).join(', ')
+    },
     formatDate(date) {
       const finalFormat = this.me.dateFormat ? this.me.dateFormat : 'MM/dd/yyyy'
       return format(date, finalFormat)
@@ -112,6 +129,7 @@ export default {
         hasMissedFillup: false,
         date: new Date(),
         fillingStation: '',
+        driverId: '',
         comments: '',
         userId: '',
         fuelSubType: '',
@@ -184,7 +202,7 @@ export default {
     <div class="has-text-centered">
       <div class="columns">
         <div class="column is-two-thirds">
-          <h1 class="title">Create Fillup</h1>
+          <h1 class="title">Tankung hinzufügen</h1>
           <h1 class="subtitle">
             {{ [selectedVehicle.nickname, selectedVehicle.registration, selectedVehicle.make, selectedVehicle.model].join(' | ') }}
           </h1>
@@ -195,21 +213,28 @@ export default {
       </div>
     </div>
     <form class="" @submit.prevent="createFillup">
-      <b-field label="Select a vehicle">
+      <b-field label="Fahrzeug">
         <b-select v-model="selectedVehicle" placeholder="Vehicle" required expanded :disabled="fillup.id">
           <option v-for="option in myVehicles" :key="option.id" :value="option">
             {{ option.nickname }}
           </option>
         </b-select>
       </b-field>
-      <b-field label="Expense by">
+      <b-field label="Erfasst von">
         <b-select v-model="fillupModel.userId" placeholder="User" required expanded :disabled="fillup.id">
           <option v-for="option in users" :key="option.userId" :value="option.userId">
             {{ option.name }}
           </option>
         </b-select>
       </b-field>
-      <b-field label="Fillup Date">
+      <b-field label="Wer hat getankt? (optional)">
+        <b-select v-model="fillupModel.driverId" expanded placeholder="Fahrer auswählen">
+          <option value="">Kein Fahrer ausgewählt</option>
+          <option v-for="driver in drivers" :key="driver.id" :value="driver.id">{{ driver.name }}</option>
+        </b-select>
+        <p class="help">Fahrer kannst du links unter „Fahrer“ anlegen.</p>
+      </b-field>
+      <b-field label="Datum der Tankung">
         <b-datepicker
           v-model="fillupModel.date"
           :date-formatter="formatDate"
@@ -220,7 +245,7 @@ export default {
         >
         </b-datepicker>
       </b-field>
-      <b-field label="Fuel Subtype">
+      <b-field label="Kraftstoffsorte">
         <b-autocomplete
           v-model="fillupModel.fuelSubType"
           :data="filteredFuelSubtypes"
@@ -231,9 +256,9 @@ export default {
         >
         </b-autocomplete>
       </b-field>
-      <b-field label="Quantity*" addons>
+      <b-field label="Getankte Menge*" addons>
         <b-input v-model.number="fillupModel.fuelQuantity" type="number" step=".001" min="0" expanded required></b-input>
-        <b-select v-model="fillupModel.fuelUnit" placeholder="Fuel Unit" required>
+        <b-select v-model="fillupModel.fuelUnit" placeholder="Einheit" required>
           <option v-for="(option, key) in fuelUnitMasters" :key="key" :value="key">
             {{ option.long }}
           </option>
@@ -245,32 +270,42 @@ export default {
         </p>
         <b-input v-model.number="fillupModel.perUnitPrice" type="number" min="0" step=".001" expanded required></b-input>
       </b-field>
-      <b-field label="Total Amount Paid">
+      <b-field label="Gesamtbetrag">
         <p class="control">
           <span class="button is-static">{{ me.currency }}</span>
         </p>
         <b-input v-model.number="fillupModel.totalAmount" type="number" min="0" step=".001" expanded required></b-input>
       </b-field>
-      <b-field label="Odometer Reading">
+      <b-field label="Aktueller Kilometerstand">
         <p class="control">
           <span class="button is-static">{{ me.distanceUnitDetail.short }}</span>
         </p>
         <b-input v-model.number="fillupModel.odoReading" type="number" min="0" expanded required></b-input>
       </b-field>
       <b-field>
-        <b-checkbox v-model="fillupModel.isTankFull">Did you get a full tank?</b-checkbox>
+        <b-checkbox v-model="fillupModel.isTankFull">Vollgetankt?</b-checkbox>
       </b-field>
       <b-field>
-        <b-checkbox v-model="fillupModel.hasMissedFillup">Did you miss the fillup entry before this one?</b-checkbox>
+        <b-checkbox v-model="fillupModel.hasMissedFillup">Wurde seit der letzten Volltankung eine Tankung ausgelassen?</b-checkbox>
       </b-field>
       <b-field>
-        <b-switch v-model="showMore">Fill more details</b-switch>
+        <b-switch v-model="showMore">Weitere Angaben</b-switch>
       </b-field>
       <fieldset v-if="showMore">
-        <b-field label="Filling Station Name">
-          <b-input v-model="fillupModel.fillingStation" type="text" expanded></b-input>
+        <b-field label="Tankstelle">
+          <b-input v-model="fillupModel.fillingStation" type="text" placeholder="Tankstelle selbst eintragen oder unten suchen" expanded></b-input>
         </b-field>
-        <b-field label="Comments">
+        <b-field label="Tankstellen in Deutschland suchen (PLZ)">
+          <b-input v-model="stationPostal" maxlength="5" placeholder="z. B. 69115" expanded></b-input>
+          <p class="control"><b-button :loading="stationLoading" @click="searchStations">Suchen</b-button></p>
+        </b-field>
+        <p v-if="stationError" class="help is-danger">{{ stationError }}</p>
+        <b-field v-if="stations.length" label="Tankstelle übernehmen">
+          <b-select expanded placeholder="Tankstelle wählen" @input="chooseStation">
+            <option v-for="station in stations" :key="station.id" :value="station">{{ station.brand || station.name }} – {{ station.street }}, {{ station.place }} ({{ station.dist }} km)</option>
+          </b-select>
+        </b-field>
+        <b-field label="Notizen">
           <b-input v-model="fillupModel.comments" type="textarea" expanded></b-input>
         </b-field>
       </fieldset>
@@ -279,7 +314,7 @@ export default {
       </b-field>
       <br />
       <b-field>
-        <b-button tag="input" native-type="submit" :disabled="tryingToCreate" type="is-primary" label="Create Fillup" expanded> </b-button>
+        <b-button tag="input" native-type="submit" :disabled="tryingToCreate" type="is-primary" label="Tankung hinzufügen" expanded> </b-button>
         <p v-if="authError">
           There was an error logging in to your account.
         </p>

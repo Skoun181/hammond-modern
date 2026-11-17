@@ -1,81 +1,66 @@
 <script>
 import { authComputed } from '@state/helpers'
 import { mapGetters } from 'vuex'
-import NavBarRoutes from './nav-bar-routes.vue'
+import { applySavedTheme, toggleTheme } from '@utils/theme-modern'
 
 export default {
-  components: { NavBarRoutes },
   data() {
-    return {
-      persistentNavRoutes: [
-        {
-          name: 'home',
-          title: 'Home',
-        },
-      ],
-      loggedInNavRoutes: [
-        {
-          name: 'quickEntries',
-          title: () => 'Quick Entries',
-          badge: () => this.unprocessedQuickEntries.length,
-        },
-        {
-          name: 'import',
-          title: () => 'Import',
-        },
-        {
-          name: 'settings',
-          title: 'Settings',
-        },
-        {
-          name: 'logout',
-          title: 'Log out',
-        },
-      ],
-      loggedOutNavRoutes: [
-        {
-          name: 'login',
-          title: 'Log in',
-        },
-      ],
-      adminNavRoutes: [
-        {
-          name: 'site-settings',
-          title: 'Site Settings',
-        },
-        {
-          name: 'users',
-          title: 'Users',
-        },
-      ],
-    }
+    return { theme: 'dark', mobileOpen: false }
   },
   computed: {
     ...authComputed,
     ...mapGetters('vehicles', ['unprocessedQuickEntries']),
-    isAdmin() {
-      return this.loggedIn && this.currentUser.role === 'ADMIN'
+    isAdmin() { return this.loggedIn && this.currentUser && this.currentUser.role === 'ADMIN' },
+    links() {
+      if (!this.loggedIn) return [{ name: 'login', title: 'Anmelden', icon: '↪' }]
+      return [
+        { name: 'home', title: 'Dashboard', icon: '▦' },
+        { name: 'vehicle-create', title: 'Fahrzeug hinzufügen', icon: '＋' },
+        { name: 'drivers', title: 'Fahrer', icon: '♙' },
+        { name: 'quickEntries', title: 'Schnelleinträge', icon: '◷', badge: this.unprocessedQuickEntries.length },
+        { name: 'import', title: 'Datenimport', icon: '⇩' },
+        { name: 'settings', title: 'Einstellungen', icon: '⚙' },
+        ...(this.isAdmin ? [
+          { name: 'site-settings', title: 'Systemeinstellungen', icon: '☷' },
+          { name: 'users', title: 'Benutzer', icon: '♙' },
+        ] : []),
+        { name: 'logout', title: 'Abmelden', icon: '⇥' },
+      ]
     },
+  },
+  created() { this.theme = applySavedTheme() },
+  watch: { '$route'() { this.mobileOpen = false } },
+  methods: {
+    switchTheme() { this.theme = toggleTheme() },
+    closeMenu() { this.mobileOpen = false },
   },
 }
 </script>
 
 <template>
-  <div class="container">
-    <b-navbar class="" spaced>
-      <template v-slot:brand>
-        <b-navbar-item tag="router-link" :to="{ path: '/' }">
-          <h1 class="title" style="font-family:Arial Black">Hammond</h1>
-        </b-navbar-item>
-      </template>
-      <template v-slot:end>
-        <NavBarRoutes :routes="persistentNavRoutes" />
-        <NavBarRoutes v-if="loggedIn" :routes="loggedInNavRoutes" />
-        <NavBarRoutes v-else :routes="loggedOutNavRoutes" />
-        <b-navbar-dropdown v-if="loggedIn && isAdmin" label="Admin">
-          <NavBarRoutes :routes="adminNavRoutes" />
-        </b-navbar-dropdown>
-      </template>
-    </b-navbar>
+  <div class="hm-navigation">
+    <header class="hm-mobile-bar">
+      <router-link class="hm-brand" :to="{ name: 'home' }">HAMMOND <span>MODERN</span></router-link>
+      <button class="hm-menu-toggle" type="button" :aria-expanded="mobileOpen.toString()" aria-label="Menü öffnen oder schließen" @click="mobileOpen = !mobileOpen">☰</button>
+    </header>
+    <div v-if="mobileOpen" class="hm-sidebar-backdrop" @click="closeMenu"></div>
+    <aside class="hm-sidebar" :class="{ 'hm-sidebar-open': mobileOpen }" aria-label="Hauptnavigation">
+      <router-link class="hm-brand hm-desktop-brand" :to="{ name: 'home' }" @click.native="closeMenu">HAMMOND <span>MODERN</span></router-link>
+      <p class="hm-nav-heading">WORKSPACE</p>
+      <nav class="hm-nav-links">
+        <router-link v-for="link in links" :key="link.name" :to="{ name: link.name }" class="hm-nav-link" :class="{ 'hm-nav-active': $route.name === link.name }" @click.native="closeMenu">
+          <span class="hm-nav-icon" aria-hidden="true">{{ link.icon }}</span>
+          <span>{{ link.title }}</span>
+          <span v-if="link.badge" class="hm-nav-badge">{{ link.badge }}</span>
+        </router-link>
+      </nav>
+      <div class="hm-sidebar-footer">
+        <button class="hm-theme-switch" type="button" :aria-label="theme === 'dark' ? 'Helles Design aktivieren' : 'Dunkles Design aktivieren'" @click="switchTheme">
+          <span aria-hidden="true">{{ theme === 'dark' ? '☀' : '☾' }}</span>
+          {{ theme === 'dark' ? 'Helles Design' : 'Dunkles Design' }}
+        </button>
+        <span class="hm-version">Hammond Modern · Community Edition</span>
+      </div>
+    </aside>
   </div>
 </template>

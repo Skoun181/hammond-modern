@@ -1,14 +1,11 @@
 <script>
 import NavBar from '@components/nav-bar.vue'
-
-export default {
-  components: { NavBar },
-}
+export default { components: { NavBar } }
 </script>
 
-<template
-  ><div>
+<template>
+  <div class="hm-shell">
     <NavBar />
-    <div class="section container"> <slot /> </div
-  ></div>
+    <main id="main-content" class="hm-main"><div class="hm-main-inner"><slot /></div></main>
+  </div>
 </template>

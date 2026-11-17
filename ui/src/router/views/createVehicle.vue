@@ -2,10 +2,11 @@
 import Layout from '@layouts/main.vue'
 import { mapState } from 'vuex'
 import axios from 'axios'
+import { vehicleBrands } from '@utils/vehicle-brands'
 
 export default {
   page: {
-    title: 'Create Vehicle',
+    title: 'Fahrzeug hinzufügen',
   },
   components: { Layout },
   props: {
@@ -24,6 +25,10 @@ export default {
       showMore: false,
       myVehicles: [],
       vehicleModel: {},
+      brands: vehicleBrands,
+      models: [],
+      catalogError: '',
+      loadingModels: false,
     }
   },
 
@@ -31,7 +36,14 @@ export default {
     ...mapState('users', ['me']),
     ...mapState('vehicles', ['fuelUnitMasters', 'fuelTypeMasters', 'vehicles']),
   },
-  watch: {},
+  watch: {
+    'vehicleModel.make': function(newMake, oldMake) {
+      if (newMake === oldMake) return
+      this.models = []
+      if (oldMake) this.vehicleModel.model = ''
+      this.loadModels(newMake)
+    },
+  },
   mounted() {
     if (!this.vehicle) {
       this.vehicleModel = this.getEmptyVehicle()
@@ -39,8 +51,22 @@ export default {
       this.vehicleModel = this.getEmptyVehicle(this.vehicle)
     }
     this.myVehicles = this.vehicles
+    if (this.vehicleModel.make) this.loadModels(this.vehicleModel.make)
   },
   methods: {
+    async loadModels(make) {
+      if (!make || make.length < 2) return
+      this.loadingModels = true
+      this.catalogError = ''
+      try {
+        const url = 'https://vpic.nhtsa.dot.gov/api/vehicles/GetModelsForMake/' + encodeURIComponent(make) + '?format=json'
+        const response = await axios.get(url, { timeout: 9000 })
+        if (this.vehicleModel.make !== make) return
+        this.models = Array.from(new Set((response.data.Results || []).map(x => x.Model_Name).filter(Boolean))).sort()
+        if (!this.models.length) this.catalogError = 'Keine Modelle gefunden – du kannst ein Modell selbst eingeben.'
+      } catch (error) { this.catalogError = 'Modellkatalog nicht erreichbar. Bitte Modell selbst eingeben.' }
+      finally { this.loadingModels = false }
+    },
     getEmptyVehicle(veh) {
       if (!veh || !veh.id) {
         return {
@@ -74,7 +100,7 @@ export default {
           .put(`/api/vehicles/${this.vehicle.id}`, this.vehicleModel)
           .then((data) => {
             this.$buefy.toast.open({
-              message: 'Vehicle Updated Successfully',
+              message: 'Fahrzeug erfolgreich aktualisiert',
               type: 'is-success',
               duration: 3000,
             })
@@ -96,7 +122,7 @@ export default {
           .post(`/api/vehicles`, this.vehicleModel)
           .then((data) => {
             this.$buefy.toast.open({
-              message: 'Vehicle Created Successfully',
+              message: 'Fahrzeug erfolgreich angelegt',
               type: 'is-success',
               duration: 3000,
             })
@@ -123,22 +149,22 @@ export default {
   <Layout>
     <div class="columns">
       <div class="column is-three-quarters">
-        <h1 class="title">Create Vehicle</h1>
+        <h1 class="title">Fahrzeug hinzufügen</h1>
       </div>
       <div class="column is-one-quarter">
         <router-link tag="b-button" type="is-primary" to="/">
-          Back to Vehicle
+          Zur Fahrzeugübersicht
         </router-link>
       </div>
     </div>
     <form @submit.prevent="createVehicle">
-      <b-field label="Nickname*">
+      <b-field label="Fahrzeugname*">
         <b-input v-model="vehicleModel.nickname" type="text" expanded required></b-input>
       </b-field>
-      <b-field label="Registration*">
+      <b-field label="Kennzeichen*">
         <b-input v-model="vehicleModel.registration" type="text" expanded required></b-input>
       </b-field>
-      <b-field label="Fuel Type*">
+      <b-field label="Kraftstoffart*">
         <b-select v-model.number="vehicleModel.fuelType" placeholder="Fuel Type" required expanded>
           <option v-for="(option, key) in fuelTypeMasters" :key="key" :value="key">
             {{ option.long }}
@@ -146,7 +172,7 @@ export default {
         </b-select>
       </b-field>
 
-      <b-field label="Fuel Unit*">
+      <b-field label="Kraftstoffeinheit*">
         <b-select v-model.number="vehicleModel.fuelUnit" placeholder="Fuel Unit" required expanded>
           <option v-for="(option, key) in fuelUnitMasters" :key="key" :value="key">
             {{ option.long }}
@@ -154,22 +180,23 @@ export default {
         </b-select>
       </b-field>
 
-      <b-field label="Make / Company*">
-        <b-input v-model="vehicleModel.make" type="text" required expanded></b-input>
+      <b-field label="Automarke*">
+        <b-autocomplete v-model="vehicleModel.make" :data="brands.filter(b => b.toLocaleLowerCase('de').includes((vehicleModel.make || '').toLocaleLowerCase('de'))).slice(0, 30)" placeholder="Marke suchen oder eingeben" keep-first open-on-focus clearable expanded required @select="option => vehicleModel.make = option" />
       </b-field>
-      <b-field label="Model*">
-        <b-input v-model="vehicleModel.model" type="text" required expanded></b-input>
+      <b-field label="Modell*">
+        <b-autocomplete v-model="vehicleModel.model" :data="models.filter(m => m.toLowerCase().includes((vehicleModel.model || '').toLowerCase())).slice(0, 40)" placeholder="Modell auswählen oder eingeben" clearable expanded required @select="option => vehicleModel.model = option" />
+        <p class="help">{{ loadingModels ? 'Modelle werden geladen…' : catalogError }}</p>
       </b-field>
-      <b-field label="Year Of Manufacture">
+      <b-field label="Baujahr">
         <b-input v-model.number="vehicleModel.yearOfManufacture" type="number" expanded number></b-input>
       </b-field>
-      <b-field label="Engine Size (in cc)">
+      <b-field label="Hubraum (cm³)">
         <b-input v-model.number="vehicleModel.engineSize" type="number" expanded number></b-input>
       </b-field>
 
       <br />
       <b-field>
-        <b-button tag="input" native-type="submit" :disabled="tryingToCreate" type="is-primary" label="Create Vehicle" expanded>
+        <b-button tag="input" native-type="submit" :disabled="tryingToCreate" type="is-primary" label="Fahrzeug hinzufügen" expanded>
           <BaseIcon v-if="tryingToCreate" name="sync" spin />
         </b-button>
         <p v-if="authError">

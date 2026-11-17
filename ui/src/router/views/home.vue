@@ -1,5 +1,6 @@
 <script>
-import currencyFormtter from 'currency-formatter'
+import { formatMoney, formatDecimal } from '@utils/format-modern'
+import { vehicleFuelStatistics } from '@utils/fuel-statistics'
 
 import appConfig from '@src/app.config'
 import Layout from '@layouts/main.vue'
@@ -41,19 +42,21 @@ export default {
     },
   },
   watch: {
-    vehicles(old, newOne) {
-      this.myVehicles = newOne
+    vehicles(newVehicles) {
+      this.myVehicles = newVehicles || []
     },
   },
   mounted() {
-    this.myVehicles = this.vehicles
+    this.myVehicles = this.vehicles || []
   },
   methods: {
+    formatDecimal(value, digits = 2) { return formatDecimal(value, digits) },
+    fuelStats(fillups) { return vehicleFuelStatistics(fillups) },
     formatDate(date) {
       return parseAndFormatDate(date)
     },
     formatCurrency(number) {
-      return currencyFormtter.format(number, { code: this.me.currency })
+      return formatMoney(number, (this.me && this.me.currency) || 'EUR')
     },
   },
 }
@@ -61,15 +64,19 @@ export default {
 
 <template>
   <Layout>
+    <div class="hm-page-heading">
+      <div><p class="hm-eyebrow">ÜBERSICHT</p><h1 class="title hm-page-title">Dein Dashboard</h1><p class="hm-page-description">Fahrzeuge, Kosten und Tankvorgänge auf einen Blick.</p></div>
+      <b-button type="is-primary" tag="router-link" :to="'/vehicles/create'">＋ Fahrzeug hinzufügen</b-button>
+    </div>
+    <div class="hm-overview-strip"><div class="hm-overview-icon">▣</div><div><p class="hm-overview-label">VERWALTETE FAHRZEUGE</p><strong>{{ myVehicles.length }}</strong></div><span class="hm-overview-note">Aktive Übersicht</span></div>
     <b-notification v-if="myVehicles.length === 0" type="is-warning is-light" :closable="false">
       <div class="columns">
         <div class="column">
-          It seems you have not yet created a vehicle in the system. Start by creating an entry for
-          one of the vehicles you want to track.
+          Noch keine Fahrzeuge vorhanden. Lege dein erstes Fahrzeug an, um Ausgaben und Tankvorgänge zu verfolgen.
         </div>
         <div class="column" :class="!isMobile ? 'has-text-right' : ''">
           <b-button type="is-warning" class="" tag="router-link" :to="`/vehicles/create`"
-            >Create Now</b-button
+            >Jetzt anlegen</b-button
           ></div
         >
       </div>
@@ -82,14 +89,12 @@ export default {
       <div class="columns">
         <div class="column">
           {{
-            `You have ${unprocessedQuickEntries.length} quick ${
-              unprocessedQuickEntries.length === 1 ? 'entry' : 'entries'
-            } pending to be processed.`
+            `Du hast ${unprocessedQuickEntries.length} unbearbeitete Schnelleinträge.`
           }}
         </div>
         <div class="column" :class="!isMobile ? 'has-text-right' : ''">
           <b-button type="is-warning" class="is-small" tag="router-link" :to="`/quickEntries`"
-            >Process Now</b-button
+            >Jetzt bearbeiten</b-button
           ></div
         >
       </div>
@@ -99,10 +104,10 @@ export default {
     <br />
     <section>
       <div class="columns" :class="isMobile ? 'has-text-centered' : ''"
-        ><div class="column is-three-quarters"> <h1 class="title">Your Vehicles</h1></div>
+        ><div class="column is-three-quarters"> <h2 class="title">Meine Fahrzeuge</h2></div>
         <div class="column is-one-quarter buttons" :class="!isMobile ? 'has-text-right' : ''">
           <b-button type="is-primary" tag="router-link" :to="`/vehicles/create`"
-            >Add Vehicle</b-button
+            >Fahrzeug hinzufügen</b-button
           >
         </div></div
       >
@@ -125,21 +130,21 @@ export default {
               <div class="content">
                 <table class="table">
                   <div class="columns">
-                    <div class="column is-one-third">Last Fillup</div>
+                    <div class="column is-one-third">Letzte Tankung</div>
                     <div class="column"
                       >{{ formatDate(vehicle.fillups[0].date) }} <br />
                       {{ `${formatCurrency(vehicle.fillups[0].totalAmount)}` }} ({{
-                        `${vehicle.fillups[0].fuelQuantity} ${vehicle.fillups[0].fuelUnitDetail.short}`
+                        `${formatDecimal(vehicle.fillups[0].fuelQuantity)} ${vehicle.fillups[0].fuelUnitDetail.short}`
                       }}
                       @ {{ `${formatCurrency(vehicle.fillups[0].perUnitPrice)}` }})</div
                     >
                   </div>
 
                   <div class="columns">
-                    <div class="column is-one-third">Odometer</div>
+                    <div class="column is-one-third">Kilometerstand</div>
                     <div class="column">
                       <template v-if="vehicle.fillups.length">
-                        {{ vehicle.fillups[0].odoReading }}&nbsp;{{
+                        {{ formatDecimal(vehicle.fillups[0].odoReading, 0) }}&nbsp;{{
                           me.distanceUnitDetail.short
                         }}</template
                       >
@@ -148,14 +153,23 @@ export default {
                 </table>
               </div>
             </div>
+            <div class="card-content">
+              <div class="columns is-mobile hm-fuel-metrics">
+                <div class="column"><p class="heading">Getankt im Monat</p><strong>{{ formatDecimal(fuelStats(vehicle.fillups).monthLiters) }} L</strong></div>
+                <div class="column"><p class="heading">Getankt im Jahr</p><strong>{{ formatDecimal(fuelStats(vehicle.fillups).yearLiters) }} L</strong></div>
+              </div>
+              <p class="heading">Ø Verbrauch (Volltankungen)</p>
+              <p><strong>{{ fuelStats(vehicle.fillups).consumption === null ? 'Noch nicht berechenbar' : formatDecimal(fuelStats(vehicle.fillups).consumption) + ' L/100 km' }}</strong></p>
+              <p class="help">Benötigt mindestens zwei Volltankungen mit steigenden Kilometerständen und keine ausgelassene Tankung.</p>
+            </div>
             <footer class="card-footer">
               <router-link class="card-footer-item" :to="'/vehicles/' + vehicle.id">
                 Details
               </router-link>
               <router-link class="card-footer-item" :to="`/vehicles/${vehicle.id}/fillup`">
-                Add Fillup </router-link
+                Tankung hinzufügen </router-link
               ><router-link class="card-footer-item" :to="`/vehicles/${vehicle.id}/expense`">
-                Add Expense
+                Ausgabe hinzufügen
               </router-link>
             </footer>
           </b-collapse>

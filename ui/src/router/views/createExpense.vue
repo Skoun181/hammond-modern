@@ -34,6 +34,8 @@ export default {
       selectedVehicle: this.vehicle,
       expenseModel: this.expense,
       processQuickEntry: false,
+      invoiceUploading: false,
+      invoiceName: '',
     }
   },
 
@@ -70,7 +72,10 @@ export default {
       return {
         vehicleId: this.selectedVehicle.id,
         amount: null,
-        expenseType: '',
+        expenseType: 'Werkstatt / Reparatur',
+        workshop: '',
+        workPerformed: '',
+        invoiceAttachmentId: '',
         odoReading: '',
         date: new Date(),
         comments: '',
@@ -84,6 +89,34 @@ export default {
           this.users = data
         })
         .catch((err) => console.log(err))
+    },
+    async downloadInvoice() {
+      if (!this.expenseModel.invoiceAttachmentId) return
+      try {
+        const response = await axios.get('/api/invoices/' + this.expenseModel.invoiceAttachmentId + '/file', { responseType: 'blob' })
+        const url = window.URL.createObjectURL(response.data)
+        const a = document.createElement('a')
+        a.href = url; a.download = this.invoiceName || 'werkstattrechnung'; document.body.appendChild(a); a.click(); a.remove()
+        window.URL.revokeObjectURL(url)
+      } catch (error) { this.$buefy.toast.open({ message: 'Rechnung konnte nicht geladen werden.', type: 'is-danger' }) }
+    },
+    async uploadInvoice(event) {
+      const file = event.target.files && event.target.files[0]
+      if (!file) return
+      if (!['application/pdf', 'image/jpeg', 'image/png'].includes(file.type) || file.size > 10 * 1024 * 1024) {
+        this.$buefy.toast.open({ message: 'Bitte PDF, JPG oder PNG bis 10 MB wählen.', type: 'is-danger' }); return
+      }
+      this.invoiceUploading = true
+      try {
+        const form = new FormData()
+        form.append('file', file)
+        const response = await axios.post('/api/invoices', form, { headers: { 'Content-Type': 'multipart/form-data' } })
+        const attachment = Array.isArray(response.data) ? response.data[0] : response.data
+        if (!attachment || !attachment.id) throw new Error('Keine Anhang-ID erhalten')
+        this.expenseModel.invoiceAttachmentId = attachment.id
+        this.invoiceName = file.name
+      } catch (err) { this.$buefy.toast.open({ message: 'Rechnung konnte nicht hochgeladen werden.', type: 'is-danger' }) }
+      finally { this.invoiceUploading = false }
     },
     createExpense() {
       this.tryingToCreate = true
@@ -152,7 +185,7 @@ export default {
   <Layout>
     <div class="columns">
       <div class="column is-two-thirds">
-        <h1 class="title">Create Expense</h1>
+        <h1 class="title">Werkstatt & Ausgaben</h1>
         <h1 class="subtitle">
           {{ [selectedVehicle.nickname, selectedVehicle.registration, selectedVehicle.make, selectedVehicle.model].join(' | ') }}
         </h1>
@@ -162,21 +195,21 @@ export default {
       </div>
     </div>
     <form @submit.prevent="createExpense">
-      <b-field label="Select a vehicle">
+      <b-field label="Fahrzeug">
         <b-select v-model="selectedVehicle" placeholder="Vehicle" required expanded :disabled="expense.id">
           <option v-for="option in myVehicles" :key="option.id" :value="option">
             {{ option.nickname }}
           </option>
         </b-select>
       </b-field>
-      <b-field label="Expense by">
+      <b-field label="Erfasst von">
         <b-select v-model="expenseModel.userId" placeholder="User" required expanded :disabled="expense.id">
           <option v-for="option in users" :key="option.userId" :value="option.userId">
             {{ option.name }}
           </option>
         </b-select>
       </b-field>
-      <b-field label="Expense Date">
+      <b-field label="Datum der Ausgabe">
         <b-datepicker
           v-model="expenseModel.date"
           :date-formatter="formatDate"
@@ -186,17 +219,28 @@ export default {
         >
         </b-datepicker>
       </b-field>
-      <b-field label="Expense Type*">
+      <b-field label="Werkstatt / Dienstleister">
+        <b-input v-model="expenseModel.workshop" placeholder="z. B. Autohaus Müller" expanded></b-input>
+      </b-field>
+      <b-field label="Was wurde gemacht oder ersetzt?">
+        <b-input v-model="expenseModel.workPerformed" type="textarea" placeholder="z. B. Bremsbeläge vorne erneuert" expanded></b-input>
+      </b-field>
+      <b-field label="Rechnung hochladen (PDF, JPG, PNG · maximal 10 MB)">
+        <input type="file" accept=".pdf,.jpg,.jpeg,.png" :disabled="invoiceUploading" @change="uploadInvoice" />
+        <p class="help">{{ invoiceUploading ? 'Wird hochgeladen…' : (invoiceName || (expenseModel.invoiceAttachmentId ? 'Rechnung hinterlegt' : 'Noch keine Datei ausgewählt')) }}</p>
+        <a v-if="expenseModel.invoiceAttachmentId" href="#" @click.prevent="downloadInvoice">Rechnung herunterladen</a>
+      </b-field>
+      <b-field label="Art der Ausgabe*">
         <b-input v-model="expenseModel.expenseType" expanded required></b-input>
       </b-field>
 
-      <b-field label="Total Amount Paid">
+      <b-field label="Rechnungsbetrag">
         <p class="control">
           <span class="button is-static">{{ me.currency }}</span>
         </p>
         <b-input v-model.number="expenseModel.amount" type="number" min="0" expanded step=".001" required></b-input>
       </b-field>
-      <b-field label="Odometer Reading">
+      <b-field label="Kilometerstand">
         <p class="control">
           <span class="button is-static">{{ me.distanceUnitDetail.short }}</span>
         </p>
@@ -207,7 +251,7 @@ export default {
         <b-switch v-model="showMore">Fill more details</b-switch>
       </b-field>
       <fieldset v-if="showMore">
-        <b-field label="Comments">
+        <b-field label="Zusätzliche Notizen">
           <b-input v-model="expenseModel.comments" type="textarea" expanded></b-input>
         </b-field>
       </fieldset>
@@ -216,7 +260,7 @@ export default {
       </b-field>
       <br />
       <b-field>
-        <b-button tag="input" native-type="submit" :disabled="tryingToCreate" type="is-primary" label="Create Expense" expanded> </b-button>
+        <b-button tag="input" native-type="submit" :disabled="tryingToCreate || invoiceUploading" type="is-primary" label="Ausgabe speichern" expanded> </b-button>
       </b-field>
     </form>
   </Layout>

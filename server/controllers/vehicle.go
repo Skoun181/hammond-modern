@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/akhilrex/hammond/common"
+	"github.com/akhilrex/hammond/db"
 	"github.com/akhilrex/hammond/models"
 	"github.com/akhilrex/hammond/service"
 	"github.com/gin-gonic/gin"
@@ -165,6 +166,13 @@ func createFillup(c *gin.Context) {
 			c.JSON(http.StatusUnprocessableEntity, common.NewValidatorError(err))
 			return
 		}
+		if request.DriverID != "" {
+			var count int64
+			if err := db.DB.Model(&db.Driver{}).Where("id = ? AND owner_user_id = ?", request.DriverID, c.MustGet("userId").(string)).Count(&count).Error; err != nil || count == 0 {
+				c.JSON(http.StatusUnprocessableEntity, gin.H{"error": "Fahrer nicht gefunden"})
+				return
+			}
+		}
 		fillup, err := service.CreateFillup(request)
 		if err != nil {
 			c.JSON(http.StatusUnprocessableEntity, common.NewError("createFillup", err))
@@ -185,6 +193,10 @@ func createExpense(c *gin.Context) {
 			c.JSON(http.StatusUnprocessableEntity, common.NewValidatorError(err))
 			return
 		}
+		if !validInvoiceForUser(request.InvoiceAttachmentID, c.MustGet("userId").(string)) {
+			c.JSON(422, gin.H{"error": "Rechnung gehört nicht zum angemeldeten Benutzer"})
+			return
+		}
 		expense, err := service.CreateExpense(request)
 		if err != nil {
 			c.JSON(http.StatusUnprocessableEntity, common.NewError("createExpense", err))
@@ -201,6 +213,10 @@ func updateExpense(c *gin.Context) {
 	var updateExpenseModel models.UpdateExpenseRequest
 	if err := c.ShouldBindUri(&searchByIdQuery); err == nil {
 		if err := c.ShouldBind(&updateExpenseModel); err == nil {
+			if !validInvoiceForUser(updateExpenseModel.InvoiceAttachmentID, c.MustGet("userId").(string)) {
+				c.JSON(422, gin.H{"error": "Rechnung gehört nicht zum angemeldeten Benutzer"})
+				return
+			}
 			err := service.UpdateExpense(searchByIdQuery.SubId, updateExpenseModel)
 			if err != nil {
 				c.JSON(http.StatusUnprocessableEntity, common.NewError("getExpenseById", err))

@@ -1,6 +1,6 @@
 <script>
 import { addDays, addMonths } from 'date-fns'
-import currencyFormtter from 'currency-formatter'
+import { formatMoney } from '@utils/format-modern'
 import { mapState } from 'vuex'
 
 import axios from 'axios'
@@ -14,15 +14,16 @@ export default {
   data: function() {
     return {
       dateRangeOptions: [
-        { label: 'This week', value: 'this_week' },
-        { label: 'This month', value: 'this_month' },
-        { label: 'Past 30 days', value: 'past_30_days' },
-        { label: 'Past 3 months', value: 'past_3_months' },
-        { label: 'This year', value: 'this_year' },
-        { label: 'All Time', value: 'all_time' },
+        { label: 'Diese Woche', value: 'this_week' },
+        { label: 'Dieser Monat', value: 'this_month' },
+        { label: 'Letzte 30 Tage', value: 'past_30_days' },
+        { label: 'Letzte 3 Monate', value: 'past_3_months' },
+        { label: 'Dieses Jahr', value: 'this_year' },
+        { label: 'Gesamter Zeitraum', value: 'all_time' },
       ],
       dateRangeOption: 'past_30_days',
       stats: [],
+      loadError: false,
     }
   },
   computed: {
@@ -32,15 +33,15 @@ export default {
         return [
           [
             {
-              label: 'Total Expenditure',
+              label: 'Gesamtausgaben',
               value: this.formatCurrency(0, this.user.currency),
             },
             {
-              label: 'Fillup Costs',
+              label: 'Tankkosten',
               value: `${this.formatCurrency(0, this.user.currency)} (0)`,
             },
             {
-              label: 'Other Expenses',
+              label: 'Sonstige Ausgaben',
               value: `${this.formatCurrency(0, this.user.currency)} (0)`,
             },
           ],
@@ -49,15 +50,15 @@ export default {
       return this.stats.map((x) => {
         return [
           {
-            label: 'Total Expenditure',
+            label: 'Gesamtausgaben',
             value: this.formatCurrency(x.expenditureTotal, x.currency),
           },
           {
-            label: 'Fillup Costs',
+            label: 'Tankkosten',
             value: `${this.formatCurrency(x.expenditureFillups, x.currency)} (${x.countFillups})`,
           },
           {
-            label: 'Other Expenses',
+            label: 'Sonstige Ausgaben',
             value: `${this.formatCurrency(x.expenditureExpenses, x.currency)} (${x.countExpenses})`,
           },
         ]
@@ -78,11 +79,12 @@ export default {
   methods: {
     formatCurrency(number, currencyCode) {
       if (!currencyCode) {
-        currencyCode = this.me.currency
+        currencyCode = (this.user && this.user.currency) || 'EUR'
       }
-      return currencyFormtter.format(number, { code: currencyCode })
+      return formatMoney(number, currencyCode)
     },
     getStats() {
+      this.loadError = false
       axios
         .get('/api/me/stats', {
           params: {
@@ -91,8 +93,9 @@ export default {
           },
         })
         .then((data) => {
-          this.stats = data.data
+          this.stats = Array.isArray(data.data) ? data.data : []
         })
+        .catch(() => { this.loadError = true; this.stats = [] })
     },
     getStartDate() {
       const toDate = new Date()
@@ -129,7 +132,7 @@ export default {
 <template>
   <div>
     <div class="columns">
-      <div class="column" :class="isMobile ? 'has-text-centered' : ''"> <h1 class="title">Stats</h1></div>
+      <div class="column" :class="isMobile ? 'has-text-centered' : ''"> <h2 class="title">Kostenübersicht – alle meine Fahrzeuge</h2></div>
       <div class="column">
         <b-select v-model="dateRangeOption" class="is-pulled-right is-medium">
           <option v-for="option in dateRangeOptions" :key="option.value" :value="option.value">
@@ -138,8 +141,9 @@ export default {
         </b-select></div
       >
     </div>
-    <div v-for="(currencyLevel, index) in summaryObject" :key="index" class="level box">
-      <div v-for="item in currencyLevel" :key="item.label" class="level-item has-text-centered">
+    <b-notification v-if="loadError" type="is-danger" :closable="false">Statistiken konnten nicht geladen werden.</b-notification>
+    <div v-for="(currencyLevel, index) in summaryObject" :key="index" class="modern-stat-grid">
+      <div v-for="item in currencyLevel" :key="item.label" class="modern-stat-card">
         <div>
           <p class="heading">{{ item.label }}</p>
           <p class="title is-4">{{ item.value }}</p>

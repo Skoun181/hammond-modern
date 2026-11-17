@@ -100,6 +100,15 @@ type UserVehicle struct {
 	IsOwner   bool   `json:"isOwner"`
 }
 
+// Driver is deliberately separate from application users: drivers need no login.
+type Driver struct {
+	Base
+	OwnerUserID   string     `json:"-" gorm:"index"`
+	Name          string     `json:"name"`
+	LicenseExpiry *time.Time `json:"licenseExpiry"`
+	Notes         string     `json:"notes"`
+}
+
 type Fillup struct {
 	Base
 	VehicleID       string       `json:"vehicleId"`
@@ -113,6 +122,7 @@ type Fillup struct {
 	HasMissedFillup *bool        `json:"hasMissedFillup"`
 	Comments        string       `json:"comments"`
 	FillingStation  string       `json:"fillingStation"`
+	DriverID        string       `json:"driverId"`
 	UserID          string       `json:"userId"`
 	User            User         `json:"user"`
 	Date            time.Time    `json:"date"`
@@ -137,18 +147,21 @@ func (b *Fillup) MarshalJSON() ([]byte, error) {
 
 type Expense struct {
 	Base
-	VehicleID    string       `json:"vehicleId"`
-	Vehicle      Vehicle      `json:"-"`
-	Amount       float32      `json:"amount"`
-	OdoReading   int          `json:"odoReading"`
-	Comments     string       `json:"comments"`
-	ExpenseType  string       `json:"expenseType"`
-	UserID       string       `json:"userId"`
-	User         User         `json:"user"`
-	Date         time.Time    `json:"date"`
-	Currency     string       `json:"currency"`
-	DistanceUnit DistanceUnit `json:"distanceUnit"`
-	Source       string       `json:"source"`
+	VehicleID           string       `json:"vehicleId"`
+	Vehicle             Vehicle      `json:"-"`
+	Amount              float32      `json:"amount"`
+	OdoReading          int          `json:"odoReading"`
+	Comments            string       `json:"comments"`
+	ExpenseType         string       `json:"expenseType"`
+	Workshop            string       `json:"workshop"`
+	WorkPerformed       string       `json:"workPerformed"`
+	InvoiceAttachmentID string       `json:"invoiceAttachmentId"`
+	UserID              string       `json:"userId"`
+	User                User         `json:"user"`
+	Date                time.Time    `json:"date"`
+	Currency            string       `json:"currency"`
+	DistanceUnit        DistanceUnit `json:"distanceUnit"`
+	Source              string       `json:"source"`
 }
 
 type Setting struct {

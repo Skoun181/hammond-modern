@@ -1,3 +1,4 @@
+import { applySavedTheme } from '@utils/theme-modern'
 import Vue from 'vue'
 import Buefy from 'buefy'
 import router from '@router'
@@ -32,6 +33,9 @@ import '@components/_globals'
 
 import 'buefy/dist/buefy.css'
 import 'nprogress/nprogress.css'
+import './design/modern.css'
+
+applySavedTheme()
 
 Vue.component('vue-fontawesome', FontAwesomeIcon)
 library.add(
