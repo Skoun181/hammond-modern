@@ -9,7 +9,7 @@ export function normalizeCurrency(currency) {
   const candidate = (code ? code[1] : input).toUpperCase()
   if (!/^[A-Z]{3}$/.test(candidate)) return 'EUR'
   try {
-    new Intl.NumberFormat('de-DE', { style: 'currency', currency: candidate })
+    Intl.NumberFormat('de-DE', { style: 'currency', currency: candidate })
     return candidate
   } catch (error) {
     return 'EUR'
