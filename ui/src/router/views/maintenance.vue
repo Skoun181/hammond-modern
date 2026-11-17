@@ -21,7 +21,6 @@ export default {
   },
   computed: {
     ...mapState('vehicles', ['vehicles']),
-    activeTasks() { return this.tasks.filter(t => !t.completedAt) },
     completedTasks() { return this.tasks.filter(t => !!t.completedAt) },
   },
   watch: {
@@ -29,6 +28,7 @@ export default {
       if (value === '1') {
         this.editingId = ''
         this.showForm = true
+        this.scrollToForm()
       }
     },
   },
@@ -77,8 +77,15 @@ export default {
       this.editingId = ''
       this.form = { vehicleId: this.vehicles.length ? this.vehicles[0].id : '', title: '', notes: '', dueDate: '', dueOdo: '', completed: false }
     },
+    scrollToForm() {
+      this.$nextTick(() => {
+        const el = this.$el.querySelector('#maintenance-form')
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      })
+    },
     edit(task) {
       this.showForm = true
+      this.scrollToForm()
       this.editingId = task.id
       this.form = {
         vehicleId: task.vehicleId, title: task.title, notes: task.notes || '',
@@ -134,7 +141,7 @@ export default {
       </div>
     </div>
     <b-notification v-if="error" type="is-danger" :closable="false">{{ error }}</b-notification>
-    <MaintenanceOverview :key="overviewKey" heading="Was steht als Nächstes an?" />
+    <MaintenanceOverview :key="overviewKey" heading="Was steht als Nächstes an?" :show-actions="true" @edit="edit" @complete="complete" @remove="remove" />
     <div v-if="showForm" id="maintenance-form" class="box">
       <h2 class="title is-5">{{ editingId ? 'Wartung bearbeiten' : 'Neue Wartung planen' }}</h2>
       <form @submit.prevent="save">
@@ -167,23 +174,6 @@ export default {
         <b-button type="is-primary" native-type="submit" :loading="saving">{{ editingId ? 'Änderungen speichern' : 'Wartung speichern' }}</b-button>
         <b-button v-if="editingId" @click="resetForm">Abbrechen</b-button>
       </form>
-    </div>
-    <h2 class="title is-5">Offene Wartungen bearbeiten ({{ activeTasks.length }})</h2>
-    <p v-if="loading">Wartungen werden geladen…</p>
-    <p v-else-if="!activeTasks.length" class="help">Noch keine offenen Wartungen vorhanden.</p>
-    <div v-for="task in activeTasks" :key="task.id" class="box">
-      <div class="columns is-vcentered">
-        <div class="column">
-          <strong>{{ task.title }}</strong> · {{ vehicleName(task.vehicleId) }}
-          <p class="help">{{ status(task) }}</p>
-          <p v-if="task.notes">{{ task.notes }}</p>
-        </div>
-        <div class="column is-narrow">
-          <b-button size="is-small" @click="edit(task)">Bearbeiten</b-button>
-          <b-button size="is-small" type="is-primary" @click="complete(task)">Erledigt</b-button>
-          <b-button size="is-small" type="is-danger" outlined @click="remove(task)">Löschen</b-button>
-        </div>
-      </div>
     </div>
     <h2 v-if="completedTasks.length" class="title is-5">Erledigt ({{ completedTasks.length }})</h2>
     <div v-for="task in completedTasks" :key="task.id" class="box">
