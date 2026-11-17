@@ -1,0 +1,27 @@
+# Dockhand Git-Stack für Synology (Hammond Modern v1.1.5)
+# Dockhand: Compose file path = docker-compose.dockhand.yml
+# Context directory = . ; Build images on deploy = enabled
+services:
+  hammond-modern:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: hammond-modern:1.1.5
+    platform: linux/amd64
+    container_name: hammond-modern
+    restart: unless-stopped
+    environment:
+      TZ: Europe/Berlin
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET fehlt}
+      TANKERKOENIG_API_KEY: ${TANKERKOENIG_API_KEY:-}
+    volumes:
+      - /volume2/docker/Hammond/Hammond-config:/config
+      - /volume2/docker/Hammond/Hammond-assets:/assets
+    networks:
+      macvlan:
+        ipv4_address: 192.168.0.36
+
+networks:
+  macvlan:
+    external: true
+    name: macvlan
