@@ -18,7 +18,8 @@ Der Assistent unter **Datenimport → Original-Hammond übernehmen** importiert:
 1. In Hammond Modern anmelden und im Menü **Datenimport** öffnen.
 2. **Hammond-Migration starten** auswählen.
 3. Originale `hammond.db` hochladen (bis 50 MB).
-4. Vorschau ansehen: Anzahl Fahrzeuge, Tankungen und Ausgaben sowie eventuelle vorhandene Fahrzeuge. Identische Quellfahrzeuge mit gleichem Namen, Kennzeichen, Hersteller und Modell werden als ein Fahrzeug angezeigt; die Historie sämtlicher zugehöriger IDs wird zusammengeführt.\n5. Per Checkbox gezielt auswählen, welche Fahrzeuge übernommen werden. Ohne Auswahl findet kein Import statt.
+4. Vorschau ansehen: Anzahl Fahrzeuge, Tankungen und Ausgaben sowie eventuelle vorhandene Fahrzeuge. Identische Quellfahrzeuge mit gleichem Namen, Kennzeichen, Hersteller und Modell werden als ein Fahrzeug angezeigt; die Historie sämtlicher zugehöriger IDs wird zusammengeführt.
+5. Per Checkbox gezielt auswählen, welche Fahrzeuge übernommen werden. Ohne Auswahl findet kein Import statt.
 6. Nach eigener Prüfung den Import bestätigen.
 7. Im Dashboard und in den Fahrzeugdetails stichprobenartig Daten prüfen.
 
@@ -33,4 +34,4 @@ Der Assistent unter **Datenimport → Original-Hammond übernehmen** importiert:
 ## Grenzen
 - Der Assistent erwartet die SQLite-Struktur von Hammond und ist **nicht** für beliebige SQLite-Dateien geeignet.
 - Die Unterstützung für sehr alte oder angepasste Original-Hammond-Forks muss jeweils anhand einer Test-Sicherung geprüft werden.
-- Diese Funktion befindet sich aktuell **nur im Develop-Branch**; bitte zuerst mit einer Kopie testen, bevor produktive Daten importiert werden.
+- Diese Funktion ist Bestandteil von **v1.1.5**. Die Migrationsvorschau mit einem realen Original-Datenbestand wurde geprüft; ein vollständig abgeschlossener Import wurde noch nicht als erfolgreich getestet. Bitte zuerst mit Kopien und gesicherter Modern-Datenbank testen.
