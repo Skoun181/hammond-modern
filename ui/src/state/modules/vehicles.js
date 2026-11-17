@@ -1,5 +1,4 @@
 import axios from 'axios'
-import { filter } from 'lodash'
 
 import parseISO from 'date-fns/parseISO'
 export const state = {
@@ -9,18 +8,10 @@ export const state = {
   distanceUnitMasters: [],
   currencyMasters: [],
   fuelTypeMasters: [],
-  quickEntries: [],
   vehicleStats: new Map(),
 }
 
-export const getters = {
-  unprocessedQuickEntries: (state) => {
-    return filter(state.quickEntries, (o) => o.processDate == null)
-  },
-  processedQuickEntries: (state) => {
-    return filter(state.quickEntries, (o) => o.processDate != null)
-  },
-}
+export const getters = {}
 
 export const mutations = {
   CACHE_VEHICLE(state, newVehicles) {
@@ -41,9 +32,6 @@ export const mutations = {
   CACHE_CURRENCY_MASTERS(state, masters) {
     state.currencyMasters = masters
   },
-  CACHE_QUICK_ENTRIES(state, entries) {
-    state.quickEntries = entries
-  },
   CACHE_ROLE_MASTERS(state, roles) {
     state.roleMasters = roles
   },
@@ -55,7 +43,6 @@ export const actions = {
     if (currentUser) {
       dispatch('fetchVehicles')
       dispatch('fetchMasters')
-      dispatch('fetchQuickEntries', { force: true })
     }
   },
   fetchMasters({ commit, state, rootState }) {
@@ -74,16 +61,6 @@ export const actions = {
     return axios.get('/api/me/vehicles').then((response) => {
       const data = response.data
       commit('CACHE_VEHICLE', data)
-      return data
-    })
-  },
-  fetchQuickEntries({ commit, state, rootState }, { force }) {
-    if (state.quickEntries && !force) {
-      return Promise.resolve(state.quickEntries)
-    }
-    return axios.get('/api/me/quickEntries').then((response) => {
-      const data = response.data
-      commit('CACHE_QUICK_ENTRIES', data)
       return data
     })
   },
@@ -155,20 +132,6 @@ export const actions = {
       data.vehicleId = vehicleId
       commit('CACHE_VEHICLE_STATS', data)
 
-      return data
-    })
-  },
-  setQuickEntryAsProcessed({ commit, state, rootState, dispatch }, { id }) {
-    return axios.post(`/api/quickEntries/${id}/process`, {}).then((response) => {
-      const data = response.data
-      dispatch('fetchQuickEntries', { force: true })
-      return data
-    })
-  },
-  deleteQuickEntry({ commit, state, rootState, dispatch }, { id }) {
-    return axios.delete(`/api/quickEntries/${id}`).then((response) => {
-      const data = response.data
-      dispatch('fetchQuickEntries', { force: true })
       return data
     })
   },
