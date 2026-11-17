@@ -47,9 +47,9 @@ func RegisterStationController(router *gin.RouterGroup) {
 			return
 		}
 		// One external search per minute; fail clearly rather than violate the public API's rate limit.
-		if time.Since(stationCache.lastRequest) < time.Minute {
+		if time.Since(stationCache.lastRequest) < 2*time.Second {
 			stationCache.Unlock()
-			c.JSON(429, gin.H{"error": "Bitte eine Minute warten oder dieselbe PLZ erneut abfragen"})
+			c.JSON(429, gin.H{"error": "Bitte zwei Sekunden warten und die Suche erneut versuchen"})
 			return
 		}
 		stationCache.lastRequest = time.Now()
