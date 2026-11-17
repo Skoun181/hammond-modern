@@ -16,7 +16,7 @@ RUN npm ci --legacy-peer-deps --no-audit --no-fund
 COPY ui/ ./
 RUN npm run build
 FROM debian:bookworm-slim
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates tzdata && rm -rf /var/lib/apt/lists/* && mkdir -p /config /assets /api
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates tzdata tesseract-ocr tesseract-ocr-deu tesseract-ocr-eng && rm -rf /var/lib/apt/lists/* && mkdir -p /config /assets /api
 ENV CONFIG=/config DATA=/assets GIN_MODE=release TZ=Europe/Berlin
 WORKDIR /api
 COPY --from=backend-build /out/hammond ./app
