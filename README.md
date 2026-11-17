@@ -31,18 +31,23 @@ Die Verbrauchsberechnung benötigt mindestens zwei geeignete Volltankungen mit s
 
 ## Screenshots der neuen Oberfläche
 
-Hier sind zwei Plätze für echte Screenshots von Hammond Modern reserviert. Sobald Bilder aus der laufenden Instanz vorliegen, können sie unter den angegebenen Namen in `docs/screenshots/` abgelegt und die auskommentierten Bildzeilen aktiviert werden.
+### Dashboard
 
-| Dashboard und Fahrzeugübersicht | Tankung / Tankstellensuche |
-| --- | --- |
-| 📸 **Screenshot 1 – Dashboard**<br>Geplanter Pfad: `docs/screenshots/dashboard.png` | 📸 **Screenshot 2 – Tankstellen oder Tankung**<br>Geplanter Pfad: `docs/screenshots/tankstellen.png` |
+Fahrzeugübersicht mit Kosten, Tankstatistiken und aktuellem Verbrauch.
 
-<!-- Nach dem Hochladen der echten Bilder diese Zeilen einkommentieren:
 ![Hammond Modern – Dashboard](docs/screenshots/dashboard.png)
-![Hammond Modern – Tankstellen- und Tankungsansicht](docs/screenshots/tankstellen.png)
--->
 
-**Tipp:** Vor Veröffentlichung persönliche Kennzeichen, Standortdaten und Tankbelege in den Screenshots unkenntlich machen.
+### Tankung erfassen
+
+Tankmenge, Fahrerzuordnung, Preis, Kilometerstand und weitere Angaben.
+
+![Hammond Modern – Tankung erfassen](docs/screenshots/tankung.png)
+
+### Tankstellensuche per PLZ
+
+Suchergebnisse und Übernahme einer Tankstelle für den Tankvorgang.
+
+![Hammond Modern – Tankstellensuche](docs/screenshots/tankstellensuche.png)
 
 ## Installation – Docker und Docker Compose
 
