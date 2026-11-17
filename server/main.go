@@ -52,6 +52,8 @@ func main() {
 	controllers.RegisterStationController(router)
 	controllers.RegisterVehicleCatalogController(router)
 	controllers.RegisterInvoiceController(router)
+	controllers.RegisterMaintenanceController(router)
+	controllers.RegisterReceiptController(router)
 	controllers.RegisterFilesController(router)
 	controllers.RegisteImportController(router)
 	controllers.RegisterReportsController(router)
