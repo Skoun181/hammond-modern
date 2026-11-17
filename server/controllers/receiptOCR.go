@@ -99,9 +99,9 @@ func parseReceipt(text string) gin.H {
 
 func RegisterReceiptController(router *gin.RouterGroup) {
  router.POST("/receipts/recognize",func(c *gin.Context){
-  c.Request.Body=http.MaxBytesReader(c.Writer,c.Request.Body,6<<20)
+  c.Request.Body=http.MaxBytesReader(c.Writer,c.Request.Body,13<<20)
   file,err:=c.FormFile("file")
-  if err!=nil || file.Size<=0 || file.Size>5<<20 {c.JSON(400,gin.H{"error":"Bitte JPG oder PNG bis 5 MB auswählen"});return}
+  if err!=nil || file.Size<=0 || file.Size>12<<20 {c.JSON(400,gin.H{"error":"Bitte ein JPEG/PNG bis 12 MB auswählen"});return}
   f,err:=file.Open();if err!=nil {c.JSON(400,gin.H{"error":"Bild konnte nicht gelesen werden"});return}
   defer f.Close()
   head:=make([]byte,512)
@@ -112,7 +112,7 @@ func RegisterReceiptController(router *gin.RouterGroup) {
   input,err:=os.CreateTemp("","hammond-bon-*"+suffix)
   if err!=nil {c.Status(500);return}
   defer os.Remove(input.Name())
-  if _,err=input.Write(head[:n]);err==nil {_,err=io.Copy(input,io.LimitReader(f,5<<20))}
+  if _,err=input.Write(head[:n]);err==nil {_,err=io.Copy(input,io.LimitReader(f,12<<20))}
   input.Close()
   if err!=nil {c.JSON(500,gin.H{"error":"Beleg konnte nicht verarbeitet werden"});return}
   processed,err:=os.CreateTemp("","hammond-bon-*.png")
