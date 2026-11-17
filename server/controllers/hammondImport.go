@@ -19,6 +19,8 @@ const legacyDBMaxSize int64 = 50 << 20
 
 type legacyVehiclePreview struct {
  ID string `json:"id"`
+ SourceIDs []string `json:"sourceIds"`
+ DuplicateCount int `json:"duplicateCount"`
  Name string `json:"name"`
  Registration string `json:"registration"`
  Fillups int `json:"fillups"`
@@ -30,6 +32,8 @@ type legacyPreview struct {
  TotalFillups int `json:"totalFillups"`
  TotalExpenses int `json:"totalExpenses"`
  ExistingVehicles int `json:"existingVehicles"`
+ SourceVehicleCount int `json:"sourceVehicleCount"`
+ GroupedDuplicates int `json:"groupedDuplicates"`
  Note string `json:"note"`
 }
 type legacyData struct {
@@ -112,17 +116,51 @@ func processHammondImport(c *gin.Context,execute bool) {
  var mine []db.Vehicle
  err=db.DB.Model(&db.Vehicle{}).Joins("JOIN user_vehicles ON user_vehicles.vehicle_id=vehicles.id").Where("user_vehicles.user_id=?",userID).Find(&mine).Error
  if err!=nil{c.JSON(500,gin.H{"error":"Ziel-Fahrzeuge konnten nicht geladen werden"});return}
- preview:=legacyPreview{Vehicles:make([]legacyVehiclePreview,0,len(data.Vehicles)),TotalFillups:len(data.Fillups),TotalExpenses:len(data.Expenses),Note:"Benutzer/Passwörter, Dateianhänge und alte Erinnerungen werden nicht importiert."}
+ // Several original Hammond rows can represent the same car. Group only when
+ // all identity fields match, retaining every source ID so history is preserved.
+ groups:=make([]legacyVehiclePreview,0,len(data.Vehicles))
+ representatives:=make([]db.Vehicle,0,len(data.Vehicles))
+ sourceGroups:=make(map[string]int,len(data.Vehicles))
  for _,v:=range data.Vehicles{
-  item:=legacyVehiclePreview{ID:v.ID,Name:v.Nickname,Registration:v.Registration}
-  for _,current:=range mine {if sameVehicle(v,current){item.Matched=true;preview.ExistingVehicles++;break}}
-  for _,f:=range data.Fillups {if f.VehicleID==v.ID {item.Fillups++}}
-  for _,e:=range data.Expenses {if e.VehicleID==v.ID {item.Expenses++}}
-  preview.Vehicles=append(preview.Vehicles,item)
+  groupIndex:=-1
+  for i,representative:=range representatives{
+   if sameVehicle(v,representative) && strings.TrimSpace(v.Registration)!="" {
+    groupIndex=i;break
+   }
+  }
+  if groupIndex<0{
+   groupIndex=len(groups)
+   groups=append(groups,legacyVehiclePreview{ID:v.ID,SourceIDs:[]string{},Name:v.Nickname,Registration:v.Registration})
+   representatives=append(representatives,v)
+  }
+  groups[groupIndex].SourceIDs=append(groups[groupIndex].SourceIDs,v.ID)
+  sourceGroups[v.ID]=groupIndex
+ }
+ for _,f:=range data.Fillups{groups[sourceGroups[f.VehicleID]].Fillups++}
+ for _,e:=range data.Expenses{groups[sourceGroups[e.VehicleID]].Expenses++}
+ preview:=legacyPreview{
+  Vehicles:groups,TotalFillups:len(data.Fillups),TotalExpenses:len(data.Expenses),
+  SourceVehicleCount:len(data.Vehicles),GroupedDuplicates:len(data.Vehicles)-len(groups),
+  Note:"Benutzer/Passwörter, Dateianhänge und alte Erinnerungen werden nicht importiert.",
+ }
+ for i:=range groups{
+  groups[i].DuplicateCount=len(groups[i].SourceIDs)-1
+  for _,existing:=range mine{
+   if sameVehicle(representatives[i],existing){groups[i].Matched=true;preview.ExistingVehicles++;break}
+  }
  }
  if !execute {c.JSON(200,preview);return}
  if c.PostForm("confirm")!="IMPORTIEREN" {c.JSON(422,gin.H{"error":"Bitte den Import ausdrücklich bestätigen"});return}
- if len(data.Vehicles)==0 {c.JSON(422,gin.H{"error":"Keine Fahrzeuge zum Importieren gefunden"});return}
+ // The preview selects group IDs, not individual historical database rows.
+ selectedIDs:=c.PostFormArray("vehicleIds")
+ if len(selectedIDs)==0{c.JSON(422,gin.H{"error":"Bitte mindestens ein Fahrzeug auswählen"});return}
+ selectedGroups:=map[int]bool{}
+ for _,id:=range selectedIDs{
+  found:=false
+  for i,g:=range groups{if g.ID==id{selectedGroups[i]=true;found=true;break}}
+  if !found{c.JSON(422,gin.H{"error":"Ungültige Fahrzeugauswahl; Vorschau erneut laden"});return}
+ }
+ if len(selectedGroups)==0{c.JSON(422,gin.H{"error":"Kein Fahrzeug ausgewählt"});return}
  var currentUser db.User
  if err=db.DB.First(&currentUser,"id=?",userID).Error;err!=nil{c.JSON(500,gin.H{"error":"Benutzer nicht gefunden"});return}
  tx:=db.DB.Begin()
@@ -130,15 +168,23 @@ func processHammondImport(c *gin.Context,execute bool) {
  defer tx.Rollback()
  mapped:=map[string]string{}
  newVehicles,newFillups,newExpenses,skippedFillups,skippedExpenses:=0,0,0,0,0
- for _,v:=range data.Vehicles{
-  for _,existing:=range mine {if sameVehicle(v,existing){mapped[v.ID]=existing.ID;break}}
-  if mapped[v.ID]!=""{continue}
-  cloned:=db.Vehicle{Nickname:v.Nickname,Registration:v.Registration,Make:v.Make,Model:v.Model,YearOfManufacture:v.YearOfManufacture,EngineSize:v.EngineSize,FuelUnit:v.FuelUnit,FuelType:v.FuelType}
-  if err=tx.Create(&cloned).Error;err!=nil{c.JSON(500,gin.H{"error":"Fahrzeugimport fehlgeschlagen"});return}
-  if err=tx.Create(&db.UserVehicle{UserID:userID,VehicleID:cloned.ID,IsOwner:true}).Error;err!=nil{c.JSON(500,gin.H{"error":"Fahrzeugzuordnung fehlgeschlagen"});return}
-  mapped[v.ID]=cloned.ID;newVehicles++
+ for i,group:=range groups{
+  if !selectedGroups[i]{continue}
+  v:=representatives[i]
+  targetID:=""
+  for _,existing:=range mine{
+   if sameVehicle(v,existing){targetID=existing.ID;break}
+  }
+  if targetID==""{
+   cloned:=db.Vehicle{Nickname:v.Nickname,Registration:v.Registration,Make:v.Make,Model:v.Model,YearOfManufacture:v.YearOfManufacture,EngineSize:v.EngineSize,FuelUnit:v.FuelUnit,FuelType:v.FuelType}
+   if err=tx.Create(&cloned).Error;err!=nil{c.JSON(500,gin.H{"error":"Fahrzeugimport fehlgeschlagen"});return}
+   if err=tx.Create(&db.UserVehicle{UserID:userID,VehicleID:cloned.ID,IsOwner:true}).Error;err!=nil{c.JSON(500,gin.H{"error":"Fahrzeugzuordnung fehlgeschlagen"});return}
+   targetID=cloned.ID;newVehicles++
+  }
+  for _,originalID:=range group.SourceIDs{mapped[originalID]=targetID}
  }
  for _,f:=range data.Fillups{
+  if mapped[f.VehicleID]==""{continue}
   var count int64
   key:="Hammond:"+f.ID
   if err=tx.Model(&db.Fillup{}).Where("source = ? OR id = ?",key,f.ID).Count(&count).Error;err!=nil{c.JSON(500,gin.H{"error":"Duplikatprüfung fehlgeschlagen"});return}
@@ -149,6 +195,7 @@ func processHammondImport(c *gin.Context,execute bool) {
   newFillups++
  }
  for _,e:=range data.Expenses{
+  if mapped[e.VehicleID]==""{continue}
   var count int64
   key:="Hammond:"+e.ID
   if err=tx.Model(&db.Expense{}).Where("source = ? OR id = ?",key,e.ID).Count(&count).Error;err!=nil{c.JSON(500,gin.H{"error":"Duplikatprüfung fehlgeschlagen"});return}
