@@ -4,21 +4,21 @@ import { vehicleFuelStatistics } from '@utils/fuel-statistics'
 
 import appConfig from '@src/app.config'
 import Layout from '@layouts/main.vue'
-import CreateQuickEntry from '@components/createQuickEntry.vue'
+import MaintenanceOverview from '@components/maintenanceOverview.vue'
 import StatsWidget from '@components/statsWidget.vue'
 import CostHistory from '@components/costHistory.vue'
 import { chunk } from 'lodash'
 
 import { parseAndFormatDate } from '@utils/format-date'
 // import store from '@state/store'
-import { mapGetters, mapState } from 'vuex'
+import { mapState } from 'vuex'
 
 export default {
   page: {
     title: 'Home',
     meta: [{ name: 'description', content: appConfig.description }],
   },
-  components: { Layout, CreateQuickEntry, StatsWidget, CostHistory },
+  components: { Layout, MaintenanceOverview, StatsWidget, CostHistory },
   props: {
     user: {
       type: Object,
@@ -39,10 +39,10 @@ export default {
     ...mapState('users', ['me']),
     ...mapState('vehicles', ['vehicles']),
     ...mapState('utils', ['isMobile']),
-    ...mapGetters('vehicles', ['unprocessedQuickEntries']),
     chunkedVehicles() {
       return chunk(this.myVehicles, 3)
     },
+    firstVehicleId() { return this.myVehicles.length ? this.myVehicles[0].id : null },
   },
   watch: {
     vehicles(newVehicles) {
@@ -81,7 +81,7 @@ export default {
   <Layout>
     <div class="hm-page-heading">
       <div><p class="hm-eyebrow">ÜBERSICHT</p><h1 class="title hm-page-title">Dein Dashboard</h1><p class="hm-page-description">Fahrzeuge, Kosten und Tankvorgänge auf einen Blick.</p></div>
-      <b-button type="is-primary" tag="router-link" :to="'/vehicles/create'">＋ Fahrzeug hinzufügen</b-button>
+      <b-button v-if="firstVehicleId" type="is-primary" tag="router-link" :to="'/vehicles/' + firstVehicleId + '/fillup'">＋ Tankung hinzufügen</b-button>
     </div>
     <b-notification v-if="vehiclesError" type="is-danger is-light" :closable="false">{{ vehiclesError }} <b-button size="is-small" @click="refreshVehicles">Erneut versuchen</b-button></b-notification>
     <div class="hm-overview-strip"><div class="hm-overview-icon">▣</div><div><p class="hm-overview-label">VERWALTETE FAHRZEUGE</p><strong>{{ myVehicles.length }}</strong></div><span class="hm-overview-note">Aktive Übersicht</span></div>
@@ -97,26 +97,8 @@ export default {
         >
       </div>
     </b-notification>
-    <b-notification
-      v-if="unprocessedQuickEntries.length"
-      type="is-warning is-light"
-      :closable="false"
-    >
-      <div class="columns">
-        <div class="column">
-          {{
-            `Du hast ${unprocessedQuickEntries.length} unbearbeitete Schnelleinträge.`
-          }}
-        </div>
-        <div class="column" :class="!isMobile ? 'has-text-right' : ''">
-          <b-button type="is-warning" class="is-small" tag="router-link" :to="`/quickEntries`"
-            >Jetzt bearbeiten</b-button
-          ></div
-        >
-      </div>
-    </b-notification>
     <p v-if="vehiclesLoading" class="help">Fahrzeuge werden geladen…</p>
-    <CreateQuickEntry />
+    <MaintenanceOverview :limit="4" />
     <StatsWidget :user="me" />
     <CostHistory />
     <br />
@@ -124,9 +106,7 @@ export default {
       <div class="columns" :class="isMobile ? 'has-text-centered' : ''"
         ><div class="column is-three-quarters"> <h2 class="title">Meine Fahrzeuge</h2></div>
         <div class="column is-one-quarter buttons" :class="!isMobile ? 'has-text-right' : ''">
-          <b-button type="is-primary" tag="router-link" :to="`/vehicles/create`"
-            >Fahrzeug hinzufügen</b-button
-          >
+          <b-button v-if="firstVehicleId" type="is-primary" tag="router-link" :to="'/vehicles/' + firstVehicleId + '/fillup'">Tankung hinzufügen</b-button>
         </div></div
       >
 
@@ -163,7 +143,7 @@ export default {
                     <div class="column">
                       <template v-if="vehicle.fillups.length">
                         {{ formatDecimal(vehicle.fillups[0].odoReading, 0) }}&nbsp;{{
-                          me.distanceUnitDetail.short
+                          (me && me.distanceUnitDetail ? me.distanceUnitDetail.short : "km")
                         }}</template
                       >
                     </div>
