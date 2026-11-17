@@ -20,7 +20,7 @@ var receiptNumber = regexp.MustCompile(`\d{1,5}(?:[.,]\d{1,3})?`)
 var receiptTotal = regexp.MustCompile(`(?i)(gesamt(?:betrag)?|summe|total|zu zahlen|betrag|ec-karte)\b`)
 var receiptLiters = regexp.MustCompile(`(?i)(liter|litre|litres|menge|\bl\b)`)
 var receiptPrice = regexp.MustCompile(`(?i)(preis\s*/\s*l|eur\s*/\s*l|€\s*/\s*l|einzelpreis|literpreis|\b€/l\b)`)
-var receiptQuantity = regexp.MustCompile(`(?i)([0-9]{1,3}(?:[.,][0-9]{1,3})?)\\s*(?:l|liter|litre|litres)\\b`)
+var receiptQuantity = regexp.MustCompile(`(?i)([0-9]{1,3}(?:[.,][0-9]{1,3})?)\s*(?:l|liter|litre|litres)\b`)
 var receiptStation = regexp.MustCompile(`(?i)(aral|shell|esso|jet|totalenergies|avia|hem|star|oil!|tankstelle|bft|raiffeisen|orlen)`)
 
 func receiptFloat(s string) float64 {
