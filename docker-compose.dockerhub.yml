@@ -1,0 +1,25 @@
+# Synology Dockhand normal Compose stack, pulling Docker Hub image.
+# Requires an existing external Docker macvlan network named "macvlan".
+# Application: http://192.168.0.36:3000
+services:
+  hammond-modern:
+    image: skoun181/hammond-modern:1.1.5
+    pull_policy: always
+    platform: linux/amd64
+    container_name: hammond-modern
+    restart: unless-stopped
+    environment:
+      TZ: Europe/Berlin
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET fehlt}
+      TANKERKOENIG_API_KEY: ${TANKERKOENIG_API_KEY:-}
+    volumes:
+      - /volume2/docker/Hammond/Hammond-config:/config
+      - /volume2/docker/Hammond/Hammond-assets:/assets
+    networks:
+      macvlan:
+        ipv4_address: 192.168.0.36
+
+networks:
+  macvlan:
+    external: true
+    name: macvlan
