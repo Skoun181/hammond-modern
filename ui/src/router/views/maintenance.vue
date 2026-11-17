@@ -1,11 +1,12 @@
 <script>
 import Layout from '@layouts/main.vue'
+import MaintenanceOverview from '@components/maintenanceOverview.vue'
 import axios from 'axios'
 import { mapState } from 'vuex'
 
 export default {
   page: { title: 'Wartungscenter' },
-  components: { Layout },
+  components: { Layout, MaintenanceOverview },
   data() {
     return {
       tasks: [],
@@ -13,6 +14,8 @@ export default {
       saving: false,
       error: '',
       editingId: '',
+      showForm: false,
+      overviewKey: 0,
       form: { vehicleId: '', title: '', notes: '', dueDate: '', dueOdo: '', completed: false },
     }
   },
@@ -22,6 +25,7 @@ export default {
     completedTasks() { return this.tasks.filter(t => !!t.completedAt) },
   },
   mounted() {
+    this.showForm = this.$route.query.neu === '1'
     this.$store.dispatch('vehicles/fetchVehicles').then(() => {
       if (this.vehicles.length && !this.form.vehicleId) this.form.vehicleId = this.vehicles[0].id
     }).catch(() => { this.error = 'Fahrzeuge konnten nicht geladen werden.' })
@@ -60,10 +64,12 @@ export default {
       return states.join(' · ')
     },
     resetForm() {
+      this.showForm = false
       this.editingId = ''
       this.form = { vehicleId: this.vehicles.length ? this.vehicles[0].id : '', title: '', notes: '', dueDate: '', dueOdo: '', completed: false }
     },
     edit(task) {
+      this.showForm = true
       this.editingId = task.id
       this.form = {
         vehicleId: task.vehicleId, title: task.title, notes: task.notes || '',
@@ -90,6 +96,7 @@ export default {
         else await axios.post('/api/maintenance', payload)
         this.resetForm()
         await this.loadTasks()
+        this.overviewKey += 1
       } catch (error) {
         this.error = (error.response && error.response.data && error.response.data.error) || 'Wartung konnte nicht gespeichert werden.'
       } finally { this.saving = false }
@@ -101,7 +108,7 @@ export default {
     },
     async remove(task) {
       if (!window.confirm('Wartung wirklich löschen?')) return
-      try { await axios.delete('/api/maintenance/' + task.id); await this.loadTasks() }
+      try { await axios.delete('/api/maintenance/' + task.id); await this.loadTasks(); this.overviewKey += 1 }
       catch (error) { this.error = 'Wartung konnte nicht gelöscht werden.' }
     },
   },
@@ -118,7 +125,8 @@ export default {
       </div>
     </div>
     <b-notification v-if="error" type="is-danger" :closable="false">{{ error }}</b-notification>
-    <div class="box">
+    <MaintenanceOverview :key="overviewKey" heading="Was steht als Nächstes an?" />
+    <div v-if="showForm" id="maintenance-form" class="box">
       <h2 class="title is-5">{{ editingId ? 'Wartung bearbeiten' : 'Neue Wartung planen' }}</h2>
       <form @submit.prevent="save">
         <b-field label="Fahrzeug">
@@ -151,7 +159,7 @@ export default {
         <b-button v-if="editingId" @click="resetForm">Abbrechen</b-button>
       </form>
     </div>
-    <h2 class="title is-5">Offene Wartungen ({{ activeTasks.length }})</h2>
+    <h2 class="title is-5">Offene Wartungen bearbeiten ({{ activeTasks.length }})</h2>
     <p v-if="loading">Wartungen werden geladen…</p>
     <p v-else-if="!activeTasks.length" class="help">Noch keine offenen Wartungen vorhanden.</p>
     <div v-for="task in activeTasks" :key="task.id" class="box">
