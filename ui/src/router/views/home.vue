@@ -6,6 +6,7 @@ import appConfig from '@src/app.config'
 import Layout from '@layouts/main.vue'
 import CreateQuickEntry from '@components/createQuickEntry.vue'
 import StatsWidget from '@components/statsWidget.vue'
+import CostHistory from '@components/costHistory.vue'
 import { chunk } from 'lodash'
 
 import { parseAndFormatDate } from '@utils/format-date'
@@ -17,7 +18,7 @@ export default {
     title: 'Home',
     meta: [{ name: 'description', content: appConfig.description }],
   },
-  components: { Layout, CreateQuickEntry, StatsWidget },
+  components: { Layout, CreateQuickEntry, StatsWidget, CostHistory },
   props: {
     user: {
       type: Object,
@@ -117,6 +118,7 @@ export default {
     <p v-if="vehiclesLoading" class="help">Fahrzeuge werden geladen…</p>
     <CreateQuickEntry />
     <StatsWidget :user="me" />
+    <CostHistory />
     <br />
     <section>
       <div class="columns" :class="isMobile ? 'has-text-centered' : ''"
