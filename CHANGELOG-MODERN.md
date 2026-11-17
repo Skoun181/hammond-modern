@@ -1,17 +1,39 @@
-# Hammond Modern changes
+# Hammond Modern – Änderungsverlauf
 
-## UI
-- Responsive persistent sidebar with mobile drawer, route highlighting, theme toggle and admin navigation.
-- Dashboard heading, vehicle summary, responsive metric cards, and German UI labels.
-- German locale display formatting for fuel quantity and odometer in dashboard vehicle cards.
-- Fixed vehicle store watcher argument ordering; corrected stats fallback currency and added error handling.
-- Existing forms, vehicle details, and API logic remain intact, with global light/dark styling.
+## v1.1.5 – Fahrzeugmigration und UI-Verbesserungen (17. November 2026)
 
-## Build / deployment
-- New multi-stage Dockerfile using Go 1.25, Node 22 and Alpine 3.22 base images (not yet validated by a full build).
-- Synology Compose, .env example, .dockerignore and deployment notes.
+### Neu
+- Migrationsassistent für Daten aus dem Original-Hammond: sichere SQLite-Datei `hammond.db` hochladen, Vorschau ansehen und Import gezielt bestätigen.
+- Fahrzeuge, Tankungen und Ausgaben können übernommen werden; die Originaldatenbank wird schreibgeschützt verarbeitet.
+- Gleiche Fahrzeugdatensätze aus der Originalinstallation werden anhand von Name, Kennzeichen, Hersteller und Modell gruppiert. Die zugehörige Tankhistorie bleibt erhalten.
+- **Checkboxen** zur Auswahl einzelner Fahrzeuge vor dem Import.
+- Duplikatprüfung anhand der ursprünglichen Eintrags-IDs, damit bereits importierte Tankungen und Ausgaben nicht mehrfach angelegt werden.
+- Dokumentation für Installation, Update, Backup und Datenmigration.
 
-## Known limits
-- Full Vue 3 migration, backend dependency upgrades and security review are **not** completed.
-- Container runtime and integration tests are **not** completed.
-- No changes have been pushed to GitHub.
+### Verbesserungen
+- Datenimport-Oberfläche für Dark Mode und Mobilgeräte überarbeitet; verständlichere Upload-Fehlermeldungen.
+- SQLite-Upload im Browser auf natives Multipart-Formular umgestellt.
+- Fahrzeugdetails: aufgeräumte Aktionsbuttons, mobile Tabellen und kontrastreiche Hover-Zustände.
+- Vereinheitlichte Währungsbeträge und auf eine Nachkommastelle gerundete Literanzeigen.
+- Wartungscenter und Dashboard-Erweiterungen aus dem bisherigen Entwicklungsstand konsolidiert.
+
+### Noch offen
+- **Tankbeleg-OCR** arbeitet nicht zuverlässig; manuelle Kontrolle notwendig.
+- **Vollständiger Datenimport** ist noch nicht mit einer produktiven Original-Hammond-Datenbank auf Abschluss geprüft. Die Vorschau und Gruppierung wurden praktisch getestet.
+- Anhänge, Rechnungsdateien, Nutzerkonten und Nutzerfreigaben werden nicht migriert.
+- Kein vollständiges Sicherheits-Audit.
+
+## v1.1.0 – Wartung, Kosten und mobile Darstellung
+- Wartungsplanung für HU/TÜV, Inspektion und Service nach Datum und/oder Kilometerstand.
+- Anzeige anstehender Wartungen im Dashboard.
+- Erweiterte Kostenübersichten und Verlauf.
+- „Tankung hinzufügen“ mit Fahrzeugauswahl; frühere Quick Entries aus der Oberfläche entfernt.
+- Verbesserungen für Smartphone-Layouts, Dark Mode, Tabellen, Währungs- und Mengenformatierung.
+- Erste experimentelle Tankbeleg-Texterkennung.
+
+## v1.0.0 – Erste Stable-Version
+- Modernisiertes Hammond-Layout mit responsiver Navigation und Dark-/Light-Mode.
+- Fahrzeuge, Tankungen, Fahrer, Ausgaben, Werkstatt-Rechnungen und Tankstellensuche.
+- Docker-Compose-Bereitstellung für einen lokalen Build und persistent gespeicherte Daten.
+
+Weitere technische Änderungen stehen im [Git-Verlauf](https://github.com/Skoun181/hammond-modern/commits/develop/hammond-modern-next).
