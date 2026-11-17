@@ -20,6 +20,7 @@ var receiptNumber = regexp.MustCompile(`\d{1,5}(?:[.,]\d{1,3})?`)
 var receiptTotal = regexp.MustCompile(`(?i)(gesamt(?:betrag)?|summe|total|zu zahlen|betrag|ec-karte)\b`)
 var receiptLiters = regexp.MustCompile(`(?i)(liter|litre|litres|menge|\bl\b)`)
 var receiptPrice = regexp.MustCompile(`(?i)(preis\s*/\s*l|eur\s*/\s*l|€\s*/\s*l|einzelpreis|literpreis|\b€/l\b)`)
+var receiptQuantity = regexp.MustCompile(`(?i)([0-9]{1,3}(?:[.,][0-9]{1,3})?)\\s*(?:l|liter|litre|litres)\\b`)
 var receiptStation = regexp.MustCompile(`(?i)(aral|shell|esso|jet|totalenergies|avia|hem|star|oil!|tankstelle|bft|raiffeisen|orlen)`)
 
 func receiptFloat(s string) float64 {
@@ -59,7 +60,14 @@ func parseReceipt(text string) gin.H {
 			fields["fillingStation"] = strings.TrimSpace(line)
 		}
 	}
-	if v := receiptValue(lines, receiptLiters, 1, 500); v > 0 { fields["fuelQuantity"] = v }
+	for _, line := range lines {
+		if m := receiptQuantity.FindStringSubmatch(line); m != nil {
+			if v := receiptFloat(m[1]); v >= 1 && v <= 500 { fields["fuelQuantity"] = v; break }
+		}
+		if receiptLiters.MatchString(line) && !receiptPrice.MatchString(line) {
+			if v := receiptValue([]string{line}, receiptLiters, 1, 500); v > 0 { fields["fuelQuantity"] = v; break }
+		}
+	}
 	if v := receiptValue(lines, receiptPrice, 0.5, 5); v > 0 { fields["perUnitPrice"] = v }
 	if v := receiptValue(lines, receiptTotal, 1, 1000); v > 0 { fields["totalAmount"] = v }
 	// Deliberately do not infer missing amounts; the user must review all values.
@@ -91,6 +99,6 @@ func RegisterReceiptController(router *gin.RouterGroup) {
 		cmd.Stderr = &stderr
 		output, err := cmd.Output()
 		if err != nil { c.JSON(422,gin.H{"error":"Texterkennung fehlgeschlagen. Bitte Werte manuell eintragen."}); return }
-		c.JSON(200, gin.H{"suggestions":parseReceipt(string(output)), "rawText":strings.TrimSpace(string(output)), "notice":"Automatisch erkannte Werte immer kontrollieren. Belegbild wird nicht gespeichert."})
+		c.JSON(200, gin.H{"suggestions":parseReceipt(string(output)), "notice":"Automatisch erkannte Werte immer kontrollieren. Belegbild wird nicht gespeichert."})
 	})
 }
