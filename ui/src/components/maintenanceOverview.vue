@@ -71,7 +71,7 @@ export default {
         <h2 class="title is-5">{{ heading }}</h2>
         <p class="help">TÜV, Inspektion und Service – übersichtlich nach Fälligkeit.</p>
       </div>
-      <b-button type="is-primary" size="is-small" tag="router-link" :to="{ name: 'maintenance', query: { neu: '1' } }">＋ Neue Wartung</b-button>
+      <b-button type="is-primary" size="is-small" tag="router-link" :to="{ name: 'maintenance', query: { neu: '1' } }">＋ Neue Wartung hinzufügen</b-button>
     </div>
     <p v-if="loading" class="help">Wartungen werden geladen…</p>
     <b-notification v-if="error" type="is-danger" :closable="false">{{ error }}</b-notification>
