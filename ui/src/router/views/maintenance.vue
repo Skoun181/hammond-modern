@@ -24,6 +24,14 @@ export default {
     activeTasks() { return this.tasks.filter(t => !t.completedAt) },
     completedTasks() { return this.tasks.filter(t => !!t.completedAt) },
   },
+  watch: {
+    '$route.query.neu': function(value) {
+      if (value === '1') {
+        this.editingId = ''
+        this.showForm = true
+      }
+    },
+  },
   mounted() {
     this.showForm = this.$route.query.neu === '1'
     this.$store.dispatch('vehicles/fetchVehicles').then(() => {
@@ -65,6 +73,7 @@ export default {
     },
     resetForm() {
       this.showForm = false
+      if (this.$route.query.neu) this.$router.replace({ name: 'maintenance', query: {} })
       this.editingId = ''
       this.form = { vehicleId: this.vehicles.length ? this.vehicles[0].id : '', title: '', notes: '', dueDate: '', dueOdo: '', completed: false }
     },
