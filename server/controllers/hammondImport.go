@@ -133,7 +133,7 @@ func processHammondImport(c *gin.Context,execute bool) {
  for _,f:=range data.Fillups{
   var count int64
   key:="Hammond:"+f.ID
-  if err=tx.Model(&db.Fillup{}).Where("source=?",key).Count(&count).Error;err!=nil{c.JSON(500,gin.H{"error":"Duplikatprüfung fehlgeschlagen"});return}
+  if err=tx.Model(&db.Fillup{}).Where("source = ? OR id = ?",key,f.ID).Count(&count).Error;err!=nil{c.JSON(500,gin.H{"error":"Duplikatprüfung fehlgeschlagen"});return}
   if count>0 {skippedFillups++;continue}
   clone:=db.Fillup{VehicleID:mapped[f.VehicleID],FuelUnit:f.FuelUnit,FuelQuantity:f.FuelQuantity,PerUnitPrice:f.PerUnitPrice,TotalAmount:f.TotalAmount,OdoReading:f.OdoReading,IsTankFull:f.IsTankFull,HasMissedFillup:f.HasMissedFillup,Comments:f.Comments,FillingStation:f.FillingStation,UserID:userID,Date:f.Date,Currency:f.Currency,DistanceUnit:f.DistanceUnit,Source:key,FuelSubType:f.FuelSubType}
   if clone.Currency==""{clone.Currency=currentUser.Currency}
@@ -143,7 +143,7 @@ func processHammondImport(c *gin.Context,execute bool) {
  for _,e:=range data.Expenses{
   var count int64
   key:="Hammond:"+e.ID
-  if err=tx.Model(&db.Expense{}).Where("source=?",key).Count(&count).Error;err!=nil{c.JSON(500,gin.H{"error":"Duplikatprüfung fehlgeschlagen"});return}
+  if err=tx.Model(&db.Expense{}).Where("source = ? OR id = ?",key,e.ID).Count(&count).Error;err!=nil{c.JSON(500,gin.H{"error":"Duplikatprüfung fehlgeschlagen"});return}
   if count>0 {skippedExpenses++;continue}
   clone:=db.Expense{VehicleID:mapped[e.VehicleID],Amount:e.Amount,OdoReading:e.OdoReading,Comments:e.Comments,ExpenseType:e.ExpenseType,Workshop:e.Workshop,WorkPerformed:e.WorkPerformed,UserID:userID,Date:e.Date,Currency:e.Currency,DistanceUnit:e.DistanceUnit,Source:key}
   if clone.Currency==""{clone.Currency=currentUser.Currency}
