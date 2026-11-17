@@ -82,22 +82,60 @@ export default {
     }
   },
   methods: {
+    // iPhone images often arrive as HEIC or large JPEGs.
+    // Decode them on-device and send a compressed JPEG to our local OCR API.
+    prepareReceiptImage(file) {
+      return new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(file)
+        const image = new Image()
+        image.onload = () => {
+          URL.revokeObjectURL(url)
+          const longestSide = Math.max(image.naturalWidth, image.naturalHeight)
+          if (!longestSide) { reject(new Error('Bild konnte nicht gelesen werden.')); return }
+          const scale = Math.min(1, 2400 / longestSide)
+          const canvas = document.createElement('canvas')
+          canvas.width = Math.round(image.naturalWidth * scale)
+          canvas.height = Math.round(image.naturalHeight * scale)
+          const context = canvas.getContext('2d')
+          if (!context) { reject(new Error('Bildverarbeitung nicht verfügbar.')); return }
+          context.fillStyle = '#ffffff'
+          context.fillRect(0, 0, canvas.width, canvas.height)
+          context.drawImage(image, 0, 0, canvas.width, canvas.height)
+          canvas.toBlob(blob => {
+            if (!blob) { reject(new Error('Bild konnte nicht konvertiert werden.')); return }
+            resolve(new File([blob], 'tankbeleg.jpg', { type: 'image/jpeg' }))
+          }, 'image/jpeg', 0.88)
+        }
+        image.onerror = () => {
+          URL.revokeObjectURL(url)
+          reject(new Error('Dieses Fotoformat konnte nicht geöffnet werden. Bitte ein JPEG auswählen.'))
+        }
+        image.src = url
+      })
+    },
     async recognizeReceipt(event) {
       const file = event.target.files && event.target.files[0]
       if (!file) return
       this.receiptError = ''
       this.receiptNotice = ''
       this.receiptFields = []
-      if (!['image/jpeg', 'image/png'].includes(file.type) || file.size > 5 * 1024 * 1024) {
-        this.receiptError = 'Bitte JPG oder PNG bis maximal 5 MB verwenden.'
+      if (!file.type.startsWith('image/') && !/\\.(heic|heif|jpg|jpeg|png)$/i.test(file.name)) {
+        this.receiptError = 'Bitte eine Bilddatei auswählen (JPEG, PNG oder HEIC).'
+        event.target.value = ''
+        return
+      }
+      if (file.size > 25 * 1024 * 1024) {
+        this.receiptError = 'Das Originalfoto ist größer als 25 MB.'
         event.target.value = ''
         return
       }
       this.receiptLoading = true
-      const form = new FormData()
-      form.append('file', file)
       try {
-        const response = await axios.post('/api/receipts/recognize', form, { timeout: 30000 })
+        const converted = await this.prepareReceiptImage(file)
+        if (converted.size > 12 * 1024 * 1024) throw new Error('Das Foto ist auch nach der Komprimierung zu groß.')
+        const form = new FormData()
+        form.append('file', converted, converted.name)
+        const response = await axios.post('/api/receipts/recognize', form, { timeout: 65000 })
         const fields = response.data.suggestions || {}
         if (fields.fillingStation) {
           this.fillupModel.fillingStation = fields.fillingStation
@@ -129,7 +167,7 @@ export default {
           : 'Keine Felder zuverlässig erkannt. Bitte Werte selbst eingeben.'
       } catch (error) {
         this.receiptError = (error.response && error.response.data && error.response.data.error) ||
-          'Beleg konnte nicht erkannt werden. Bitte Daten manuell eingeben.'
+          error.message || 'Beleg konnte nicht erkannt werden. Bitte Daten manuell eingeben.'
       } finally {
         this.receiptLoading = false
         event.target.value = ''
@@ -254,11 +292,11 @@ export default {
       <h2 class="title is-5">Tankbeleg scannen</h2>
       <p class="help">Auf dem Handy die Kamera öffnen oder ein vorhandenes Foto auswählen. Die Texterkennung läuft lokal auf deinem Hammond-Server. Das Foto wird nur für die Erkennung verarbeitet und nicht gespeichert.</p>
       <label class="button is-primary hm-camera-button" for="receipt-camera">📷 Beleg fotografieren / hochladen</label>
-      <input id="receipt-camera" type="file" accept="image/jpeg,image/png" capture="environment" style="position:absolute;width:1px;height:1px;opacity:0" :disabled="receiptLoading" @change="recognizeReceipt">
+      <input id="receipt-camera" type="file" accept="image/*,.heic,.heif" capture="environment" style="position:absolute;width:1px;height:1px;opacity:0" :disabled="receiptLoading" @change="recognizeReceipt">
       <p v-if="receiptLoading" class="help">Beleg wird erkannt…</p>
       <b-notification v-if="receiptError" type="is-danger" :closable="false">{{ receiptError }}</b-notification>
       <b-notification v-if="receiptNotice" type="is-info" :closable="false">{{ receiptNotice }}</b-notification>
-      <p class="help">Datum, Tankstelle, Menge und Preise werden nur übernommen, wenn ein passender Wert erkannt wurde. Vor dem Speichern prüfen.</p>
+      <p class="help">Auch iPhone-HEIC-Fotos werden auf dem Gerät in ein komprimiertes JPEG umgewandelt. Datum, Tankstelle, Menge und Preise vor dem Speichern prüfen.</p>
     </div>
     <form class="hm-fillup-form" @submit.prevent="createFillup">
       <b-field label="Fahrzeug">
