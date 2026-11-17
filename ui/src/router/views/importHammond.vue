@@ -6,10 +6,10 @@ export default {
   page: { title: 'Hammond-Daten übernehmen' },
   components: { Layout },
   data() {
-    return { file: null, preview: null, loading: false, importing: false, error: '', done: null, confirmed: false }
+    return { file: null, preview: null, loading: false, importing: false, error: '', done: null, confirmed: false, selectedVehicles: [] }
   },
   computed: {
-    canImport() { return this.preview && this.preview.vehicles && this.preview.vehicles.length && this.confirmed && !this.importing }
+    canImport() { return this.preview && this.preview.vehicles && this.selectedVehicles.length > 0 && this.confirmed && !this.importing }
   },
   methods: {
     onFileChange(event) {
@@ -18,12 +18,16 @@ export default {
       this.preview = null
       this.done = null
       this.confirmed = false
+      this.selectedVehicles = []
       this.error = ''
     },
     formData(execute) {
       const form = new FormData()
       form.append('file', this.file, this.file.name)
-      if (execute) form.append('confirm', 'IMPORTIEREN')
+      if (execute) {
+        form.append('confirm', 'IMPORTIEREN')
+        this.selectedVehicles.forEach(id => form.append('vehicleIds', id))
+      }
       return form
     },
     showError(error) {
@@ -51,6 +55,7 @@ export default {
       this.loading = true
       try {
         this.preview = await this.sendUpload('/api/import/hammond/preview', false)
+        this.selectedVehicles = []
         this.confirmed = false
       } catch (error) { this.showError(error) }
       finally { this.loading = false }
@@ -62,6 +67,7 @@ export default {
       try {
         this.done = await this.sendUpload('/api/import/hammond/execute', true)
         this.preview = null
+        this.selectedVehicles = []
         this.confirmed = false
       } catch (error) { this.showError(error) }
       finally { this.importing = false }
@@ -104,14 +110,24 @@ export default {
 
     <div v-if="preview" class="box hm-import-panel hm-import-step">
       <h2 class="title is-5">2. Vorschau prüfen</h2>
-      <p>Gefunden: <strong>{{ preview.vehicles.length }} Fahrzeuge, {{ preview.totalFillups }} Tankungen und {{ preview.totalExpenses }} Ausgaben.</strong></p>
-      <div v-for="vehicle in preview.vehicles" :key="vehicle.id" class="hm-maintenance-row">
-        <div class="hm-maintenance-row-text">
-          <strong>{{ vehicle.name || '(Ohne Namen)' }}</strong>
-          <p class="help">{{ vehicle.registration || 'Ohne Kennzeichen' }} · {{ vehicle.fillups }} Tankungen · {{ vehicle.expenses }} Ausgaben</p>
-        </div>
-        <span class="hm-maintenance-status">{{ vehicle.matched ? 'Bestehend, wird zugeordnet' : 'Wird neu angelegt' }}</span>
-      </div>
+      <p>Gefunden: <strong>{{ preview.sourceVehicleCount || preview.vehicles.length }} Datenbankeinträge, {{ preview.totalFillups }} Tankungen und {{ preview.totalExpenses }} Ausgaben.</strong></p>
+      <p v-if="preview.groupedDuplicates" class="hm-import-duplicate-note">
+        {{ preview.groupedDuplicates }} vermutlich doppelte Fahrzeugeinträge zusammengefasst.
+        Es bleiben <strong>{{ preview.vehicles.length }} unterschiedliche Fahrzeuge</strong> zur Auswahl.
+      </p>
+      <p class="help">Wähle per Häkchen aus, welche Fahrzeuge und deren gesamte Historie übernommen werden sollen. Standardmäßig ist nichts ausgewählt.</p>
+      <div class="hm-import-selection-summary">{{ selectedVehicles.length }} von {{ preview.vehicles.length }} Fahrzeugen ausgewählt</div>
+      <label v-for="vehicle in preview.vehicles" :key="vehicle.id" class="hm-import-vehicle-option">
+        <input v-model="selectedVehicles" type="checkbox" :value="vehicle.id" :disabled="importing">
+        <span class="hm-import-vehicle-content">
+          <strong>{{ vehicle.name || '(Ohne Namen)' }} · {{ vehicle.registration || 'Ohne Kennzeichen' }}</strong>
+          <span class="hm-import-vehicle-meta">{{ vehicle.fillups }} Tankungen · {{ vehicle.expenses }} Ausgaben</span>
+          <span v-if="vehicle.duplicateCount" class="hm-import-duplicate-info">
+            {{ vehicle.duplicateCount }} weitere identische Fahrzeugdatensätze erkannt – Historie wird zusammengeführt
+          </span>
+        </span>
+        <span class="hm-import-vehicle-status">{{ vehicle.matched ? 'Bereits vorhanden' : 'Neues Fahrzeug' }}</span>
+      </label>
       <b-notification type="is-warning" :closable="false">
         <strong>Was nicht übernommen wird:</strong> Benutzerkonten, Passwörter, Fahrzeugfreigaben, Anhänge/Rechnungsdateien und alte Erinnerungen. Importierte Einträge werden deinem aktuellen Konto zugeordnet. Vorher bitte auch Hammond Modern sichern.
       </b-notification>
