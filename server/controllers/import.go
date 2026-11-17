@@ -9,6 +9,7 @@ import (
 
 func RegisteImportController(router *gin.RouterGroup) {
 	router.POST("/import/fuelly", fuellyImport)
+	RegisteHammondImportController(router)
 }
 
 func fuellyImport(c *gin.Context) {
