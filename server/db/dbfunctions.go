@@ -124,20 +124,25 @@ func UnshareVehicle(vehicleId, userId string) error {
 }
 
 func GetUserVehicles(id string) (*[]Vehicle, error) {
-	var toReturn []Vehicle
-	user, err := GetUserById(id)
-	if err != nil {
-		return nil, err
+	// Query the join table explicitly. Association mode does not reliably
+	// honor Select/Preload when loading the dashboard vehicle collection.
+	vehicles := make([]Vehicle, 0)
+	result := DB.Model(&Vehicle{}).
+		Select("vehicles.*, user_vehicles.is_owner").
+		Joins("JOIN user_vehicles ON user_vehicles.vehicle_id = vehicles.id").
+		Where("user_vehicles.user_id = ?", id).
+		Preload("Fillups", func(db *gorm.DB) *gorm.DB {
+			return db.Order("fillups.date DESC")
+		}).
+		Preload("Expenses", func(db *gorm.DB) *gorm.DB {
+			return db.Order("expenses.date DESC")
+		}).
+		Order("vehicles.created_at DESC").
+		Find(&vehicles)
+	if result.Error != nil {
+		return nil, result.Error
 	}
-	err = DB.Preload("Fillups", func(db *gorm.DB) *gorm.DB {
-		return db.Order("fillups.date DESC")
-	}).Preload("Expenses", func(db *gorm.DB) *gorm.DB {
-		return db.Order("expenses.date DESC")
-	}).Model(user).Select("vehicles.*,user_vehicles.is_owner").Association("Vehicles").Find(&toReturn)
-	if err != nil {
-		return nil, err
-	}
-	return &toReturn, nil
+	return &vehicles, nil
 }
 func GetUserById(id string) (*User, error) {
 	var data User
