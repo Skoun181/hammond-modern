@@ -113,7 +113,8 @@ export default {
       if (this.vehicle.id) {
         axios
           .put(`/api/vehicles/${this.vehicle.id}`, this.vehicleModel)
-          .then((data) => {
+          .then(async () => {
+            await this.$store.dispatch('vehicles/fetchVehicles')
             this.$buefy.toast.open({
               message: 'Fahrzeug erfolgreich aktualisiert',
               type: 'is-success',
@@ -135,7 +136,8 @@ export default {
       } else {
         axios
           .post(`/api/vehicles`, this.vehicleModel)
-          .then((data) => {
+          .then(async () => {
+            await this.$store.dispatch('vehicles/fetchVehicles')
             this.$buefy.toast.open({
               message: 'Fahrzeug erfolgreich angelegt',
               type: 'is-success',
