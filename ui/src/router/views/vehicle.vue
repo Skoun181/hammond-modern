@@ -254,6 +254,7 @@ export default {
       return formatMoney(number, currencyCode)
     },
     formatLiter(value) { return formatDecimal(value, 1) },
+    formatDecimal(value, digits = 0) { return formatDecimal(value, digits) },
     formatPrice(value, currency) {
       return formatDecimal(value, 3) + ' ' + (normalizeCurrency(currency || (this.me && this.me.currency)) === 'EUR' ? '€' : normalizeCurrency(currency || (this.me && this.me.currency)))
     },
@@ -315,7 +316,7 @@ export default {
 
 <template>
   <Layout>
-    <div class="columns box">
+    <div class="columns box hm-vehicle-header">
       <div class="column is-two-thirds" :class="isMobile ? 'has-text-centered' : ''">
         <p class="title">{{ vehicle.nickname }} - {{ vehicle.registration }}</p>
         <p class="subtitle">
@@ -337,7 +338,7 @@ export default {
           </template>
         </p>
       </div>
-      <div class="column is-one-third buttons has-text-centered">
+      <div class="column is-one-third buttons has-text-centered hm-vehicle-actions">
         <b-button type="is-primary" tag="router-link" :to="`/vehicles/${vehicle.id}/fillup`">Tankung hinzufügen</b-button>
         <b-button type="is-primary" tag="router-link" :to="`/vehicles/${vehicle.id}/expense`">Ausgabe hinzufügen</b-button>
         <b-button
@@ -371,7 +372,7 @@ export default {
     <div class="box">
       <h1 class="title is-4">Tankvorgänge</h1>
 
-      <b-table :data="fillups" hoverable mobile-cards paginated per-page="10">
+      <b-table class="hm-vehicle-table" :data="fillups" hoverable mobile-cards paginated per-page="10">
         <b-table-column v-slot="props" field="date" label="Datum" :td-attrs="columnTdAttrs" sortable date>
           {{ formatDate(props.row.date) }}
         </b-table-column>
@@ -432,11 +433,11 @@ export default {
     <div class="box">
       <h1 class="title is-4">Werkstatt & Ausgaben</h1>
 
-      <b-table :data="expenses" hoverable mobile-cards paginated per-page="10">
+      <b-table class="hm-vehicle-table" :data="expenses" hoverable mobile-cards paginated per-page="10">
         <b-table-column v-slot="props" field="date" label="Datum" :td-attrs="columnTdAttrs" date>
           {{ formatDate(props.row.date) }}
         </b-table-column>
-        <b-table-column v-slot="props" field="expenseType" label="Expense Type">
+        <b-table-column v-slot="props" field="expenseType" label="Ausgabenart">
           {{ `${props.row.expenseType}` }}
         </b-table-column>
 
@@ -450,15 +451,15 @@ export default {
           <a v-if="props.row.invoiceAttachmentId" href="#" @click.prevent="downloadInvoice(props.row.invoiceAttachmentId)">Herunterladen</a>
           <span v-else>–</span>
         </b-table-column>
-        <b-table-column v-slot="props" field="amount" label="Gesamtbetrag" :td-attrs="hiddenMobile" sortable numeric>
+        <b-table-column v-slot="props" field="amount" label="Gesamtbetrag" sortable numeric>
           {{ `${formatCurrency(props.row.amount, props.row.currency)}` }}
         </b-table-column>
 
         <b-table-column v-slot="props" field="odoReading" label="Kilometerstand" :td-attrs="columnTdAttrs" numeric>
-          {{ `${props.row.odoReading} ${me.distanceUnitDetail.short}` }}
+          {{ formatDecimal(props.row.odoReading, 0) }} {{ me.distanceUnitDetail.short }}
         </b-table-column>
 
-        <b-table-column v-slot="props" field="userId" label="By" :td-attrs="columnTdAttrs">
+        <b-table-column v-slot="props" field="userId" label="Erfasst von" :td-attrs="columnTdAttrs">
           {{ `${props.row.user.name}` }}
         </b-table-column>
         <b-table-column v-slot="props">
@@ -483,7 +484,7 @@ export default {
     <br />
     <div class="box">
       <div class="columns">
-        <div class="column is-three-quarters"> <h1 class="title is-4">Attachments</h1></div>
+        <div class="column is-three-quarters"> <h1 class="title is-4">Anhänge</h1></div>
         <div class="column buttons">
           <b-button type="is-primary" @click="showAttachmentForm = true">
             Add Attachment
@@ -531,7 +532,7 @@ export default {
         </div>
       </div>
 
-      <b-table :data="attachments" hoverable mobile-cards>
+      <b-table class="hm-vehicle-table" :data="attachments" hoverable mobile-cards>
         <b-table-column v-slot="props" field="title" label="Title" :td-attrs="columnTdAttrs">
           {{ `${props.row.title}` }}
         </b-table-column>
