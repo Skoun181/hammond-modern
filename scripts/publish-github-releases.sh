@@ -7,7 +7,7 @@ REPO="Skoun181/hammond-modern"
 STABLE_SHA="5477bb1a5199f44f6ca3ddf41b6a171344b18d9d"
 DEVELOP_SHA="db88b500f9cd07ca3d20646e1b4ee11713cd1bf4"
 
-cd "$(dirname "$0")/../.."
+cd "$(dirname "$0")/.."
 command -v gh >/dev/null || { echo "GitHub CLI fehlt (sudo apt install gh)"; exit 1; }
 gh auth status >/dev/null || { echo "Bitte zuerst 'gh auth login' ausführen."; exit 1; }
 command -v git >/dev/null || { echo "git fehlt."; exit 1; }
