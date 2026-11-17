@@ -23,11 +23,18 @@ Die Verbrauchsberechnung benötigt mindestens zwei geeignete Volltankungen mit s
 
 | Branch | Bedeutung |
 | --- | --- |
-| [`master`](https://github.com/Skoun181/hammond-modern/tree/master) | Ursprüngliche Hammond-Codebasis als Referenz; keine Hammond-Modern-Installation |
-| [`stable/hammond-modern`](https://github.com/Skoun181/hammond-modern/tree/stable/hammond-modern) | Getesteter Stand der Hammond-Modern-Erweiterungen |
-| [`develop/hammond-modern-next`](https://github.com/Skoun181/hammond-modern/tree/develop/hammond-modern-next) | Laufende Weiterentwicklung |
+| [`stable/hammond-modern`](https://github.com/Skoun181/hammond-modern/tree/stable/hammond-modern) | Öffentlicher Standardbranch, für Stable-Installationen |
+| [`develop/hammond-modern-next`](https://github.com/Skoun181/hammond-modern/tree/develop/hammond-modern-next) | Laufende Weiterentwicklung und neue Funktionen zum Testen |
 
-**Wichtig:** Der GitHub-Standardbranch ist derzeit `master`. Für Hammond Modern beim Klonen oder nach dem Klonen **`stable/hammond-modern`** oder zum Entwickeln **`develop/hammond-modern-next`** auswählen. Der Stable-Branch ist keine automatische Docker-Image-Veröffentlichung.
+Veröffentlichte, festgeschriebene Versionen stehen unter [GitHub Releases](https://github.com/Skoun181/hammond-modern/releases). Der frühere Branch `master` wurde entfernt. Release-Tags und Branches sind unabhängig.
+
+## Migration von Original-Hammond
+
+Im Develop-Branch gibt es einen neuen Assistenten unter **Datenimport → Hammond-Migration starten**. Lade eine **konsistente Sicherung der originalen `hammond.db`** hoch und prüfe vor dem Import die Vorschau. Übernommen werden Fahrzeuge, Tankungen und Ausgaben.
+
+**Nicht übernommen werden** Benutzerkonten, Passwörter, Freigaben, Dateianhänge und alte Erinnerungen. Der Import überschreibt keine bestehende Datenbank; Duplikate werden anhand der Original-IDs erkannt. Die Funktion ist noch nicht auf einer echten Altdatenbank deiner Installation getestet.
+
+[Schritt-für-Schritt-Anleitung](docs/MIGRATION-ORIGINAL-HAMMOND.md)
 
 ## Screenshots der neuen Oberfläche
 
