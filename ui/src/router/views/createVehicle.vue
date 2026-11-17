@@ -29,6 +29,7 @@ export default {
       models: [],
       catalogError: '',
       loadingModels: false,
+      modelRequestId: 0,
     }
   },
 
@@ -55,17 +56,31 @@ export default {
   },
   methods: {
     async loadModels(make) {
-      if (!make || make.length < 2) return
-      this.loadingModels = true
+      const requestId = ++this.modelRequestId
+      this.models = []
       this.catalogError = ''
+      if (!make || make.trim().length < 2) {
+        this.loadingModels = false
+        return
+      }
+      this.loadingModels = true
       try {
-        const url = 'https://vpic.nhtsa.dot.gov/api/vehicles/GetModelsForMake/' + encodeURIComponent(make) + '?format=json'
-        const response = await axios.get(url, { timeout: 9000 })
-        if (this.vehicleModel.make !== make) return
-        this.models = Array.from(new Set((response.data.Results || []).map(x => x.Model_Name).filter(Boolean))).sort()
-        if (!this.models.length) this.catalogError = 'Keine Modelle gefunden – du kannst ein Modell selbst eingeben.'
-      } catch (error) { this.catalogError = 'Modellkatalog nicht erreichbar. Bitte Modell selbst eingeben.' }
-      finally { this.loadingModels = false }
+        const response = await axios.get('/api/vehicle-models', {
+          params: { make: make.trim() },
+          timeout: 15000,
+        })
+        if (requestId !== this.modelRequestId || this.vehicleModel.make !== make) return
+        this.models = Array.isArray(response.data.models) ? response.data.models.sort((a, b) => a.localeCompare(b, 'de')) : []
+        if (!this.models.length) {
+          this.catalogError = 'Für diese Marke sind keine Modelle hinterlegt. Bitte Modell selbst eingeben.'
+        }
+      } catch (error) {
+        if (requestId !== this.modelRequestId) return
+        this.catalogError = (error.response && error.response.data && error.response.data.error)
+          || 'Modellvorschläge derzeit nicht verfügbar. Bitte Modell selbst eingeben.'
+      } finally {
+        if (requestId === this.modelRequestId) this.loadingModels = false
+      }
     },
     getEmptyVehicle(veh) {
       if (!veh || !veh.id) {
