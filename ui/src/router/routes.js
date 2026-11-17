@@ -386,15 +386,6 @@ export default [
     props: (route) => ({ vehicle: route.meta.tmp.vehicle, expense: route.meta.tmp.expense }),
   },
   {
-    path: '/quickEntries',
-    name: 'quickEntries',
-    component: () => lazyLoadView(import('@views/quickEntries.vue')),
-    meta: {
-      authRequired: true,
-    },
-    props: (route) => ({ user: store.state.auth.currentUser || {} }),
-  },
-  {
     path: '/import',
     name: 'import',
     component: () => lazyLoadView(import('@views/import.vue')),
