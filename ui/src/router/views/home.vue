@@ -30,6 +30,8 @@ export default {
       myVehicles: [],
 
       tryingToCreate: false,
+      vehiclesLoading: false,
+      vehiclesError: '',
     }
   },
   computed: {
@@ -48,8 +50,20 @@ export default {
   },
   mounted() {
     this.myVehicles = this.vehicles || []
+    this.refreshVehicles()
   },
   methods: {
+    async refreshVehicles() {
+      this.vehiclesLoading = true
+      this.vehiclesError = ''
+      try {
+        await this.$store.dispatch('vehicles/fetchVehicles')
+      } catch (error) {
+        this.vehiclesError = 'Fahrzeuge konnten nicht geladen werden. Bitte neu anmelden oder erneut versuchen.'
+      } finally {
+        this.vehiclesLoading = false
+      }
+    },
     formatDecimal(value, digits = 2) { return formatDecimal(value, digits) },
     fuelStats(fillups) { return vehicleFuelStatistics(fillups) },
     formatDate(date) {
@@ -68,8 +82,9 @@ export default {
       <div><p class="hm-eyebrow">ÜBERSICHT</p><h1 class="title hm-page-title">Dein Dashboard</h1><p class="hm-page-description">Fahrzeuge, Kosten und Tankvorgänge auf einen Blick.</p></div>
       <b-button type="is-primary" tag="router-link" :to="'/vehicles/create'">＋ Fahrzeug hinzufügen</b-button>
     </div>
+    <b-notification v-if="vehiclesError" type="is-danger is-light" :closable="false">{{ vehiclesError }} <b-button size="is-small" @click="refreshVehicles">Erneut versuchen</b-button></b-notification>
     <div class="hm-overview-strip"><div class="hm-overview-icon">▣</div><div><p class="hm-overview-label">VERWALTETE FAHRZEUGE</p><strong>{{ myVehicles.length }}</strong></div><span class="hm-overview-note">Aktive Übersicht</span></div>
-    <b-notification v-if="myVehicles.length === 0" type="is-warning is-light" :closable="false">
+    <b-notification v-if="!vehiclesLoading && !vehiclesError && myVehicles.length === 0" type="is-warning is-light" :closable="false">
       <div class="columns">
         <div class="column">
           Noch keine Fahrzeuge vorhanden. Lege dein erstes Fahrzeug an, um Ausgaben und Tankvorgänge zu verfolgen.
@@ -99,6 +114,7 @@ export default {
         >
       </div>
     </b-notification>
+    <p v-if="vehiclesLoading" class="help">Fahrzeuge werden geladen…</p>
     <CreateQuickEntry />
     <StatsWidget :user="me" />
     <br />
@@ -126,7 +142,7 @@ export default {
                 </a>
               </div>
             </template>
-            <div v-if="vehicle.fillups.length" class="card-content">
+            <div v-if="(vehicle.fillups || []).length" class="card-content">
               <div class="content">
                 <table class="table">
                   <div class="columns">
@@ -155,7 +171,7 @@ export default {
             </div>
             <div class="card-content">
               <div class="columns is-mobile hm-fuel-metrics">
-                <div class="column"><p class="heading">Getankt im Monat</p><strong>{{ formatDecimal(fuelStats(vehicle.fillups).monthLiters) }} L</strong></div>
+                <div class="column"><p class="heading">Getankt im Monat</p><strong>{{ formatDecimal(fuelStats(vehicle.fillups || []).monthLiters) }} L</strong></div>
                 <div class="column"><p class="heading">Getankt im Jahr</p><strong>{{ formatDecimal(fuelStats(vehicle.fillups).yearLiters) }} L</strong></div>
               </div>
               <p class="heading">Ø Verbrauch (Volltankungen)</p>
