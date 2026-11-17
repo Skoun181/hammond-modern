@@ -1,6 +1,5 @@
 <script>
 import Layout from '@layouts/main.vue'
-import QuickEntryDisplay from '@components/quickEntryDisplay.vue'
 import { mapState } from 'vuex'
 import axios from 'axios'
 import store from '@state/store'
@@ -10,7 +9,7 @@ export default {
   page: {
     title: 'Create Expense',
   },
-  components: { Layout, QuickEntryDisplay },
+  components: { Layout },
   props: {
     vehicle: {
       type: Object,
@@ -28,12 +27,10 @@ export default {
     return {
       tryingToCreate: false,
       showMore: false,
-      quickEntry: null,
       myVehicles: [],
       users: [],
       selectedVehicle: this.vehicle,
       expenseModel: this.expense,
-      processQuickEntry: false,
       invoiceUploading: false,
       invoiceName: '',
     }
@@ -46,13 +43,6 @@ export default {
     ...mapState('utils', ['isMobile']),
     ...mapState('users', ['me']),
     ...mapState('vehicles', ['fuelUnitMasters', 'fuelTypeMasters', 'vehicles']),
-  },
-  watch: {
-    quickEntry: function(newOne, old) {
-      if (old == null && newOne !== null) {
-        this.processQuickEntry = true
-      }
-    },
   },
   mounted() {
     this.myVehicles = this.vehicles
@@ -133,9 +123,6 @@ export default {
               duration: 3000,
             })
             this.expenseModel = this.getEmptyExpense()
-            if (this.processQuickEntry) {
-              store.dispatch('vehicles/setQuickEntryAsProcessed', { id: this.quickEntry.id }).then((data) => {})
-            }
           })
           .catch((ex) => {
             this.$buefy.toast.open({
@@ -158,11 +145,6 @@ export default {
               duration: 3000,
             })
             this.expenseModel = this.getEmptyExpense()
-            if (this.processQuickEntry) {
-              store.dispatch('vehicles/setQuickEntryAsProcessed', { id: this.quickEntry.id }).then((data) => {
-                this.quickEntry = null
-              })
-            }
           })
           .catch((ex) => {
             this.$buefy.toast.open({
@@ -189,9 +171,6 @@ export default {
         <h1 class="subtitle">
           {{ [selectedVehicle.nickname, selectedVehicle.registration, selectedVehicle.make, selectedVehicle.model].join(' | ') }}
         </h1>
-      </div>
-      <div class="column is-one-thirds">
-        <QuickEntryDisplay v-model="quickEntry" :user="user" />
       </div>
     </div>
     <form @submit.prevent="createExpense">
@@ -255,9 +234,6 @@ export default {
           <b-input v-model="expenseModel.comments" type="textarea" expanded></b-input>
         </b-field>
       </fieldset>
-      <b-field>
-        <b-switch v-if="quickEntry" v-model="processQuickEntry">Mark selected Quick Entry as processed</b-switch>
-      </b-field>
       <br />
       <b-field>
         <b-button tag="input" native-type="submit" :disabled="tryingToCreate || invoiceUploading" type="is-primary" label="Ausgabe speichern" expanded> </b-button>
