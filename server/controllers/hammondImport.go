@@ -59,7 +59,7 @@ func readLegacyDatabase(c *gin.Context) (*gorm.DB, func(), error) {
  if _,err = io.ReadFull(input,header); err != nil || string(header)!="SQLite format 3\x00" {
   target.Close(); cleanup(); return nil,nil,fmt.Errorf("Das ist keine gültige SQLite-Datenbank")
  }
- if _,err = target.Write(header); err == nil { _,err = io.CopyN(target,input,legacyDBMaxSize-int64(len(header))) }
+ if _,err = target.Write(header); err == nil { _,err = io.Copy(target,io.LimitReader(input,legacyDBMaxSize-int64(len(header)))) }
  if closeErr := target.Close(); err == nil { err = closeErr }
  if err != nil { cleanup(); return nil,nil,fmt.Errorf("Datei konnte nicht verarbeitet werden") }
  source, err := gorm.Open(sqlite.Open("file:"+path+"?mode=ro"), &gorm.Config{DisableAutomaticPing:false})
