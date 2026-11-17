@@ -106,3 +106,24 @@ body { font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   .hm-main .modern-stat-grid { grid-template-columns:1fr; }
   .hm-main .card-footer-item { flex-basis:100%; }
 }
+
+/* Responsive cost overview: no floated period selector, no half-width cards on iPhone. */
+.hm-stats-heading { display:flex; align-items:flex-end; justify-content:space-between; flex-wrap:wrap; gap:14px 20px; margin:16px 0 20px; min-width:0; }
+.hm-stats-heading > .title { margin:0!important; flex:1 1 280px; min-width:0; text-align:left; font-size:clamp(1.2rem,2vw,1.65rem)!important; overflow-wrap:normal; }
+.hm-stats-period { flex:0 1 230px; min-width:0; }
+.hm-stats-period .select, .hm-stats-period .select select { width:100%; }
+.hm-stats-heading + .modern-stat-grid { width:100%; }
+@media (max-width:768px) {
+ .hm-stats-heading { display:flex; flex-direction:column; align-items:stretch; gap:12px; }
+ .hm-stats-heading > .title { flex:initial; font-size:1.25rem!important; }
+ .hm-stats-period { flex:initial; width:100%; }
+ .hm-main .modern-stat-grid { display:grid; grid-template-columns:minmax(0,1fr)!important; gap:12px; }
+ .hm-main .modern-stat-card { width:100%; min-width:0; min-height:100px; }
+ .hm-main .modern-stat-card .title { font-size:1.35rem!important; }
+ .hm-main .subtitle { overflow-wrap:anywhere; font-size:1rem; }
+ .hm-main .hm-page-heading { width:100%; }
+ .hm-main .box { width:100%; min-width:0; }
+ .hm-main .field .control { max-width:100%; }
+ .hm-main .field.is-grouped { flex-wrap:wrap; }
+ .hm-main .hm-cost-chart { max-width:100%; }
+}
