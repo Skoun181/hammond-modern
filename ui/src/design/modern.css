@@ -127,3 +127,45 @@ body { font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
  .hm-main .field.is-grouped { flex-wrap:wrap; }
  .hm-main .hm-cost-chart { max-width:100%; }
 }
+
+/* Hammond vehicle details: readable Buefy mobile cards and responsive stats. */
+.hm-vehicle-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(145px,1fr)); gap:12px; }
+.hm-vehicle-stat { padding:12px 8px; min-width:0; overflow-wrap:anywhere; }
+.hm-vehicle-stat .heading { font-size:.72rem; letter-spacing:.06em; }
+.hm-vehicle-stat .title { color:var(--hm-text)!important; margin-top:6px; font-size:clamp(1.05rem,2vw,1.45rem)!important; overflow-wrap:anywhere; }
+.hm-vehicle-header { align-items:center; }
+.hm-vehicle-header .title { overflow-wrap:anywhere; }
+.hm-vehicle-actions { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; }
+.hm-vehicle-actions .button { margin:0!important; }
+.hm-vehicle-table .table, .hm-vehicle-table .table-wrapper { background:transparent!important; }
+.hm-vehicle-table .table tr, .hm-vehicle-table .table td { color:var(--hm-text)!important; border-color:var(--hm-border)!important; }
+.hm-vehicle-table .table td strong, .hm-vehicle-table .table td a { color:var(--hm-text); }
+.hm-vehicle-table .table td a { color:var(--hm-accent); }
+.hm-vehicle-table .pagination-link, .hm-vehicle-table .pagination-previous, .hm-vehicle-table .pagination-next { background:var(--hm-input)!important; color:var(--hm-text)!important; border-color:var(--hm-border)!important; }
+.hm-vehicle-table .pagination-link.is-current { background:var(--hm-accent)!important; color:#111827!important; }
+.hm-main .dropdown-content { background:var(--hm-surface)!important; border:1px solid var(--hm-border)!important; box-shadow:0 14px 36px #0008!important; }
+.hm-main .dropdown-content .dropdown-item, .hm-main .dropdown-content .dropdown-item button,
+.hm-main .dropdown-content .dropdown-item a { color:var(--hm-text)!important; }
+.hm-main .dropdown-content .dropdown-item:hover, .hm-main .dropdown-content .dropdown-item.is-active,
+.hm-main .dropdown-content .dropdown-item:focus { background:var(--hm-input)!important; color:var(--hm-accent)!important; }
+.hm-main .dropdown-menu { max-width:min(92vw,440px); }
+@media (max-width:768px) {
+ .hm-vehicle-stats { grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; }
+ .hm-vehicle-stat { padding:10px 4px; }
+ .hm-vehicle-stat .title { font-size:1.1rem!important; }
+ .hm-vehicle-header { display:flex; flex-direction:column; gap:0; }
+ .hm-vehicle-header > .column { width:100%; }
+ .hm-vehicle-header .title { font-size:1.7rem!important; }
+ .hm-vehicle-actions .button.is-primary { flex:1 1 100%; }
+ .hm-vehicle-table .table-wrapper { overflow:visible; }
+ .hm-vehicle-table .table.mobile-cards, .hm-vehicle-table .table.mobile-cards tbody,
+ .hm-vehicle-table .table.mobile-cards tr { background:transparent!important; }
+ .hm-vehicle-table .table.mobile-cards tr { display:block; margin:0 0 12px; border:1px solid var(--hm-border)!important; border-radius:10px; background:var(--hm-input)!important; overflow:hidden; }
+ .hm-vehicle-table .table.mobile-cards td { display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:8px; background:var(--hm-input)!important; color:var(--hm-text)!important; padding:10px 12px; text-align:right!important; min-height:42px; overflow-wrap:anywhere; }
+ .hm-vehicle-table .table.mobile-cards td:before { color:var(--hm-muted)!important; font-weight:600; max-width:46%; flex:0 0 46%; text-align:left!important; white-space:normal; }
+ .hm-vehicle-table .table.mobile-cards td > * { max-width:100%; }
+ .hm-vehicle-table .table.mobile-cards td .button { background:var(--hm-surface); color:var(--hm-text); border-color:var(--hm-border); }
+ .hm-vehicle-table .table.mobile-cards td.is-hidden-mobile { display:none!important; }
+ .hm-vehicle-table .pagination { flex-wrap:wrap; gap:10px; }
+}
+@media (max-width:390px) { .hm-vehicle-stats { grid-template-columns:1fr; } }
