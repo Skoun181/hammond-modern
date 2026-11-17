@@ -45,7 +45,15 @@ func RegisteHammondImportController(router *gin.RouterGroup) {
 func readLegacyDatabase(c *gin.Context) (*gorm.DB, func(), error) {
  c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, legacyDBMaxSize+(1<<20))
  f, err := c.FormFile("file")
- if err != nil { return nil,nil,fmt.Errorf("Bitte die Originaldatei hammond.db auswählen") }
+ if err != nil {
+  if strings.Contains(err.Error(), "request body too large") {
+   return nil,nil,fmt.Errorf("Die hochgeladene Datei überschreitet das Limit von 50 MB")
+  }
+  if strings.Contains(err.Error(), "multipart") || strings.Contains(err.Error(), "no such file") {
+   return nil,nil,fmt.Errorf("Die Datenbank wurde nicht als Datei übertragen (Upload-Format ungültig). Bitte erneut auswählen. Ursache: %v",err)
+  }
+  return nil,nil,fmt.Errorf("Datenbankdatei konnte nicht gelesen werden: %v",err)
+ }
  if f.Size <= 0 || f.Size > legacyDBMaxSize { return nil,nil,fmt.Errorf("Die SQLite-Datei darf höchstens 50 MB groß sein") }
  input, err := f.Open()
  if err != nil { return nil,nil,fmt.Errorf("Datei konnte nicht gelesen werden") }
