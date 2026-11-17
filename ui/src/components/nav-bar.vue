@@ -1,6 +1,5 @@
 <script>
 import { authComputed } from '@state/helpers'
-import { mapGetters } from 'vuex'
 import { applySavedTheme, toggleTheme } from '@utils/theme-modern'
 
 export default {
@@ -9,7 +8,6 @@ export default {
   },
   computed: {
     ...authComputed,
-    ...mapGetters('vehicles', ['unprocessedQuickEntries']),
     isAdmin() { return this.loggedIn && this.currentUser && this.currentUser.role === 'ADMIN' },
     links() {
       if (!this.loggedIn) return [{ name: 'login', title: 'Anmelden', icon: '↪' }]
@@ -18,7 +16,6 @@ export default {
         { name: 'vehicle-create', title: 'Fahrzeug hinzufügen', icon: '＋' },
         { name: 'drivers', title: 'Fahrer', icon: '♙' },
         { name: 'maintenance', title: 'Wartungscenter', icon: '⚒' },
-        { name: 'quickEntries', title: 'Schnelleinträge', icon: '◷', badge: this.unprocessedQuickEntries.length },
         { name: 'import', title: 'Datenimport', icon: '⇩' },
         { name: 'settings', title: 'Einstellungen', icon: '⚙' },
         ...(this.isAdmin ? [
