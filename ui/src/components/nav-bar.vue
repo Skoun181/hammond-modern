@@ -17,6 +17,7 @@ export default {
         { name: 'home', title: 'Dashboard', icon: '▦' },
         { name: 'vehicle-create', title: 'Fahrzeug hinzufügen', icon: '＋' },
         { name: 'drivers', title: 'Fahrer', icon: '♙' },
+        { name: 'maintenance', title: 'Wartungscenter', icon: '⚒' },
         { name: 'quickEntries', title: 'Schnelleinträge', icon: '◷', badge: this.unprocessedQuickEntries.length },
         { name: 'import', title: 'Datenimport', icon: '⇩' },
         { name: 'settings', title: 'Einstellungen', icon: '⚙' },
