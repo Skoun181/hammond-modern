@@ -4,7 +4,7 @@ import { parseAndFormatDate } from '@utils/format-date'
 import { mapState } from 'vuex'
 import { addDays, addMonths } from 'date-fns'
 import axios from 'axios'
-import currencyFormtter from 'currency-formatter'
+import { formatMoney, formatDecimal, normalizeCurrency } from '@utils/format-modern'
 import store from '@state/store'
 import ShareVehicle from '@components/shareVehicle.vue'
 import MileageChart from '@components/mileageChart.vue'
@@ -62,8 +62,8 @@ export default {
       return this.stats.map((x) => {
         return [
           {
-            label: 'Currency',
-            value: x.currency,
+            label: 'Währung',
+            value: normalizeCurrency(x.currency || (this.me && this.me.currency)),
           },
           {
             label: 'Gesamtausgaben',
@@ -83,11 +83,11 @@ export default {
           },
           {
             label: 'Ø Tankmenge',
-            value: `${x.avgFuelQty} ${this.vehicle.fuelUnitDetail.short}`,
+            value: `${formatDecimal(x.avgFuelQty, 1)} ${this.vehicle.fuelUnitDetail.short}`,
           },
           {
             label: 'Ø Kraftstoffpreis',
-            value: `${this.formatCurrency(x.avgFuelPrice, x.currency)} per ${this.vehicle.fuelUnitDetail.short}`,
+            value: `${this.formatCurrency(x.avgFuelPrice, x.currency)} / ${this.vehicle.fuelUnitDetail.short}`,
           },
         ]
       })
@@ -251,7 +251,11 @@ export default {
       if (!currencyCode) {
         currencyCode = this.me.currency
       }
-      return currencyFormtter.format(number, { code: currencyCode })
+      return formatMoney(number, currencyCode)
+    },
+    formatLiter(value) { return formatDecimal(value, 1) },
+    formatPrice(value, currency) {
+      return formatDecimal(value, 3) + ' ' + (normalizeCurrency(currency || (this.me && this.me.currency)) === 'EUR' ? '€' : normalizeCurrency(currency || (this.me && this.me.currency)))
     },
     columnTdAttrs(row, column) {
       return null
@@ -356,8 +360,8 @@ export default {
         ></b-button>
       </div>
     </div>
-    <div v-for="(currencyLevel, index) in summaryObject" :key="index" class="level box">
-      <div v-for="item in currencyLevel" :key="item.label" class="level-item has-text-centered">
+    <div v-for="(currencyLevel, index) in summaryObject" :key="index" class="box hm-vehicle-stats">
+      <div v-for="item in currencyLevel" :key="item.label" class="hm-vehicle-stat has-text-centered">
         <div>
           <p class="heading">{{ item.label }}</p>
           <p class="title is-4">{{ item.value }}</p>
@@ -367,38 +371,34 @@ export default {
     <div class="box">
       <h1 class="title is-4">Tankvorgänge</h1>
 
-      <b-table :data="fillups" hoverable mobile-cards :detailed="isMobile" detail-key="id" paginated per-page="10">
+      <b-table :data="fillups" hoverable mobile-cards paginated per-page="10">
         <b-table-column v-slot="props" field="date" label="Datum" :td-attrs="columnTdAttrs" sortable date>
           {{ formatDate(props.row.date) }}
         </b-table-column>
         <b-table-column v-slot="props" field="fuelSubType" label="Kraftstoffsorte" :td-attrs="columnTdAttrs">
           {{ props.row.fuelSubType }}
         </b-table-column>
-        <b-table-column v-slot="props" field="fuelQuantity" label="Qty." :td-attrs="hiddenMobile" numeric>
-          {{ `${props.row.fuelQuantity} ${props.row.fuelUnitDetail.short}` }}
+        <b-table-column v-slot="props" field="fuelQuantity" label="Menge" :td-attrs="hiddenMobile" numeric>
+          {{ formatLiter(props.row.fuelQuantity) }} {{ props.row.fuelUnitDetail.short }}
         </b-table-column>
         <b-table-column
           v-slot="props"
           field="perUnitPrice"
-          :label="'Price per ' + vehicle.fuelUnitDetail.short"
+          :label="'Preis pro ' + vehicle.fuelUnitDetail.short"
           :td-attrs="hiddenMobile"
           numeric
           sortable
         >
-          {{ `${formatCurrency(props.row.perUnitPrice, props.row.currency)}` }}
+          {{ formatPrice(props.row.perUnitPrice, props.row.currency) }}
         </b-table-column>
-        <b-table-column v-if="isMobile" v-slot="props" field="totalAmount" label="Total" :td-attrs="hiddenDesktop" sortable numeric>
-          {{ `${me.currency} ${props.row.totalAmount}` }} ({{ `${props.row.fuelQuantity} ${props.row.fuelUnitDetail.short}` }} @
-          {{ `${me.currency} ${props.row.perUnitPrice}` }})
-        </b-table-column>
-        <b-table-column v-if="!isMobile" v-slot="props" field="totalAmount" label="Total" :td-attrs="hiddenMobile" sortable numeric>
-          {{ `${formatCurrency(props.row.totalAmount, props.row.currency)}` }}
+        <b-table-column v-slot="props" field="totalAmount" label="Gesamtbetrag" sortable numeric>
+          <strong>{{ formatCurrency(props.row.totalAmount, props.row.currency) }}</strong>
         </b-table-column>
         <b-table-column v-slot="props" width="20" field="isTankFull" label="Vollgetankt" :td-attrs="hiddenMobile">
           <b-icon pack="fas" :icon="props.row.isTankFull ? 'check' : 'times'" type="is-info"> </b-icon>
         </b-table-column>
         <b-table-column v-slot="props" field="odoReading" label="Kilometerstand" :td-attrs="hiddenMobile" numeric>
-          {{ `${props.row.odoReading} ${me.distanceUnitDetail.short}` }}
+          {{ formatDecimal(props.row.odoReading, 0) }} {{ me.distanceUnitDetail.short }}
         </b-table-column>
         <b-table-column v-slot="props" field="fillingStation" label="Tankstelle" :td-attrs="hiddenMobile">
           {{ `${props.row.fillingStation}` }}
@@ -426,9 +426,6 @@ export default {
           ></b-button>
         </b-table-column>
         <template v-slot:empty> Noch keine Tankvorgänge</template>
-        <template v-slot:detail="props">
-          <p>{{ props.row.id }}</p>
-        </template>
       </b-table>
     </div>
     <br />
@@ -551,10 +548,10 @@ export default {
       </b-table>
     </div>
     <div class="box">
-      <div class="columns">
-        <div class="column" :class="isMobile ? 'has-text-centered' : ''"> <h1 class="title">Stats</h1></div>
-        <div class="column">
-          <b-select v-model="dateRangeOption" class="is-pulled-right is-medium">
+      <div class="hm-stats-heading">
+        <h1 class="title is-4">Statistiken</h1>
+        <div>
+          <b-select v-model="dateRangeOption" class="hm-stats-period">
             <option v-for="option in dateRangeOptions" :key="option.value" :value="option.value">
               {{ option.label }}
             </option>
