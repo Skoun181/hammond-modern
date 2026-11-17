@@ -54,6 +54,7 @@ export default {
     this.refreshVehicles()
   },
   methods: {
+    startFillup(id) { this.$router.push('/vehicles/' + id + '/fillup') },
     async refreshVehicles() {
       this.vehiclesLoading = true
       this.vehiclesError = ''
@@ -81,7 +82,15 @@ export default {
   <Layout>
     <div class="hm-page-heading">
       <div><p class="hm-eyebrow">ÜBERSICHT</p><h1 class="title hm-page-title">Dein Dashboard</h1><p class="hm-page-description">Fahrzeuge, Kosten und Tankvorgänge auf einen Blick.</p></div>
-      <b-button v-if="firstVehicleId" type="is-primary" tag="router-link" :to="'/vehicles/' + firstVehicleId + '/fillup'">＋ Tankung hinzufügen</b-button>
+      <b-button v-if="myVehicles.length === 1" type="is-primary" tag="router-link" :to="'/vehicles/' + firstVehicleId + '/fillup'">＋ Tankung hinzufügen</b-button>
+      <b-dropdown v-else-if="myVehicles.length > 1" position="is-bottom-left" aria-role="list">
+        <template slot="trigger">
+          <b-button type="is-primary">＋ Tankung hinzufügen</b-button>
+        </template>
+        <b-dropdown-item v-for="v in myVehicles" :key="v.id" aria-role="listitem" @click="startFillup(v.id)">
+          {{ v.nickname }} – {{ v.registration }}
+        </b-dropdown-item>
+      </b-dropdown>
     </div>
     <b-notification v-if="vehiclesError" type="is-danger is-light" :closable="false">{{ vehiclesError }} <b-button size="is-small" @click="refreshVehicles">Erneut versuchen</b-button></b-notification>
     <div class="hm-overview-strip"><div class="hm-overview-icon">▣</div><div><p class="hm-overview-label">VERWALTETE FAHRZEUGE</p><strong>{{ myVehicles.length }}</strong></div><span class="hm-overview-note">Aktive Übersicht</span></div>
@@ -105,9 +114,7 @@ export default {
     <section>
       <div class="columns" :class="isMobile ? 'has-text-centered' : ''"
         ><div class="column is-three-quarters"> <h2 class="title">Meine Fahrzeuge</h2></div>
-        <div class="column is-one-quarter buttons" :class="!isMobile ? 'has-text-right' : ''">
-          <b-button v-if="firstVehicleId" type="is-primary" tag="router-link" :to="'/vehicles/' + firstVehicleId + '/fillup'">Tankung hinzufügen</b-button>
-        </div></div
+</div
       >
 
       <div v-if="myVehicles.length">
