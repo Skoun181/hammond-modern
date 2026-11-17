@@ -43,6 +43,7 @@ export const actions = {
       const user = response.data
       commit('SET_CURRENT_USER', user)
       dispatch('vehicles/fetchMasters', null, { root: true })
+      dispatch('vehicles/fetchVehicles', null, { root: true })
       return user
     })
   },
