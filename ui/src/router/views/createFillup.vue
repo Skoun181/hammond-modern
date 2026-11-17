@@ -40,6 +40,11 @@ export default {
       stations: [],
       stationLoading: false,
       stationError: '',
+      receiptLoading: false,
+      receiptError: '',
+      receiptNotice: '',
+      receiptPreview: '',
+      receiptFields: [],
       selectedVehicle: this.vehicle,
       fillupModel: this.fillup,
       processQuickEntry: false,
@@ -86,6 +91,59 @@ export default {
     }
   },
   methods: {
+    async recognizeReceipt(event) {
+      const file = event.target.files && event.target.files[0]
+      if (!file) return
+      this.receiptError = ''
+      this.receiptNotice = ''
+      this.receiptFields = []
+      if (!['image/jpeg', 'image/png'].includes(file.type) || file.size > 5 * 1024 * 1024) {
+        this.receiptError = 'Bitte JPG oder PNG bis maximal 5 MB verwenden.'
+        event.target.value = ''
+        return
+      }
+      this.receiptLoading = true
+      const form = new FormData()
+      form.append('file', file)
+      try {
+        const response = await axios.post('/api/receipts/recognize', form, { timeout: 30000 })
+        const fields = response.data.suggestions || {}
+        if (fields.fillingStation) {
+          this.fillupModel.fillingStation = fields.fillingStation
+          this.receiptFields.push('Tankstelle')
+          this.showMore = true
+        }
+        if (fields.date) {
+          const date = new Date(fields.date + 'T12:00:00')
+          if (!isNaN(date.getTime()) && date <= new Date()) {
+            this.fillupModel.date = date
+            this.receiptFields.push('Datum')
+          }
+        }
+        if (fields.fuelQuantity != null) {
+          this.fillupModel.fuelQuantity = fields.fuelQuantity
+          this.receiptFields.push('Liter')
+        }
+        if (fields.perUnitPrice != null) {
+          this.fillupModel.perUnitPrice = fields.perUnitPrice
+          this.receiptFields.push('Preis/Liter')
+        }
+        await this.$nextTick()
+        if (fields.totalAmount != null) {
+          this.fillupModel.totalAmount = fields.totalAmount
+          this.receiptFields.push('Gesamtbetrag')
+        }
+        this.receiptNotice = this.receiptFields.length
+          ? 'Erkannt: ' + this.receiptFields.join(', ') + '. Bitte alle Angaben sorgfältig kontrollieren.'
+          : 'Keine Felder zuverlässig erkannt. Bitte Werte selbst eingeben.'
+      } catch (error) {
+        this.receiptError = (error.response && error.response.data && error.response.data.error) ||
+          'Beleg konnte nicht erkannt werden. Bitte Daten manuell eingeben.'
+      } finally {
+        this.receiptLoading = false
+        event.target.value = ''
+      }
+    },
     async searchStations() {
       if (!/^\d{5}$/.test(this.stationPostal)) { this.stationError = 'Bitte eine fünfstellige PLZ eingeben.'; return }
       this.stationLoading = true
@@ -211,6 +269,16 @@ export default {
           <QuickEntryDisplay v-model="quickEntry" :user="user" />
         </div>
       </div>
+    </div>
+    <div v-if="!fillup.id" class="box">
+      <h2 class="title is-5">Tankbeleg scannen</h2>
+      <p class="help">Auf dem Handy die Kamera öffnen oder ein vorhandenes Foto auswählen. Die Texterkennung läuft lokal auf deinem Hammond-Server. Das Foto wird nur für die Erkennung verarbeitet und nicht gespeichert.</p>
+      <label class="button is-primary" for="receipt-camera">📷 Beleg fotografieren / hochladen</label>
+      <input id="receipt-camera" type="file" accept="image/jpeg,image/png" capture="environment" style="position:absolute;width:1px;height:1px;opacity:0" :disabled="receiptLoading" @change="recognizeReceipt">
+      <p v-if="receiptLoading" class="help">Beleg wird erkannt…</p>
+      <b-notification v-if="receiptError" type="is-danger" :closable="false">{{ receiptError }}</b-notification>
+      <b-notification v-if="receiptNotice" type="is-info" :closable="false">{{ receiptNotice }}</b-notification>
+      <p class="help">Datum, Tankstelle, Menge und Preise werden nur übernommen, wenn ein passender Wert erkannt wurde. Vor dem Speichern prüfen.</p>
     </div>
     <form class="" @submit.prevent="createFillup">
       <b-field label="Fahrzeug">
