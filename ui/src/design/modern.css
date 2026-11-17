@@ -212,3 +212,47 @@ body { font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
     color: var(--hm-accent) !important;
   }
 }
+
+/* Definitive vehicle-table fix: Bulma .is-hoverable changes the ROW background,
+   and Buefy mobile cards inherit this on touch devices. Cover BOTH states. */
+.hm-main .hm-vehicle-table table.table tbody tr,
+.hm-main .hm-vehicle-table table.table tbody tr:not(.is-selected),
+.hm-main .hm-vehicle-table table.table.is-hoverable tbody tr:not(.is-selected) {
+  background-color: var(--hm-surface) !important;
+  color: var(--hm-text) !important;
+}
+.hm-main .hm-vehicle-table table.table tbody tr td,
+.hm-main .hm-vehicle-table table.table tbody tr th {
+  background-color: transparent !important;
+  color: var(--hm-text) !important;
+  border-color: var(--hm-border) !important;
+}
+.hm-main .hm-vehicle-table table.table.is-hoverable tbody tr:not(.is-selected):hover,
+.hm-main .hm-vehicle-table table.table tbody tr:hover,
+.hm-main .hm-vehicle-table table.table tbody tr:focus-within {
+  background-color: var(--hm-input) !important;
+  color: var(--hm-text) !important;
+}
+.hm-main .hm-vehicle-table table.table.is-hoverable tbody tr:not(.is-selected):hover td,
+.hm-main .hm-vehicle-table table.table tbody tr:hover td,
+.hm-main .hm-vehicle-table table.table tbody tr:focus-within td {
+  background-color: transparent !important;
+  color: var(--hm-text) !important;
+}
+@media screen and (max-width: 768px) {
+  .hm-main .hm-vehicle-table table.table.has-mobile-cards tr,
+  .hm-main .hm-vehicle-table table.table.has-mobile-cards tr:not(.is-selected),
+  .hm-main .hm-vehicle-table table.table.has-mobile-cards tr:hover,
+  .hm-main .hm-vehicle-table table.table.has-mobile-cards tr:focus-within {
+    background-color: var(--hm-input) !important;
+    color: var(--hm-text) !important;
+  }
+  .hm-main .hm-vehicle-table table.table.has-mobile-cards tr td,
+  .hm-main .hm-vehicle-table table.table.has-mobile-cards tr:hover td {
+    background-color: transparent !important;
+    color: var(--hm-text) !important;
+  }
+  .hm-main .hm-vehicle-table table.table.has-mobile-cards tr td:before {
+    color: var(--hm-muted) !important;
+  }
+}
