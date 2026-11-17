@@ -29,64 +29,168 @@ Die Verbrauchsberechnung benötigt mindestens zwei geeignete Volltankungen mit s
 
 **Wichtig:** Der GitHub-Standardbranch ist derzeit `master`. Für Hammond Modern beim Klonen oder nach dem Klonen **`stable/hammond-modern`** oder zum Entwickeln **`develop/hammond-modern-next`** auswählen. Der Stable-Branch ist keine automatische Docker-Image-Veröffentlichung.
 
-## Installation: Debian-LXC / Docker
+## Screenshots der neuen Oberfläche
 
-Die folgenden Befehle entsprechen der bisher getesteten Konfiguration (Linux AMD64 / x86_64; Docker Compose). Für einen öffentlich erreichbaren Betrieb sind zusätzliche Schutzmaßnahmen nötig.
+Hier sind zwei Plätze für echte Screenshots von Hammond Modern reserviert. Sobald Bilder aus der laufenden Instanz vorliegen, können sie unter den angegebenen Namen in `docs/screenshots/` abgelegt und die auskommentierten Bildzeilen aktiviert werden.
 
-### 1. Repository klonen
+| Dashboard und Fahrzeugübersicht | Tankung / Tankstellensuche |
+| --- | --- |
+| 📸 **Screenshot 1 – Dashboard**<br>Geplanter Pfad: `docs/screenshots/dashboard.png` | 📸 **Screenshot 2 – Tankstellen oder Tankung**<br>Geplanter Pfad: `docs/screenshots/tankstellen.png` |
 
-```bash
-git clone --branch stable/hammond-modern git@github.com:Skoun181/hammond-modern.git
-cd hammond-modern
-```
+<!-- Nach dem Hochladen der echten Bilder diese Zeilen einkommentieren:
+![Hammond Modern – Dashboard](docs/screenshots/dashboard.png)
+![Hammond Modern – Tankstellen- und Tankungsansicht](docs/screenshots/tankstellen.png)
+-->
 
-Alternativ ohne SSH-Schlüssel:
+**Tipp:** Vor Veröffentlichung persönliche Kennzeichen, Standortdaten und Tankbelege in den Screenshots unkenntlich machen.
+
+## Installation – Docker und Docker Compose
+
+Die Anleitung orientiert sich an der Installation des ursprünglichen Hammond, verwendet aber **unseren Quellcode**. Ein fertig veröffentlichtes Docker-Hub-Image wird hier nicht vorausgesetzt. Der bisher getestete Weg ist **Docker Compose mit lokalem Build** auf Linux AMD64 (x86_64), unter anderem auf Debian 13 im LXC.
+
+### Voraussetzungen
+
+- Linux AMD64 / x86_64 mit Docker Engine und `docker compose` (Compose-Plugin)
+- Git zum Herunterladen des Repositories
+- Freier Host-Port `3006` (oder Portbelegung anpassen)
+- Für die Tankstellensuche optional ein eigener Tankerkönig-API-Key
+
+Beim Betrieb in einem Proxmox-LXC muss Docker bereits funktionsfähig eingerichtet sein. Diese Anleitung verändert keine Proxmox-Container-Einstellungen.
+
+### 1. Repository herunterladen
+
+**Empfohlen: Stable-Version per HTTPS**
 
 ```bash
 git clone --branch stable/hammond-modern https://github.com/Skoun181/hammond-modern.git
 cd hammond-modern
 ```
 
-### 2. Zugangsdaten lokal konfigurieren
+Alternativ per SSH, wenn ein GitHub-SSH-Schlüssel eingerichtet ist:
 
-Erstelle im Projektverzeichnis die Datei `.env`:
+```bash
+git clone --branch stable/hammond-modern git@github.com:Skoun181/hammond-modern.git
+cd hammond-modern
+```
+
+Für die Weiterentwicklung kann stattdessen der Branch `develop/hammond-modern-next` verwendet werden. `master` enthält die ursprüngliche Hammond-Codebasis und ist **nicht** die hier beschriebene Modern-Version.
+
+### 2. Konfiguration (`.env`)
+
+Im Projektverzeichnis ein dauerhaftes JWT-Secret erstellen:
 
 ```bash
 printf 'JWT_SECRET=%s\n' "$(openssl rand -hex 32)" > .env
 chmod 600 .env
 ```
 
-Für die optionale Tankstellensuche zusätzlich **deinen eigenen** Tankerkönig-Key in `.env` eintragen:
+**Optional:** In derselben `.env`-Datei die Tankstellensuche aktivieren:
 
 ```dotenv
 TANKERKOENIG_API_KEY=DEIN_EIGENER_API_KEY
 ```
 
-Den vorhandenen `JWT_SECRET` bei späteren Updates **nicht neu generieren**. Weder `.env`, API-Keys noch Zugangsdaten in Git einchecken.
+Den Wert von `JWT_SECRET` bei späteren Neustarts oder Updates **nicht ändern**. Die `.env`-Datei nicht veröffentlichen oder zu Git hinzufügen.
 
-### 3. Anwendung bauen und starten
+### 3A. Empfohlen: Docker Compose
+
+Die mitgelieferte [`compose.test.yml`](compose.test.yml) baut das Image aus diesem Repository und bindet zwei lokale Datenverzeichnisse ein:
 
 ```bash
 docker compose -f compose.test.yml up -d --build
 docker compose -f compose.test.yml ps
 ```
 
-Die Anwendung ist danach im lokalen Netzwerk unter **`http://SERVER-IP:3006`** erreichbar.
+Anschließend im Browser aufrufen:
 
-Beim ersten Start in der Weboberfläche einen Administrator anlegen und die persönlichen Einheiten/Währung konfigurieren.
+```text
+http://SERVER-IP:3006
+```
+
+Beim ersten Aufruf Administrator anlegen und gewünschte Einheiten sowie Währung einstellen.
+
+**Auszug aus unserer Compose-Konfiguration:**
+
+```yaml
+services:
+  hammond-modern:
+    build: .
+    image: hammond-modern:next
+    container_name: hammond-modern-next
+    ports:
+      - "3006:3000"
+    environment:
+      TZ: Europe/Berlin
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET fehlt}
+      TANKERKOENIG_API_KEY: ${TANKERKOENIG_API_KEY:-}
+    volumes:
+      - ./data/config:/config
+      - ./data/assets:/assets
+    restart: unless-stopped
+```
+
+Die vollständige, maßgebliche Datei liegt im Repository. `data/config` enthält die Konfiguration und SQLite-Datenbank, `data/assets` die Anhänge.
+
+### 3B. Alternativ: Docker Run (wie beim Original)
+
+Wer **kein Compose** verwenden möchte, kann dasselbe lokale Image manuell starten. Dazu ebenfalls zunächst das Repository klonen, die `.env` anlegen und das Image bauen:
+
+```bash
+docker build -t hammond-modern:local .
+mkdir -p data/config data/assets
+```
+
+Anschließend starten:
+
+```bash
+docker run -d \
+  --name hammond-modern \
+  --restart unless-stopped \
+  -p 3006:3000 \
+  --env-file .env \
+  -e TZ=Europe/Berlin \
+  -v "$PWD/data/config:/config" \
+  -v "$PWD/data/assets:/assets" \
+  hammond-modern:local
+```
+
+Auch hier lautet die Adresse `http://SERVER-IP:3006`. Bei `docker run` werden beide Variablen aus `.env` geladen, sofern eingetragen. **Nur eine** der Varianten 3A oder 3B gleichzeitig mit Host-Port `3006` verwenden.
+
+**Wichtig:** Nicht `docker run akhilrex/hammond` verwenden; das startet das originale Hammond und nicht unseren Fork.
 
 ### 4. Aktualisieren
 
-Für einen Stable-Checkout:
+Für die Compose-Installation auf dem Stable-Branch:
 
 ```bash
+git switch stable/hammond-modern
 git pull --ff-only origin stable/hammond-modern
 docker compose -f compose.test.yml up -d --build
 ```
 
-Für einen bestehenden Entwicklungs-Checkout entsprechend `develop/hammond-modern-next` verwenden.
+Für die manuelle Docker-Run-Variante nach dem `git pull` das Image erneut mit `docker build -t hammond-modern:local .` bauen und den bestehenden Container anschließend mit denselben `docker run`-Parametern neu erstellen. Die gemounteten Datenverzeichnisse dabei erhalten.
 
-**Niemals bei einem normalen Update `data/` löschen:** Dort liegen Datenbank und Anhänge.
+**Bei normalen Updates `data/config` und `data/assets` nicht löschen.**
+
+### 5. Betrieb und Fehleranalyse
+
+```bash
+# Compose-Container und Status anzeigen
+docker compose -f compose.test.yml ps
+
+# Letzte Logzeilen
+docker compose -f compose.test.yml logs --tail=100
+
+# Container neu starten
+docker compose -f compose.test.yml restart
+
+# Container stoppen/entfernen – Datenverzeichnisse bleiben bestehen
+docker compose -f compose.test.yml down
+```
+
+Bei der manuellen Variante stattdessen `docker logs hammond-modern` oder `docker restart hammond-modern` verwenden.
+
+Eine direkte Freigabe des HTTP-Ports im Internet ist nicht empfohlen. Für externen Zugriff HTTPS und einen abgesicherten Reverse Proxy oder VPN verwenden.
 
 ## Docker-Konfiguration
 
