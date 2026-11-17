@@ -119,7 +119,7 @@ export default {
       this.receiptError = ''
       this.receiptNotice = ''
       this.receiptFields = []
-      if (!file.type.startsWith('image/') && !/\\.(heic|heif|jpg|jpeg|png)$/i.test(file.name)) {
+      if (!file.type.startsWith('image/') && !/\.(heic|heif|jpg|jpeg|png)$/i.test(file.name)) {
         this.receiptError = 'Bitte eine Bilddatei auswählen (JPEG, PNG oder HEIC).'
         event.target.value = ''
         return
