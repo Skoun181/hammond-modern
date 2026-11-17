@@ -131,15 +131,13 @@ export default {
 
 <template>
   <div>
-    <div class="columns">
-      <div class="column" :class="isMobile ? 'has-text-centered' : ''"> <h2 class="title">Kostenübersicht – alle meine Fahrzeuge</h2></div>
-      <div class="column">
-        <b-select v-model="dateRangeOption" class="is-pulled-right is-medium">
-          <option v-for="option in dateRangeOptions" :key="option.value" :value="option.value">
-            {{ option.label }}
-          </option>
-        </b-select></div
-      >
+    <div class="hm-stats-heading">
+      <h2 class="title is-4">Kostenübersicht – alle meine Fahrzeuge</h2>
+      <b-select v-model="dateRangeOption" class="hm-stats-period">
+        <option v-for="option in dateRangeOptions" :key="option.value" :value="option.value">
+          {{ option.label }}
+        </option>
+      </b-select>
     </div>
     <b-notification v-if="loadError" type="is-danger" :closable="false">Statistiken konnten nicht geladen werden.</b-notification>
     <div v-for="(currencyLevel, index) in summaryObject" :key="index" class="modern-stat-grid">
