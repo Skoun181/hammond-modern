@@ -1,42 +1,34 @@
 <script>
 import Layout from '@layouts/main.vue'
-
 export default {
-  page: {
-    title: 'Import',
-    meta: [{ name: 'Import from other apps', content: 'The Import page.' }],
-  },
+  page: { title: 'Datenimport' },
   components: { Layout },
-  props: {
-    user: {
-      type: Object,
-      required: true,
-    },
-  },
 }
 </script>
 
 <template>
   <Layout>
-    <div class="columns box"
-      ><div class="column">
-        <h1 class="title">Datenimport</h1>
-        <p class="subtitle">Übernimm Daten aus deiner bisherigen Fahrzeugverwaltung.</p>
-      </div></div
-    >
-    <br />
-    <div class="box hm-import-panel">
-      <h2 class="title is-5">Original-Hammond übernehmen</h2>
-      <p>Einfach die alte <code>hammond.db</code> auswählen, Vorschau prüfen und Fahrzeuge, Tankungen sowie Ausgaben importieren.</p>
-      <br />
-      <b-button type="is-primary" tag="router-link" to="/import/hammond">Hammond-Migration starten</b-button>
+    <div class="hm-page-heading hm-import-heading">
+      <div>
+        <p class="hm-eyebrow">DATENÜBERNAHME</p>
+        <h1 class="title hm-page-title">Datenimport</h1>
+        <p class="hm-page-description">Übernimm deine Fahrzeughistorie sicher in Hammond Modern.</p>
+      </div>
     </div>
-    <div class="columns">
-      <div class="box column is-one-third" to="/import-fuelly">
-        <h1 class="title is-5">Fuelly (CSV)</h1>
-        <p>If you have been using Fuelly to store your vehicle data, export the CSV file from Fuelly and click here to import.</p>
-        <br />
-        <b-button type="is-primary" tag="router-link" to="/import/fuelly">Import</b-button>
+    <div class="hm-import-options">
+      <div class="box hm-import-option hm-import-option-featured">
+        <p class="hm-eyebrow">EMPFOHLEN</p>
+        <h2 class="title is-5">Original-Hammond</h2>
+        <p>Importiere Fahrzeuge, Tankungen und Ausgaben aus einer Sicherung deiner bisherigen Hammond-Installation.</p>
+        <p class="hm-import-hint">SQLite-Datenbank <code>hammond.db</code> · mit Vorschau und Duplikatprüfung</p>
+        <b-button type="is-primary" tag="router-link" to="/import/hammond">Hammond-Migration starten</b-button>
+      </div>
+      <div class="box hm-import-option">
+        <p class="hm-eyebrow">WEITERE QUELLE</p>
+        <h2 class="title is-5">Fuelly (CSV)</h2>
+        <p>Du hast Tankungen bei Fuelly gespeichert? Exportiere dort deine CSV-Datei und importiere sie hier.</p>
+        <p class="hm-import-hint">CSV-Import · Fahrzeuge müssen bereits angelegt sein</p>
+        <b-button type="is-primary" tag="router-link" to="/import/fuelly">CSV importieren</b-button>
       </div>
     </div>
   </Layout>
