@@ -395,6 +395,12 @@ export default [
     props: (route) => ({ user: store.state.auth.currentUser || {} }),
   },
   {
+    path: '/import/hammond',
+    name: 'import-hammond',
+    component: () => lazyLoadView(import('@views/importHammond.vue')),
+    meta: { authRequired: true },
+  },
+  {
     path: '/import/fuelly',
     name: 'import-fuelly',
     component: () => lazyLoadView(import('@views/import-fuelly.vue')),
