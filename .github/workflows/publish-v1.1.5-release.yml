@@ -1,0 +1,35 @@
+name: Publish stable GitHub release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout stable branch
+        uses: actions/checkout@v4
+        with:
+          ref: stable/hammond-modern
+          persist-credentials: true
+
+      - name: Create v1.1.5 release if missing
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view v1.1.5 >/dev/null 2>&1; then
+            echo "Release v1.1.5 already exists; not changing it."
+            exit 0
+          fi
+          gh release create v1.1.5 \
+            --target "$(git rev-parse HEAD)" \
+            --title "Hammond Modern v1.1.5" \
+            --notes-file docs/releases/v1.1.5.md \
+            --latest
+          gh release view v1.1.5 --json url,tagName,isLatest
