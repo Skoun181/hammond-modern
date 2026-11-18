@@ -6,7 +6,7 @@ Hammond Modern ist ein unabhängiger Community-Fork von [akhilrex/hammond](https
 
 **Version: v1.1.5** · [Releases](https://github.com/Skoun181/hammond-modern/releases) · [Änderungsverlauf](CHANGELOG-MODERN.md)
 
-> **Teststand:** Die alltäglichen Funktionen und die Migrationsvorschau wurden auf einer privaten Debian-13-LXC-Installation getestet. Der vollständige Import aus einer Original-Datenbank sowie ein umfassender Sicherheits- und Produktionstest sind noch nicht bestätigt.
+> **Teststand:** Die alltäglichen Funktionen und die Migrationsvorschau wurden auf einer privaten Debian-13-LXC-Installation getestet. Das Docker-Hub-Image wurde außerdem erfolgreich auf einer Synology über Dockhand und macvlan gestartet (Anwenderbestätigung). Der vollständige Import aus einer Original-Datenbank sowie ein umfassender Sicherheits- und Produktionstest sind noch nicht bestätigt.
 
 ## Was kann Hammond Modern?
 
@@ -69,9 +69,41 @@ Eine automatische Wartungsbenachrichtigung ist derzeit nicht enthalten.
 
 Die Branches `stable` und `develop` können sich weiterentwickeln. Für einen **festen** Versionsstand das jeweilige Release-Tag auschecken. Es gibt keinen `master`-Branch mehr.
 
-## Installation mit Docker Compose
+## Schnellstart mit Docker Hub (Synology / Dockhand)
 
-Der bisher verwendete und getestete Bereitstellungsweg ist ein **lokaler Docker-Build** auf Linux, insbesondere Debian 13 in Proxmox LXC. Es wird kein fertiges Docker-Hub-Image vorausgesetzt.
+Für die veröffentlichte **v1.1.5** steht das Docker-Hub-Image **[`skoun181/hammond-modern:1.1.5`](https://hub.docker.com/r/skoun181/hammond-modern)** zur Verfügung. Das Image wurde per GitHub Actions gebaut und auf einer Synology mit Dockhand erfolgreich gestartet. Ein lokaler Build ist für diese Installation nicht nötig.
+
+**Beispiel für einen normalen Compose-Stack mit Host-Port 3006** (ohne macvlan):
+
+```yaml
+services:
+  hammond-modern:
+    image: skoun181/hammond-modern:1.1.5
+    restart: unless-stopped
+    ports:
+      - "3006:3000"
+    environment:
+      TZ: Europe/Berlin
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET fehlt}
+      TANKERKOENIG_API_KEY: ${TANKERKOENIG_API_KEY:-}
+    volumes:
+      - ./data/config:/config
+      - ./data/assets:/assets
+```
+
+Lege `JWT_SECRET` als langen zufälligen Wert in einer lokalen `.env`-Datei oder in den Environment-Variablen von Dockhand an. Für die Tankstellensuche optional `TANKERKOENIG_API_KEY` hinterlegen. **Keine Secrets ins Git-Repository committen.** Die Verzeichnisse für `/config` und `/assets` müssen persistent gespeichert und regelmäßig gesichert werden.
+
+```bash
+docker compose up -d
+```
+
+Danach `http://SERVER-IP:3006` aufrufen. Die Synology-Konfiguration mit **eigener macvlan-IP `192.168.0.36` und Container-Port `3000`** steht als [fertige Dockhand-Compose-Datei](docker-compose.dockerhub.yml) bereit. Die dort verwendeten `/volume2`-Pfade und das externe Netzwerk `macvlan` müssen zu deiner eigenen Installation passen. Mit macvlan ist kein `ports:`-Mapping erforderlich. Für den Betrieb ist aktuell **AMD64/x86-64** vorgesehen.
+
+**Updates:** Nach einem Backup den Image-Tag im Compose gezielt auf die neue veröffentlichte Version ändern und den Stack neu deployen. `latest` aktualisiert sich nicht automatisch auf einem laufenden Container; für reproduzierbare Installationen den festen Versions-Tag verwenden.
+
+## Installation aus dem Quellcode mit Docker Compose
+
+Alternativ zum Docker-Hub-Image kann Hammond Modern direkt aus dem Quellcode lokal gebaut werden, beispielsweise auf Debian 13 in Proxmox LXC.
 
 ### Voraussetzungen
 - Docker Engine, Docker Compose Plugin und Git
@@ -188,7 +220,7 @@ Für den Fernzugriff **HTTPS über Reverse Proxy oder VPN** verwenden und den HT
 - Die Migrations-*Vorschau* einschließlich Duplikatgruppierung wurde praktisch bestätigt. Ein kompletter produktiver Datenimport mit Anhängen oder mehreren Nutzern ist **noch nicht umfassend validiert**.
 - Die Tankbeleg-OCR-Erkennung bleibt experimentell.
 - Oberfläche und Dokumentation sind teilweise noch nicht vollständig übersetzt.
-- Synology-/DSM-Betrieb ist dokumentiert, aber für diese Version nicht als getestet bestätigt.
+- Der Synology-/Dockhand-Start des Docker-Hub-Images wurde bestätigt; das ersetzt keinen vollständigen Funktions- oder Sicherheitstest auf DSM.
 
 ## Screenshots
 
