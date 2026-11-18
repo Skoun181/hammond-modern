@@ -32,4 +32,4 @@ jobs:
             --title "Hammond Modern v1.1.5" \
             --notes-file docs/releases/v1.1.5.md \
             --latest
-          gh release view v1.1.5 --json url,tagName,isLatest
+          gh release view v1.1.5 --json url,tagName,isDraft,isPrerelease
