@@ -63,22 +63,34 @@ Eine automatische Wartungsbenachrichtigung ist derzeit nicht enthalten.
 | --- | --- |
 | [`stable/hammond-modern`](https://github.com/Skoun181/hammond-modern/tree/stable/hammond-modern) | Standardbranch für aktuelle Stable-Installationen |
 | [`develop/hammond-modern-next`](https://github.com/Skoun181/hammond-modern/tree/develop/hammond-modern-next) | Weiterentwicklung; Änderungen zunächst hier testen |
-| [`v1.1.5`](https://github.com/Skoun181/hammond-modern/releases/tag/v1.1.5) | Versionierter Release-Stand nach Veröffentlichung |
+| [`v1.1.5`](https://github.com/Skoun181/hammond-modern/releases/tag/v1.1.5) | Veröffentlichter Stable-Release |
 | [`v1.1.0`](https://github.com/Skoun181/hammond-modern/releases/tag/v1.1.0) | Frühere Version |
 | [`v1.0.0`](https://github.com/Skoun181/hammond-modern/releases/tag/v1.0.0) | Erste Stable-Version |
 
 Die Branches `stable` und `develop` können sich weiterentwickeln. Für einen **festen** Versionsstand das jeweilige Release-Tag auschecken. Es gibt keinen `master`-Branch mehr.
 
-## Schnellstart mit Docker Hub (Synology / Dockhand)
+## Installation
 
-Für die veröffentlichte **v1.1.5** steht das Docker-Hub-Image **[`skoun181/hammond-modern:1.1.5`](https://hub.docker.com/r/skoun181/hammond-modern)** zur Verfügung. Das Image wurde per GitHub Actions gebaut und auf einer Synology mit Dockhand erfolgreich gestartet. Ein lokaler Build ist für diese Installation nicht nötig.
+### Voraussetzungen
 
-**Beispiel für einen normalen Compose-Stack mit Host-Port 3006** (ohne macvlan):
+Docker Engine (oder Synology Container Manager), AMD64/x86-64, ein freier Host-Port (Standard: 3006). Für Compose zusätzlich Docker Compose v2, für den Quellcode-Build Git. Die Shell-Beispiele setzen Linux und OpenSSL voraus. ARM64-Images werden derzeit nicht angeboten.
+
+### Variante A – Docker Compose ohne Git (empfohlen)
+
+```bash
+mkdir -p hammond-modern/data/{config,assets}
+cd hammond-modern
+# Nur bei einer Neuinstallation ausführen:
+(umask 077; printf 'JWT_SECRET=%s\n' "$(openssl rand -hex 32)" > .env)
+```
+
+Datei `compose.yaml` erstellen:
 
 ```yaml
 services:
   hammond-modern:
     image: skoun181/hammond-modern:1.1.5
+    container_name: hammond-modern
     restart: unless-stopped
     ports:
       - "3006:3000"
@@ -91,90 +103,93 @@ services:
       - ./data/assets:/assets
 ```
 
-Lege `JWT_SECRET` als langen zufälligen Wert in einer lokalen `.env`-Datei oder in den Environment-Variablen von Dockhand an. Für die Tankstellensuche optional `TANKERKOENIG_API_KEY` hinterlegen. **Keine Secrets ins Git-Repository committen.** Die Verzeichnisse für `/config` und `/assets` müssen persistent gespeichert und regelmäßig gesichert werden.
-
 ```bash
+docker compose pull
 docker compose up -d
+docker compose ps
 ```
 
-Danach `http://SERVER-IP:3006` aufrufen. Die Synology-Konfiguration mit **eigener macvlan-IP `192.168.0.36` und Container-Port `3000`** steht als [fertige Dockhand-Compose-Datei](docker-compose.dockerhub.yml) bereit. Die dort verwendeten `/volume2`-Pfade und das externe Netzwerk `macvlan` müssen zu deiner eigenen Installation passen. Mit macvlan ist kein `ports:`-Mapping erforderlich. Für den Betrieb ist aktuell **AMD64/x86-64** vorgesehen.
+Browser: `http://SERVER-IP:3006`. Beim ersten Start Administrator einrichten.
 
-**Updates:** Nach einem Backup den Image-Tag im Compose gezielt auf die neue veröffentlichte Version ändern und den Stack neu deployen. `latest` aktualisiert sich nicht automatisch auf einem laufenden Container; für reproduzierbare Installationen den festen Versions-Tag verwenden.
+### Variante B – Docker Pull und Docker Run (ohne Compose)
 
-## Installation aus dem Quellcode mit Docker Compose
+In einem neuen Installationsverzeichnis:
 
-Alternativ zum Docker-Hub-Image kann Hammond Modern direkt aus dem Quellcode lokal gebaut werden, beispielsweise auf Debian 13 in Proxmox LXC.
+```bash
+mkdir -p hammond-modern/data/{config,assets}
+cd hammond-modern
+# Nur bei einer Neuinstallation ausführen:
+(umask 077; printf 'JWT_SECRET=%s\n' "$(openssl rand -hex 32)" > .env)
+printf 'TZ=Europe/Berlin\n' >> .env
+docker pull skoun181/hammond-modern:1.1.5
+docker run -d \
+  --name hammond-modern \
+  --restart unless-stopped \
+  --env-file .env \
+  -p 3006:3000 \
+  -v "$PWD/data/config:/config" \
+  -v "$PWD/data/assets:/assets" \
+  skoun181/hammond-modern:1.1.5
+```
 
-### Voraussetzungen
-- Docker Engine, Docker Compose Plugin und Git
-- Linux-Rechner oder bereits für Docker eingerichteter Proxmox-LXC
-- Freier Host-Port **3006** (oder die Compose-Datei entsprechend anpassen)
-- Optional: Tankerkönig-API-Key für die Tankstellensuche
+Browser: `http://SERVER-IP:3006`. Docker Pull allein startet keinen Container.
 
-### 1. Stable-Version herunterladen
+### Variante C – Git Clone und lokaler Build
 
 ```bash
 git clone --branch stable/hammond-modern https://github.com/Skoun181/hammond-modern.git
 cd hammond-modern
-```
-
-Wenn du exakt **v1.1.5** und keine späteren Stable-Änderungen möchtest:
-
-```bash
-git fetch origin --tags
+# Optional: festen Release-Stand verwenden
 git checkout v1.1.5
-```
-
-`git checkout` eines Tags führt zu einem *detached HEAD*, was für eine unveränderliche Release-Installation normal ist.
-
-### 2. Sichere Konfiguration erstellen
-
-```bash
-printf 'JWT_SECRET=%s\n' "$(openssl rand -hex 32)" > .env
-chmod 600 .env
-```
-
-Optional in `.env` ergänzen:
-
-```dotenv
-TANKERKOENIG_API_KEY=DEIN_EIGENER_API_KEY
-```
-
-**Wichtig:** Den `JWT_SECRET` nach der Inbetriebnahme aufbewahren, bei Updates **nicht verändern** und `.env` nicht auf GitHub hochladen.
-
-### 3. Starten
-
-```bash
 mkdir -p data/config data/assets
+# Nur bei einer Neuinstallation ausführen:
+(umask 077; printf 'JWT_SECRET=%s\n' "$(openssl rand -hex 32)" > .env)
 docker compose -f compose.test.yml up -d --build
 docker compose -f compose.test.yml ps
 ```
 
-Im Browser: **`http://SERVER-IP:3006`**. Beim ersten Start den Administrator einrichten und Währung sowie Entfernungseinheit einstellen.
+Browser: `http://SERVER-IP:3006`. Ohne den optionalen Checkout wird der aktuelle Stable-Branch gebaut. Der technische Containername ist bei dieser Variante `hammond-modern-next`.
 
-Die Compose-Datei verwendet folgende Speicherorte:
+### Konfiguration
 
-| Lokaler Pfad | Containerpfad | Inhalt |
-| --- | --- | --- |
-| `./data/config` | `/config` | Einstellungen und SQLite-Datenbank `hammond.db` |
-| `./data/assets` | `/assets` | Dokumente, Bilder und andere Anhänge |
+| Variable / Pfad | Bedeutung |
+| --- | --- |
+| `JWT_SECRET` | Pflicht: langer zufälliger Schlüssel; bei Updates beibehalten |
+| `TANKERKOENIG_API_KEY` | Optional: eigene API-Zugangsdaten für deutsche Tankstellensuche |
+| `TZ` | Zeitzone, Standard Europe/Berlin |
+| `/config` | Persistente Konfiguration und SQLite-Datenbank |
+| `/assets` | Persistente Anhänge und Rechnungen |
 
-Das lokale Image heißt in der Compose-Datei weiterhin `hammond-modern:next` und der Container `hammond-modern-next`. Dieser technische Name ist **keine Versionsangabe**.
+Optional in `.env` ergänzen: `TANKERKOENIG_API_KEY=DEIN_EIGENER_API_KEY`. Secrets niemals veröffentlichen. Die Verzeichnisse und die .env-Datei sichern.
 
-### 4. Vorhandene Installation aktualisieren
+### Host-Port ändern
 
-**Vor dem Update eine konsistente Sicherung erstellen**, besonders von `data/config`, `data/assets` und `.env`. Bei einer aktiven SQLite-Datenbank die Anwendung dazu anhalten oder eine SQLite-Online-Sicherung verwenden.
+Das Format lautet `HOSTPORT:CONTAINERPORT`. Intern bleibt Hammond auf **3000**. Beispiel: Host-Port 8085.
 
-```bash
-cd /pfad/zu/hammond-modern
-git switch stable/hammond-modern
-git pull --ff-only origin stable/hammond-modern
-docker compose -f compose.test.yml up -d --build
+In `compose.yaml` bzw. `compose.test.yml`:
+
+```yaml
+ports:
+  - "8085:3000"
 ```
 
-**Nicht** `data/config`, `data/assets` oder die bestehende `.env` löschen. Beim Wechsel von einer lokal abweichenden Branch-Historie gegebenenfalls zunächst `git status` und `git branch -vv` prüfen. Keine unüberlegten `git reset --hard`-Befehle auf einem produktiven Checkout ausführen.
+Danach `docker compose up -d` (lokaler Build: `docker compose -f compose.test.yml up -d`). Bei Docker Run stattdessen `-p 8085:3000` verwenden; einen vorhandenen Container hierfür nach Sicherung und Prüfung seiner Bind Mounts stoppen, entfernen und mit demselben vollständigen Run-Befehl neu erstellen. Zugriff: `http://SERVER-IP:8085`.
 
-Für die Entwicklung stattdessen `git switch develop/hammond-modern-next` und dort aktualisieren. Die Datenbank kann sich durch neue Funktionen verändern – **Stable und Develop deshalb idealerweise nicht gegen dasselbe Datenverzeichnis betreiben**.
+Für einen Reverse Proxy auf demselben Host kann die Bindung auf `127.0.0.1:8085:3000` eingeschränkt werden. Einen HTTP-Port nicht ungeschützt ins Internet freigeben; HTTPS oder VPN verwenden.
+
+### Synology / Dockhand
+
+Einen normalen Compose-Stack erstellen und Variante A verwenden. Relative Datenpfade bei Bedarf durch absolute DSM-Pfade ersetzen. JWT_SECRET und optional TANKERKOENIG_API_KEY in Dockhand als Environment-Variablen setzen. Für eine eigene LAN-IP per macvlan gibt es die [Synology-Compose-Vorlage](docker-compose.dockerhub.yml) und die [DSM-Anleitung](docs/SYNOLOGY.md). Netzwerkname, freie IP und Volume-Pfade anpassen. Bei macvlan ohne Port-Mapping ist die Anwendung direkt auf Container-IP:3000 erreichbar.
+
+### Updates und Backups
+
+Vor Updates den Container stoppen und die persistenten Verzeichnisse sowie .env sicher sichern (alternativ konsistente SQLite-Online-Sicherung plus Anhänge). Keine Datenverzeichnisse löschen. Den JWT_SECRET beibehalten.
+
+- Compose: Image-Tag auf die gewünschte veröffentlichte Version ändern, dann `docker compose pull && docker compose up -d`.
+- Docker Run: neues Image pullen, alten Container stoppen und entfernen, vollständigen Run-Befehl mit neuem Tag und unveränderten Bind Mounts erneut ausführen.
+- Git-Build: `git fetch origin --tags`, gewünschten Release-Tag auschecken oder `git switch stable/hammond-modern` und `git pull --ff-only origin stable/hammond-modern`; dann `docker compose -f compose.test.yml up -d --build`.
+
+Der feste Tag `1.1.5` ist für reproduzierbare Installationen empfohlen. `latest` aktualisiert laufende Container nicht automatisch. Stable und Develop nicht gegen dieselben Datenverzeichnisse betreiben.
 
 ## Original-Hammond zu Hammond Modern migrieren
 
@@ -239,7 +254,7 @@ Für den Fernzugriff **HTTPS über Reverse Proxy oder VPN** verwenden und den HT
 - [Versionshistorie](CHANGELOG-MODERN.md)
 - [Testnotizen: Fahrzeug- und Tankstellensuche](docs/FAHRZEUG-TANKSTELLEN-TEST.md)
 - [Weitere Funktionen](docs/HAMMOND-MODERN-NEUE-FUNKTIONEN.md)
-- [Synology-Installation (separat prüfen)](docs/SYNOLOGY.md)
+- [Synology-Installation](docs/SYNOLOGY.md)
 
 ## Herkunft und Lizenz
 
