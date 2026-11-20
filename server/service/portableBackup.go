@@ -274,6 +274,7 @@ func portableExtract(path,stage string)(PortableManifest,map[string]bool,error){
 	if stat.Size()==0||stat.Size()>PortableMaxZIP{return m,nil,errors.New("ZIP ist leer oder größer als 512 MiB")}
 	reader,err:=zip.OpenReader(path);if err!=nil{return m,nil,errors.New("Keine gültige ZIP-Datei")}
 	defer reader.Close()
+	if err=os.MkdirAll(filepath.Join(stage,"assets"),0700);err!=nil{return m,nil,err}
 	if len(reader.File)<2||len(reader.File)>PortableMaxFiles+2{return m,nil,errors.New("Ungültige Anzahl Dateien im ZIP")}
 	seen:=map[string]PortableEntry{}
 	total:=int64(0)
@@ -291,13 +292,9 @@ func portableExtract(path,stage string)(PortableManifest,map[string]bool,error){
 		}
 		total+=int64(entry.UncompressedSize64)
 		input,err:=entry.Open();if err!=nil{return m,nil,err}
-		var writer io.Writer
 		var out *os.File
 		if name=="manifest.json"{
 			if entry.UncompressedSize64>1<<20{input.Close();return m,nil,errors.New("Manifest zu groß")}
-			var b strings.Builder
-			writer=&b
-			_ = writer
 			data,readErr:=io.ReadAll(io.LimitReader(input,1<<20+1))
 			input.Close()
 			if readErr!=nil{return m,nil,readErr}
@@ -310,9 +307,8 @@ func portableExtract(path,stage string)(PortableManifest,map[string]bool,error){
 		if err=os.MkdirAll(filepath.Dir(dest),0700);err!=nil{input.Close();return m,nil,err}
 		out,err=os.OpenFile(dest,os.O_CREATE|os.O_EXCL|os.O_WRONLY,0600)
 		if err!=nil{input.Close();return m,nil,err}
-		writer=out
 		h:=sha256.New()
-		n,readErr:=io.Copy(writer,io.TeeReader(io.LimitReader(input,PortableMaxData+1),h))
+		n,readErr:=io.Copy(out,io.TeeReader(io.LimitReader(input,PortableMaxData+1),h))
 		closeErr:=out.Close()
 		input.Close()
 		if readErr!=nil{return m,nil,readErr}
