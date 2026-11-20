@@ -191,6 +191,46 @@ Vor Updates den Container stoppen und die persistenten Verzeichnisse sowie .env 
 
 Der feste Tag `1.1.5` ist für reproduzierbare Installationen empfohlen. `latest` aktualisiert laufende Container nicht automatisch. Stable und Develop nicht gegen dieselben Datenverzeichnisse betreiben.
 
+## Backup, Wiederherstellung und Serverumzug (Develop)
+
+> **Neu im Develop-Branch, noch nicht in Docker Hub v1.1.5.** Bitte zunächst in einer
+> getrennten Testinstallation prüfen. Stable und Docker Hub bleiben unverändert.
+
+Unter **Backup & Umzug** können Administratoren jetzt eine **portable ZIP-Sicherung**
+erstellen, das ZIP auf einer frischen Installation prüfen und alle bisherigen
+Anwendungsdaten wiederherstellen.
+
+- **Im ZIP:** Fahrzeuge, Tankungen, Ausgaben, Wartungen, Fahrer, Zuordnungen,
+  Einstellungen und Uploads/Rechnungen aus `/assets`, dazu ein Manifest mit
+  Exportzeit, App-/Schema-Version, Anzahl der Datensätze und SHA-256-Prüfsummen.
+- **Nicht im ZIP:** Passwörter und Passwort-Hashes, JWT-Secret, API-Keys, Tokens,
+  `.env`, Docker-Compose- oder Netzwerkkonfiguration.
+- **Sicherheit:** Admin-only, Größenlimits, Integritäts- und Schema-Prüfung,
+  sichere ZIP-Pfade, Vorab-Sicherheitsbackup und SQLite-Transaktion.
+- **Wichtig:** Der Import **ersetzt** vorhandene Daten. Für den neuen Server
+  muss ein Admin mit **gleicher E-Mail-Adresse** wie im Backup angelegt werden;
+  dessen Passwort auf dem Zielserver bleibt erhalten. Weitere Konten benötigen
+  neu vergebene Passwörter (Admin-Benutzerverwaltung).
+- **Grenze:** Ein plötzlicher Stromausfall während des Austauschs von
+  Anhängen ist nicht vollständig atomar. Für produktive Umzüge zusätzlich
+  eine externe Offline-Sicherung anlegen und den Restore zuerst testen.
+
+### Schnellstart der neuen Funktion (Entwicklung)
+
+```bash
+git clone --branch develop/hammond-modern-next https://github.com/Skoun181/hammond-modern.git
+cd hammond-modern
+(umask 077; printf 'JWT_SECRET=%s\n' "$(openssl rand -hex 32)" > .env)
+docker compose up -d --build
+```
+
+Die neue `docker-compose.yml` im Develop-Branch verwendet benannte Volumes
+`hammond_config` und `hammond_assets`. Der öffentliche Port ist über
+`HAMMOND_PORT` in der `.env` einstellbar (Standard `3006`, Containerport `3000`).
+
+**[Vollständige Schritt-für-Schritt-Anleitung für Anfänger: Export, Import,
+Serverumzug, Datensicherheit und Offline-Volume-Backups](docs/BACKUP-RESTORE-SERVERUMZUG.md)**
+
 ## Original-Hammond zu Hammond Modern migrieren
 
 > **Bitte vor der Migration zwei unabhängige Sicherungen anlegen:** eine vom ursprünglichen Hammond und eine vom bestehenden Hammond Modern. Niemals die alte `hammond.db` direkt in das neue Konfigurationsverzeichnis kopieren.
@@ -255,6 +295,7 @@ Für den Fernzugriff **HTTPS über Reverse Proxy oder VPN** verwenden und den HT
 - [Testnotizen: Fahrzeug- und Tankstellensuche](docs/FAHRZEUG-TANKSTELLEN-TEST.md)
 - [Weitere Funktionen](docs/HAMMOND-MODERN-NEUE-FUNKTIONEN.md)
 - [Synology-Installation](docs/SYNOLOGY.md)
+- [Backup, Wiederherstellung und Serverumzug (Develop)](docs/BACKUP-RESTORE-SERVERUMZUG.md)
 
 ## Herkunft und Lizenz
 
