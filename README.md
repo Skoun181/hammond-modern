@@ -211,9 +211,10 @@ Anwendungsdaten wiederherstellen.
   muss ein Admin mit **gleicher E-Mail-Adresse** wie im Backup angelegt werden;
   dessen Passwort auf dem Zielserver bleibt erhalten. Weitere Konten benötigen
   neu vergebene Passwörter (Admin-Benutzerverwaltung).
-- **Grenze:** Ein plötzlicher Stromausfall während des Austauschs von
-  Anhängen ist nicht vollständig atomar. Für produktive Umzüge zusätzlich
-  eine externe Offline-Sicherung anlegen und den Restore zuerst testen.
+- **Recovery:** Ein dauerhaftes Journal ermöglicht beim Neustart die automatische
+  Wiederherstellung der ursprünglichen Daten bei einem unterbrochenen Import.
+  Schäden an Datenträgern erfordern dennoch ein externes Offline-Backup.
+  Jeden Restore zuerst in einer Testinstanz üben.
 
 ### Schnellstart der neuen Funktion (Entwicklung)
 
