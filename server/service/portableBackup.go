@@ -112,6 +112,15 @@ func portableCheckSQLite(conn *sql.DB) error {
 }
 
 func portableSchema(conn *sql.DB) (string, []string, error) {
+	// No source-controlled views or triggers are needed for this app. Reject
+	// unexpected SQL objects in untrusted backup databases.
+	var unsafeObjects int
+	if err := conn.QueryRow("SELECT COUNT(*) FROM sqlite_master WHERE type IN ('view', 'trigger')").Scan(&unsafeObjects); err != nil {
+		return "", nil, err
+	}
+	if unsafeObjects != 0 {
+		return "", nil, errors.New("Die Datenbank enthält unerwartete SQL-Objekte")
+	}
 	rows, err := conn.Query("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name")
 	if err != nil {
 		return "", nil, err
@@ -448,7 +457,7 @@ func portableExtract(path, stage string) (PortableManifest, map[string]bool, err
 		}
 		if name != "manifest.json" && name != "data.sqlite" &&
 			!(strings.HasPrefix(name, "assets/") && portableAssetName(strings.TrimPrefix(name, "assets/"))) {
-			return m, nil, fmt.Errorf("Unerwarteter oder unsicherer ZIP-Pfad: %s", name)
+			return m, nil, errors.New("Unerwarteter oder unsicherer ZIP-Pfad")
 		}
 		if _, exists := seen[name]; exists {
 			return m, nil, errors.New("Doppelter ZIP-Eintrag")
