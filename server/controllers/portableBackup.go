@@ -21,7 +21,7 @@ func PortableDataGuard() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		checkJournal := func() bool {
 			_, err := os.Stat(filepath.Join(os.Getenv("CONFIG"), "restore-safety", "in-progress.json"))
-			if err == nil {
+			if err == nil || !os.IsNotExist(err) {
 				c.AbortWithStatusJSON(http.StatusServiceUnavailable, gin.H{"error": "Unterbrochene Wiederherstellung erkannt. Bitte Container für automatische Recovery neu starten."})
 				return false
 			}
