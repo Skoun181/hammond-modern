@@ -1,0 +1,40 @@
+name: Develop build and backup tests
+
+on:
+  push:
+    branches:
+      - develop/hammond-modern-next
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.x'
+          cache-dependency-path: server/go.sum
+      - name: Go tests
+        working-directory: server
+        run: go test ./...
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+      - name: Install frontend dependencies
+        working-directory: ui
+        run: npm ci --legacy-peer-deps --no-audit --no-fund
+      - name: Build frontend
+        working-directory: ui
+        env:
+          NODE_OPTIONS: --openssl-legacy-provider
+        run: npm run build
