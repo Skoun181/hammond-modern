@@ -32,11 +32,13 @@ func RegisterAuthController(router *gin.RouterGroup) {
 func ShouldBeAdmin() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		model := c.MustGet("userModel").(db.User)
-		if model.Role != db.ADMIN {
-			c.JSON(http.StatusUnauthorized, gin.H{})
-		} else {
-			c.Next()
+		// ADMIN is enum zero: a missing/deleted user must NEVER be treated
+		// as an administrator. Abort, otherwise Gin executes later handlers.
+		if model.ID == "" || model.Role != db.ADMIN || model.IsDisabled {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error":"Administratorrechte erforderlich"})
+			return
 		}
+		c.Next()
 	}
 }
 
