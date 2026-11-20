@@ -1,13 +1,22 @@
-version: "2.1"
+# Hammond Modern development build with portable export/restore.
+# This creates Docker-managed named volumes (not bind mounts).
+# Requires a local clone of the develop branch and a .env containing JWT_SECRET.
 services:
-  hammond:
-    image: akhilrex/hammond
-    container_name: hammond
-    environment:
-      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET fehlt}
-    volumes:
-      - /path/to/config:/config
-      - /path/to/data:/assets
-    ports:
-      - 3000:3000
+  hammond-modern:
+    build: .
+    image: hammond-modern:develop
+    container_name: hammond-modern-develop
     restart: unless-stopped
+    ports:
+      - "${HAMMOND_PORT:-3006}:3000"
+    environment:
+      TZ: ${TZ:-Europe/Berlin}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET fehlt}
+      TANKERKOENIG_API_KEY: ${TANKERKOENIG_API_KEY:-}
+    volumes:
+      - hammond_config:/config
+      - hammond_assets:/assets
+
+volumes:
+  hammond_config:
+  hammond_assets:
