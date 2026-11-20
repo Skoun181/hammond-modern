@@ -156,11 +156,19 @@ innerhalb des Daten-Volumes umgeschaltet. Bei normalen Fehlern versucht die
 Anwendung, die bisherigen Anhänge zurückzurollen. Das Sicherheitsbackup
 bleibt unabhängig davon zur manuellen Wiederherstellung erhalten.
 
-**Wichtig:** Ein ungeplanter Stromausfall oder das sofortige Beenden des
-Containers während des Dateitauschs ist nicht in allen Fällen atomar
-rückgängig zu machen. Deshalb vor produktiver Nutzung **immer auch eine
-externe Offline-Sicherung** anlegen und Restore zunächst in einem
-separaten Testcontainer üben.
+**Neustart nach Unterbrechung:** Vor dem ersten Öffnen von SQLite prüft
+Hammond Modern ein dauerhaftes Recovery-Journal. Wird darin ein
+unterbrochener Import gefunden, stellt die Anwendung die **alte**
+Datenbank und Uploads aus der Rettungskopie wieder her. Kann die
+Wiederherstellung nicht durchgeführt werden (z. B. beschädigtes Volume),
+**startet der Server absichtlich nicht**, statt möglicherweise halbfertige
+Daten freizugeben. Das Journal muss nach einer erfolgreichen Recovery
+verschwunden sein.
+
+Ein Stromausfall oder Plattenfehler kann trotzdem sowohl das Daten- als
+auch das Rettungsvolume beschädigen. Deshalb **immer auch eine externe
+Offline-Sicherung** anlegen und Restore zunächst in einem separaten
+Testcontainer üben.
 
 ## F. Separates Backup benannter Volumes (Notfallweg)
 
