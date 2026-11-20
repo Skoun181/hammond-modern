@@ -386,6 +386,12 @@ export default [
     props: (route) => ({ vehicle: route.meta.tmp.vehicle, expense: route.meta.tmp.expense }),
   },
   {
+    path: '/admin/backup',
+    name: 'backup',
+    component: () => lazyLoadView(import('@views/backup.vue')),
+    meta: { authRequired: true, roles: ['ADMIN'] },
+  },
+  {
     path: '/import',
     name: 'import',
     component: () => lazyLoadView(import('@views/import.vue')),
