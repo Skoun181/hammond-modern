@@ -88,7 +88,14 @@ func portableRestore(c *gin.Context) {
   user:=c.MustGet("userModel").(db.User)
   service.PortableDataLock.Lock()
   defer service.PortableDataLock.Unlock()
-  summary,err:=service.RestorePortableZIP(file,user)
+  // Recheck identity after acquiring the lock: another concurrent restore
+  // could have replaced the user database while this request was waiting.
+  var current db.User
+  if lookupErr:=db.DB.Where("id=?",user.ID).First(&current).Error;lookupErr!=nil||current.Role!=db.ADMIN||current.IsDisabled{
+    c.JSON(http.StatusForbidden,gin.H{"error":"Administratorberechtigung ist nicht mehr gültig. Bitte erneut anmelden."})
+    return
+  }
+  summary,err:=service.RestorePortableZIP(file,current)
   if err!=nil{portableError(c,http.StatusUnprocessableEntity,err);return}
   c.JSON(http.StatusOK,summary)
 }
