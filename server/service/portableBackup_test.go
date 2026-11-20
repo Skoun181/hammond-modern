@@ -107,4 +107,23 @@ func TestPortableBackupRoundTripAndPasswordRedaction(t *testing.T) {
   if err=rescue.QueryRow("SELECT password FROM users").Scan(&backupPass);err!=nil{t.Fatal(err)}
   rescue.Close()
   if backupPass==""{t.Fatal("local safety snapshot did not preserve existing credentials")}
+  // Simulate a container interruption after the recovery journal was created:
+  // the following startup must restore the pre-restore snapshot consistently.
+  if err=portableStartJournal(config,result.SafetyBackup);err!=nil{t.Fatal(err)}
+  if err=g.Model(&db.User{}).Where("id=?",user.ID).Update("name","Interrupted").Error;err!=nil{t.Fatal(err)}
+  if err=os.WriteFile(filepath.Join(assets,attachmentName),[]byte("interrupted asset"),0600);err!=nil{t.Fatal(err)}
+  live,_:=g.DB()
+  if err=live.Close();err!=nil{t.Fatal(err)}
+  if err=RecoverPortableRestore();err!=nil{t.Fatalf("startup recovery failed: %v",err)}
+  recovered,err:=sql.Open("sqlite3",filepath.Join(config,"hammond.db"))
+  if err!=nil{t.Fatal(err)}
+  var name string
+  if err=recovered.QueryRow("SELECT name FROM users WHERE email=?",user.Email).Scan(&name);err!=nil{t.Fatal(err)}
+  recovered.Close()
+  if name!="Neu"{t.Fatalf("recovery did not restore the safety snapshot: %s",name)}
+  recoveredFile,err:=os.ReadFile(filepath.Join(assets,attachmentName))
+  if err!=nil{t.Fatal(err)}
+  if string(recoveredFile)!="changed"{t.Fatal("recovery did not restore previous attachment")}
+  if _,err=os.Stat(portableJournalPath(config));!os.IsNotExist(err){t.Fatal("recovery journal still exists")}
+
 }
