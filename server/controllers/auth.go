@@ -35,7 +35,7 @@ func ShouldBeAdmin() gin.HandlerFunc {
 		// ADMIN is enum zero: a missing/deleted user must NEVER be treated
 		// as an administrator. Abort, otherwise Gin executes later handlers.
 		if model.ID == "" || model.Role != db.ADMIN || model.IsDisabled {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error":"Administratorrechte erforderlich"})
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "Administratorrechte erforderlich"})
 			return
 		}
 		c.Next()
