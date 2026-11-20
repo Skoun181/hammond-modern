@@ -665,6 +665,43 @@ func portableRescue(config, assets string) (string, error) {
 	return dir, nil
 }
 
+// Verify live data before the recovery journal is removed. A failed check
+// leaves the journal available so startup can restore the previous state.
+func portableVerifyRestored(conn *sql.DB, assets string, manifest PortableManifest) error {
+	if err := portableCheckSQLite(conn); err != nil {
+		return err
+	}
+	for table, expected := range manifest.Counts {
+		if !allowedTables[table] || !safeTable.MatchString(table) {
+			return errors.New("Unerwartete Tabelle bei Abschlussprüfung")
+		}
+		var count int64
+		if err := conn.QueryRow(`SELECT COUNT(*) FROM "` + table + `"`).Scan(&count); err != nil {
+			return err
+		}
+		if count != expected {
+			return fmt.Errorf("Datensätze fehlen nach Wiederherstellung: %s", table)
+		}
+	}
+	for _, item := range manifest.Files {
+		if !strings.HasPrefix(item.Path, "assets/") {
+			continue
+		}
+		name := strings.TrimPrefix(item.Path, "assets/")
+		if !portableAssetName(name) {
+			return errors.New("Ungültiger Anhang nach Wiederherstellung")
+		}
+		stat, err := os.Lstat(filepath.Join(assets, name))
+		if err != nil {
+			return err
+		}
+		if !stat.Mode().IsRegular() || stat.Size() != item.Size {
+			return errors.New("Dateien nach Wiederherstellung unvollständig")
+		}
+	}
+	return nil
+}
+
 func portableSwapAssets(assets, stage string) (func() error, func() error, error) {
 	old, err := os.MkdirTemp(assets, ".hm-rollback-")
 	if err != nil {
@@ -838,6 +875,10 @@ func RestorePortableZIP(path string, admin db.User) (PortableSummary, error) {
 	}
 	if err = cleanupFiles(); err != nil {
 		log.Printf("portable restore: old assets cleanup: %v", err)
+	}
+	if err = portableVerifyRestored(sqlDB, assets, m); err != nil {
+		log.Printf("CRITICAL restore verification failed: %v; recovery journal retained", err)
+		return result, errors.New("Wiederherstellung konnte nicht bestätigt werden; Container für automatische Recovery neu starten")
 	}
 	if err = portableFinishJournal(config); err != nil {
 		log.Printf("CRITICAL restore journal removal failed: %v", err)
