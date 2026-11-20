@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -18,6 +19,10 @@ import (
 // the exclusive lock after authentication and upload validation.
 func PortableDataGuard() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		if _, err := os.Stat(filepath.Join(os.Getenv("CONFIG"), "restore-safety", "in-progress.json")); err == nil {
+			c.AbortWithStatusJSON(http.StatusServiceUnavailable, gin.H{"error": "Unterbrochene Wiederherstellung erkannt. Bitte Container für automatische Recovery neu starten."})
+			return
+		}
 		if c.Request.URL.Path == "/api/backup/restore" {
 			c.Next()
 			return
