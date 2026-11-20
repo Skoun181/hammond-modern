@@ -454,9 +454,9 @@ func RestorePortableZIP(path string,admin db.User)(PortableSummary,error){
 	defer conn.ExecContext(context.Background(),"PRAGMA foreign_keys=ON")
 	if _,err=conn.ExecContext(context.Background(),"ATTACH DATABASE ? AS incoming",filepath.Join(stage,"data.sqlite"));err!=nil{return result,err}
 	defer conn.ExecContext(context.Background(),"DETACH DATABASE incoming")
+	_,tables,err:=portableSchema(sqlDB);if err!=nil{return result,err}
 	tx,err:=conn.BeginTx(context.Background(),nil);if err!=nil{return result,err}
 	defer tx.Rollback()
-	_,tables,err:=portableSchema(sqlDB);if err!=nil{return result,err}
 	for i:=len(tables)-1;i>=0;i--{
 		if _,err=tx.Exec(`DELETE FROM main."`+tables[i]+`"`);err!=nil{return result,err}
 	}
@@ -483,16 +483,28 @@ func RestorePortableZIP(path string,admin db.User)(PortableSummary,error){
 		if !portableAssetName(name)||!files[name]{return result,errors.New("Fehlender Anhang in der Wiederherstellung")}
 		if _,err=tx.Exec("UPDATE main.attachments SET path=? WHERE id=?",filepath.Join(assets,name),id);err!=nil{return result,err}
 	}
+	// The journal is durable BEFORE the first file move; after an unplanned
+	// container restart, RecoverPortableRestore reverts to the rescue snapshot.
+	if err=portableStartJournal(config,rescue);err!=nil{return result,err}
 	rollbackFiles,cleanupFiles,err:=portableSwapAssets(assets,filepath.Join(stage,"assets"))
-	if err!=nil{return result,fmt.Errorf("Dateien konnten nicht getauscht werden: %w",err)}
+	if err!=nil{
+		return result,fmt.Errorf("Dateitausch fehlgeschlagen; vor neuer Bearbeitung Container für automatische Recovery neu starten: %w",err)
+	}
 	if err=tx.Commit();err!=nil{
 		if rollbackErr:=rollbackFiles();rollbackErr!=nil{
 			log.Printf("CRITICAL restore file rollback failed: %v; safety snapshot: %s",rollbackErr,rescue)
-			return result,errors.New("Datenbankfehler und Rollback-Fehler: manuelle Wiederherstellung nötig")
+			return result,errors.New("Datenbankfehler und Rollback-Fehler: Container zur automatischen Recovery neu starten")
+		}
+		if journalErr:=portableFinishJournal(config);journalErr!=nil{
+			log.Printf("restore journal cleanup failed after rollback: %v",journalErr)
 		}
 		return result,err
 	}
 	if err=cleanupFiles();err!=nil{log.Printf("portable restore: old assets cleanup: %v",err)}
+	if err=portableFinishJournal(config);err!=nil{
+		log.Printf("CRITICAL restore journal removal failed: %v",err)
+		return result,errors.New("Wiederherstellung durchgeführt, aber Recovery-Journal konnte nicht entfernt werden; bitte Serverzugriff prüfen")
+	}
 	log.Printf("portable restore completed: %d assets, %d tables",len(files),len(tables))
 	return result,nil
 }
