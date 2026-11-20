@@ -114,8 +114,7 @@ func portableSchema(conn *sql.DB)(string,[]string,error) {
 	if len(names)==0{return "",nil,errors.New("Datenbank enthält keine Tabellen")}
 	var b strings.Builder
 	for _,table:=range names {
-		b.WriteString(table);b.WriteByte('
-')
+		b.WriteString(table);b.WriteByte('\n')
 		info,err:=conn.Query(`PRAGMA table_info("`+table+`")`)
 		if err!=nil{return "",nil,err}
 		columnCount:=0
@@ -124,8 +123,7 @@ func portableSchema(conn *sql.DB)(string,[]string,error) {
 			var name,typ string
 			var def sql.NullString
 			if err=info.Scan(&cid,&name,&typ,&notNull,&def,&pk);err!=nil{break}
-			b.WriteString(fmt.Sprintf("%d:%s:%s:%d:%d:%s
-",cid,name,typ,notNull,pk,def.String))
+			b.WriteString(fmt.Sprintf("%d:%s:%s:%d:%d:%s\n",cid,name,typ,notNull,pk,def.String))
 			columnCount++
 		}
 		if closeErr:=info.Close();err==nil {err=closeErr}
