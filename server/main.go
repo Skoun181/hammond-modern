@@ -25,6 +25,9 @@ func main() {
 	}
 	r := gin.Default()
 
+	// Serialize a full-instance restore against normal application requests.
+	r.Use(controllers.PortableDataGuard())
+
 	r.Use(setupSettings())
 	r.Use(gin.Recovery())
 	r.Use(location.Default())
@@ -56,6 +59,7 @@ func main() {
 	controllers.RegisterReceiptController(router)
 	controllers.RegisterFilesController(router)
 	controllers.RegisteImportController(router)
+	controllers.RegisterPortableBackupController(router)
 	controllers.RegisterReportsController(router)
 
 	go assetEnv()
