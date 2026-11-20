@@ -27,7 +27,7 @@ import (
 
 const (
 	PortableBackupVersion       = 1
-	PortableAppVersion          = "1.1.5"
+	PortableAppVersion          = "1.1.6-dev"
 	PortableMaxZIP        int64 = 512 << 20
 	PortableMaxData       int64 = 1024 << 20
 	PortableMaxFiles            = 10000
@@ -249,7 +249,7 @@ func portableAssets(assets string) ([]string, error) {
 	}
 	result := []string{}
 	for _, f := range files {
-		if strings.HasPrefix(f.Name(), ".hm-stage-") || strings.HasPrefix(f.Name(), ".hm-rollback-") {
+		if f.Name() == "@eaDir" || f.Name() == "#recycle" || strings.HasPrefix(f.Name(), ".hm-stage-") || strings.HasPrefix(f.Name(), ".hm-rollback-") {
 			continue
 		}
 		if !portableAssetName(f.Name()) || !f.Type().IsRegular() {
