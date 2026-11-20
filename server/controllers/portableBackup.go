@@ -51,10 +51,10 @@ func portableExport(c *gin.Context) {
 }
 
 func portableUpload(c *gin.Context)(string,func(),error){
-  c.Request.Body=http.MaxBytesReader(c.Writer,c.Request.Body,service.PortableMaxZIP+2<<20)
+  c.Request.Body=http.MaxBytesReader(c.Writer,c.Request.Body,service.PortableMaxZIP+(2<<20))
   form,err:=c.FormFile("file")
   if err!=nil{return "",nil,fmt.Errorf("Bitte eine gültige ZIP-Datei auswählen (maximal 512 MiB)")}
-  if form.Size<=0||form.Size>service.PortableMaxZIP||!strings.EqualFold(form.Filename[len(form.Filename)-min(len(form.Filename),4):],".zip"){
+  if form.Size<=0||form.Size>service.PortableMaxZIP||!strings.HasSuffix(strings.ToLower(form.Filename),".zip"){
     return "",nil,fmt.Errorf("Erlaubt sind nur ZIP-Dateien bis 512 MiB")
   }
   input,err:=form.Open();if err!=nil{return "",nil,err};defer input.Close()
