@@ -1,0 +1,44 @@
+name: Format portable backup Go changes (temporary)
+
+on:
+  push:
+    branches:
+      - develop/hammond-modern-next
+
+concurrency:
+  group: portable-gofmt
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  gofmt:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: develop/hammond-modern-next
+      - name: Format touched Go sources
+        run: |
+          gofmt -w server/main.go server/controllers/auth.go \
+            server/controllers/portableBackup.go \
+            server/service/portableBackup.go \
+            server/service/portableRecovery.go \
+            server/service/portableBackup_test.go
+      - name: Commit formatted sources
+        run: |
+          if git diff --quiet; then
+            echo "Files already formatted."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add server/main.go server/controllers/auth.go \
+            server/controllers/portableBackup.go \
+            server/service/portableBackup.go \
+            server/service/portableRecovery.go \
+            server/service/portableBackup_test.go
+          git commit -m "style: gofmt portable backup and restore implementation"
+          git push origin HEAD:develop/hammond-modern-next
