@@ -19,16 +19,27 @@ import (
 // the exclusive lock after authentication and upload validation.
 func PortableDataGuard() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if _, err := os.Stat(filepath.Join(os.Getenv("CONFIG"), "restore-safety", "in-progress.json")); err == nil {
-			c.AbortWithStatusJSON(http.StatusServiceUnavailable, gin.H{"error": "Unterbrochene Wiederherstellung erkannt. Bitte Container für automatische Recovery neu starten."})
-			return
+		checkJournal := func() bool {
+			_, err := os.Stat(filepath.Join(os.Getenv("CONFIG"), "restore-safety", "in-progress.json"))
+			if err == nil {
+				c.AbortWithStatusJSON(http.StatusServiceUnavailable, gin.H{"error": "Unterbrochene Wiederherstellung erkannt. Bitte Container für automatische Recovery neu starten."})
+				return false
+			}
+			return true
 		}
 		if c.Request.URL.Path == "/api/backup/restore" {
-			c.Next()
+			if checkJournal() {
+				c.Next()
+			}
 			return
 		}
 		service.PortableDataLock.RLock()
 		defer service.PortableDataLock.RUnlock()
+		// Check only after obtaining the read lock; a concurrent restore may
+		// have just left an incomplete journal while we were waiting.
+		if !checkJournal() {
+			return
+		}
 		c.Next()
 	}
 }
