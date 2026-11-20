@@ -16,6 +16,10 @@ import (
 )
 
 func main() {
+	// Recover any restore interrupted by container shutdown before opening SQLite.
+	if err := service.RecoverPortableRestore(); err != nil {
+		log.Fatalf("Restore-Recovery fehlgeschlagen: %v", err)
+	}
 	var err error
 	db.DB, err = db.Init()
 	if err != nil {
