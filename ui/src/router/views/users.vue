@@ -23,6 +23,9 @@ export default {
       users: [],
       showUserForm: false,
       isWorking: false,
+      resetUser: null,
+      resetPasswordValue: '',
+      resettingPassword: false,
       registerModel: {
         name: '',
         email: '',
@@ -82,6 +85,22 @@ export default {
             })
         },
       })
+    },
+    openPasswordReset(user) {
+      this.resetUser = user
+      this.resetPasswordValue = ''
+    },
+    async saveResetPassword() {
+      if (!this.resetUser || this.resetPasswordValue.length < 12) return
+      this.resettingPassword = true
+      try {
+        await axios.post(`/api/backup/users/${this.resetUser.id}/password`, { password: this.resetPasswordValue })
+        this.$buefy.toast.open({ message: 'Passwort neu gesetzt.', type: 'is-success' })
+        this.resetUser = null
+        this.resetPasswordValue = ''
+      } catch (ex) {
+        this.$buefy.toast.open({ message: (ex.response && ex.response.data && ex.response.data.error) || ex.message, type: 'is-danger' })
+      } finally { this.resettingPassword = false }
     },
     resetUserForm() {
       this.registerModel = {
@@ -187,6 +206,18 @@ export default {
           </div>
         </form>
       </div>
+      <div v-if="resetUser" class="box content">
+        <h2 class="title is-5">Neues Passwort für {{ resetUser.email }}</h2>
+        <p>Nach einer Backup-Wiederherstellung müssen importierte Benutzer neue Passwörter erhalten. Das Passwort wird nicht in Backups gespeichert.</p>
+        <form @submit.prevent="saveResetPassword">
+          <b-field label="Neues Passwort (mindestens 12 Zeichen)">
+            <b-input v-model="resetPasswordValue" type="password" password-reveal minlength="12" maxlength="72" required />
+          </b-field>
+          <b-button type="is-primary" native-type="submit" :loading="resettingPassword" :disabled="resetPasswordValue.length < 12">Passwort setzen</b-button>
+          <b-button type="is-light" @click="resetUser = null">Abbrechen</b-button>
+        </form>
+        <p class="help">Falls der Benutzer deaktiviert ist, anschließend wieder aktivieren.</p>
+      </div>
       <b-table :data="users" hoverable mobile-cards detail-key="id" paginated per-page="10" :row-class="(row, index) => row.isDisabled && 'is-disabled'">
         <b-table-column v-slot="props" field="name" label="Name">
           {{ `${props.row.name}` }} <template v-if="props.row.id === user.id">(You)</template>
@@ -201,6 +232,7 @@ export default {
           {{ formatDate(props.row.createdAt) }}
         </b-table-column>
          <b-table-column v-slot="props">
+           <b-button size="is-small" @click="openPasswordReset(props.row)">Passwort zurücksetzen</b-button>
            <b-button type="is-success" v-if="props.row.isDisabled && props.row.roleDetail.long === 'USER'" @click="changeDisabledStatus(props.row.id, false)">Enable</b-button>
             <b-button type="is-danger" v-if="!props.row.isDisabled && props.row.roleDetail.long === 'USER'" @click="changeDisabledStatus(props.row.id, true)">Disable</b-button>
          </b-table-column>

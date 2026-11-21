@@ -1,0 +1,106 @@
+name: Build, backup tests and stable release
+
+on:
+  push:
+    branches:
+      - develop/hammond-modern-next
+      - stable/hammond-modern
+  pull_request:
+    branches:
+      - stable/hammond-modern
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.x'
+          cache-dependency-path: server/go.sum
+      - name: Go tests
+        working-directory: server
+        run: go test ./...
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+      - name: Install frontend dependencies
+        working-directory: ui
+        run: npm ci --legacy-peer-deps --no-audit --no-fund
+      - name: Build frontend
+        working-directory: ui
+        env:
+          NODE_OPTIONS: --openssl-legacy-provider
+        run: npm run build
+
+  release:
+    if: github.ref == 'refs/heads/stable/hammond-modern' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    needs: [backend, frontend]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: hammond-stable-release
+      cancel-in-progress: false
+    outputs:
+      version: ${{ steps.release.outputs.version }}
+      publish: ${{ steps.release.outputs.publish }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Create approved release
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          version="$(cat VERSION)"
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          tag="v$version"
+          grep -F "\"$version\"" server/service/portableBackup.go | grep -F PortableAppVersion
+          test -s "docs/releases/$tag.md"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json isDraft,isPrerelease,tagName --jq 'select(.isDraft == false and .isPrerelease == false) | .tagName' | grep -Fx "$tag"
+            git merge-base --is-ancestor "$tag^{commit}" "$GITHUB_SHA"
+            if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
+              echo "publish=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "publish=false" >> "$GITHUB_OUTPUT"
+            fi
+            exit 0
+          fi
+          if git show-ref --verify --quiet "refs/tags/$tag"; then
+            echo "::error::Existing tag without release; refusing to overwrite."
+            exit 1
+          fi
+          previous="$(git tag --list 'v*' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1 || true)"
+          if [ -n "$previous" ]; then
+            test "$(printf '%s\n' "$previous" "$tag" | sort -V | tail -n 1)" = "$tag"
+          fi
+          test "$(git ls-remote origin refs/heads/stable/hammond-modern | cut -f1)" = "$GITHUB_SHA"
+          gh release create "$tag" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "Hammond Modern $tag" --notes-file "docs/releases/$tag.md" --latest
+          echo "publish=true" >> "$GITHUB_OUTPUT"
+
+  publish-dockerhub:
+    needs: release
+    if: needs.release.outputs.publish == 'true'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/docker-publish.yml
+    with:
+      version: ${{ needs.release.outputs.version }}
+      latest: true
+    secrets: inherit

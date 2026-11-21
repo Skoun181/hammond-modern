@@ -16,6 +16,10 @@ import (
 )
 
 func main() {
+	// Recover any restore interrupted by container shutdown before opening SQLite.
+	if err := service.RecoverPortableRestore(); err != nil {
+		log.Fatalf("Restore-Recovery fehlgeschlagen: %v", err)
+	}
 	var err error
 	db.DB, err = db.Init()
 	if err != nil {
@@ -24,6 +28,9 @@ func main() {
 		db.Migrate()
 	}
 	r := gin.Default()
+
+	// Serialize a full-instance restore against normal application requests.
+	r.Use(controllers.PortableDataGuard())
 
 	r.Use(setupSettings())
 	r.Use(gin.Recovery())
@@ -56,6 +63,7 @@ func main() {
 	controllers.RegisterReceiptController(router)
 	controllers.RegisterFilesController(router)
 	controllers.RegisteImportController(router)
+	controllers.RegisterPortableBackupController(router)
 	controllers.RegisterReportsController(router)
 
 	go assetEnv()

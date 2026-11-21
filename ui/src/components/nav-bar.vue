@@ -20,6 +20,7 @@ export default {
         { name: 'settings', title: 'Einstellungen', icon: '⚙' },
         ...(this.isAdmin ? [
           { name: 'site-settings', title: 'Systemeinstellungen', icon: '☷' },
+          { name: 'backup', title: 'Backup & Umzug', icon: '⇄' },
           { name: 'users', title: 'Benutzer', icon: '♙' },
         ] : []),
         { name: 'logout', title: 'Abmelden', icon: '⇥' },

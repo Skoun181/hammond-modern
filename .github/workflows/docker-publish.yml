@@ -1,59 +1,100 @@
 name: Publish Hammond Modern to Docker Hub
-
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Docker image version (e.g. 1.1.5)"
+        description: "Published release version"
         required: true
-        default: "1.1.5"
+        default: "1.1.6"
         type: string
       latest:
-        description: "Also update latest tag"
+        description: "Also update latest if this is the latest GitHub release"
         required: true
         default: true
         type: boolean
-
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+      latest:
+        required: true
+        type: boolean
+    secrets:
+      DOCKERHUB_TOKEN:
+        required: true
 permissions:
   contents: read
-
 jobs:
   docker:
+    if: github.ref == 'refs/heads/stable/hammond-modern'
     runs-on: ubuntu-latest
+    timeout-minutes: 45
+    concurrency:
+      group: hammond-dockerhub
+      cancel-in-progress: false
+    env:
+      IMAGE: docker.io/skoun181/hammond-modern
+      VERSION: ${{ inputs.version }}
+      GH_TOKEN: ${{ github.token }}
     steps:
-      - name: Checkout stable source
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          ref: stable/hammond-modern
-
-      - name: Verify version input
-        shell: bash
-        env:
-          VERSION: ${{ inputs.version }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify release and select exact tagged source
+        id: release
         run: |
-          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || {
-            echo "Version must look like 1.1.5"
-            exit 1
-          }
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
+          set -euo pipefail
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          tag="v$VERSION"
+          gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json isDraft,isPrerelease,tagName --jq 'select(.isDraft == false and .isPrerelease == false) | .tagName' | grep -Fx "$tag"
+          revision="$(git rev-parse "$tag^{commit}")"
+          git merge-base --is-ancestor "$revision" "$GITHUB_SHA"
+          git checkout --detach "$revision"
+          test "$(cat VERSION)" = "$VERSION"
+          echo "revision=$revision" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
         with:
           username: skoun181
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Build and push version
+      - name: Build tagged release
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
           platforms: linux/amd64
-          push: true
-          tags: |
-            skoun181/hammond-modern:${{ inputs.version }}
-            ${{ inputs.latest && 'skoun181/hammond-modern:latest' || '' }}
+          load: true
+          tags: ${{ env.IMAGE }}:${{ inputs.version }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.version=${{ inputs.version }}
+            org.opencontainers.image.revision=${{ steps.release.outputs.revision }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - name: Smoke test and publish
+        env:
+          REVISION: ${{ steps.release.outputs.revision }}
+          UPDATE_LATEST: ${{ inputs.latest }}
+        run: |
+          set -euo pipefail
+          docker run -d --name hammond-smoke -p 127.0.0.1:3306:3000 -e JWT_SECRET="$(openssl rand -hex 32)" "$IMAGE:$VERSION"
+          trap 'docker rm -fv hammond-smoke >/dev/null 2>&1 || true' EXIT
+          ok=false
+          for n in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:3306/ >/dev/null; then ok=true; break; fi
+            sleep 2
+          done
+          test "$ok" = true
+          if docker manifest inspect "$IMAGE:$VERSION" >/dev/null 2>&1; then
+            docker pull "$IMAGE:$VERSION"
+            test "$(docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$IMAGE:$VERSION")" = "$REVISION"
+          else
+            docker push "$IMAGE:$VERSION"
+          fi
+          if [ "$UPDATE_LATEST" = true ] && [ "$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName)" = "v$VERSION" ]; then
+            docker tag "$IMAGE:$VERSION" "$IMAGE:latest"
+            docker push "$IMAGE:latest"
+          fi
+          docker manifest inspect "$IMAGE:$VERSION" >/dev/null

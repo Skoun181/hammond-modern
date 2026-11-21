@@ -11,6 +11,7 @@ require (
 	github.com/jasonlvhit/gocron v0.0.1
 	github.com/joho/godotenv v1.3.0
 	github.com/leekchan/accounting v1.0.0 // indirect
+	github.com/mattn/go-sqlite3 v1.14.5
 	github.com/satori/go.uuid v1.2.0
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
 	golang.org/x/net v0.0.0-20210410081132-afb366fc7cd1

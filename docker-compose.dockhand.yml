@@ -1,4 +1,4 @@
-# Dockhand Git-Stack für Synology (Hammond Modern v1.1.5)
+# Dockhand Git-Stack für Synology (Hammond Modern v1.1.6)
 # Dockhand: Compose file path = docker-compose.dockhand.yml
 # Context directory = . ; Build images on deploy = enabled
 services:
@@ -6,7 +6,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: hammond-modern:1.1.5
+    image: hammond-modern:1.1.6
     platform: linux/amd64
     container_name: hammond-modern
     restart: unless-stopped

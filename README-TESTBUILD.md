@@ -1,8 +1,8 @@
 # Hammond Modern – Entwicklungsstand November 2026
 
-Dies ist ein **ungetesteter Entwicklungs-Build** für deinen Debian-13-LXC, noch keine produktionsreife Version.
+Diese Anleitung gilt für separate Entwicklungs-Testcontainer. Für den produktiven Betrieb den freigegebenen Stable-Release verwenden.
 
-## Erneut bauen (Port 3005)
+## Erneut bauen (Port 3006)
 
 1. Die bisherige Datenbank sichern (ohne laufenden Schreibzugriff):
 
@@ -29,7 +29,7 @@ docker compose -f compose.test.yml ps
 docker compose -f compose.test.yml logs --tail=100
 ```
 
-Danach `http://LXC-IP:3005` öffnen. Unbedingt Fahrer, Tankung mit Fahrer, Rechnung speichern/herunterladen, Fahrzeugmarke/Modell, Tankstelle und Dashboard testen.
+Danach `http://LXC-IP:3006` öffnen. Unbedingt Fahrer, Tankung mit Fahrer, Rechnung speichern/herunterladen, Fahrzeugmarke/Modell, Tankstelle und Dashboard testen.
 
 ## Einschränkungen
 
