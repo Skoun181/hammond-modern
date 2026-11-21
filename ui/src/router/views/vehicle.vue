@@ -341,6 +341,7 @@ export default {
       <div class="column is-one-third buttons has-text-centered hm-vehicle-actions">
         <b-button type="is-primary" tag="router-link" :to="`/vehicles/${vehicle.id}/fillup`">Tankung hinzufügen</b-button>
         <b-button type="is-primary" tag="router-link" :to="`/vehicles/${vehicle.id}/expense`">Ausgabe hinzufügen</b-button>
+        <b-button tag="router-link" :to="{name:'tires',query:{vehicleId:vehicle.id}}">Reifen verwalten</b-button>
         <b-button
           v-if="vehicle.isOwner"
           tag="router-link"
@@ -348,7 +349,7 @@ export default {
           :to="{
             name: 'vehicle-edit',
             props: { vehicle: vehicle },
-            params: { id: vehicle.id },
+            params: { vehicleId: vehicle.id },
           }"
         >
           <b-icon pack="fas" icon="edit" type="is-info"> </b-icon

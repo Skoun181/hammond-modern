@@ -36,6 +36,8 @@ export default [
     props: (route) => ({ user: store.state.auth.currentUser || {} }),
   },
   { path: '/maintenance', name: 'maintenance', component: () => lazyLoadView(import('@views/maintenance.vue')), meta: { authRequired: true } },
+  { path: '/vehicles', name: 'vehicles', component: () => lazyLoadView(import('@views/vehicles.vue')), meta: { authRequired: true } },
+  { path: '/tires', name: 'tires', component: () => lazyLoadView(import('@views/tires.vue')), meta: { authRequired: true } },
   { path: '/drivers', name: 'drivers', component: () => lazyLoadView(import('@views/drivers.vue')), meta: { authRequired: true } },
   {
     path: '/initialize',

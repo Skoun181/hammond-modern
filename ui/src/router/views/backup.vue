@@ -132,7 +132,7 @@ export default {
 
     <div class="box">
       <h2 class="title is-5">1. Backup erstellen</h2>
-      <p>Exportiert eine konsistente SQLite-Datenbank, Fahrzeughistorie, Benutzerprofile, Wartungen und Uploads in eine ZIP-Datei mit Prüfsummen.</p>
+      <p>Exportiert eine konsistente SQLite-Datenbank, Fahrzeughistorie, Reifen, Benutzerprofile, Wartungen und Uploads in eine ZIP-Datei mit Prüfsummen.</p>
       <p class="help">Nicht enthalten: Passwörter und Passwort-Hashes, API-Keys, JWT-Secrets, .env, Docker-Compose-Dateien. Die ZIP enthält personenbezogene Fahrzeugdaten – sicher aufbewahren.</p>
       <br />
       <b-button type="is-primary" icon-left="download" :loading="exporting" :disabled="checking || restoring" @click="exportBackup">
@@ -162,7 +162,8 @@ export default {
         <p>Erstellt: {{ new Date(preview.manifest.createdAt).toLocaleString('de-DE') }}</p>
         <p>App-Version: {{ preview.manifest.appVersion }} · Backup-Format: {{ preview.manifest.formatVersion }}</p>
         <p>Fahrzeuge: {{ preview.manifest.counts.vehicles || 0 }} · Tankungen: {{ preview.manifest.counts.fillups || 0 }} · Ausgaben: {{ preview.manifest.counts.expenses || 0 }}</p>
-        <p>Wartungen: {{ preview.manifest.counts.maintenance_tasks || 0 }} · Benutzer: {{ preview.manifest.counts.users || 0 }} · Dateien: {{ preview.assetCount }}</p>
+        <p>Wartungen: {{ preview.manifest.counts.maintenance_tasks || 0 }} · Reifen: {{ preview.manifest.counts.tires || 0 }} · Benutzer: {{ preview.manifest.counts.users || 0 }} · Dateien: {{ preview.assetCount }}</p>
+        <p v-if="!Object.prototype.hasOwnProperty.call(preview.manifest.counts, 'tires')" class="has-text-warning-dark">Älteres Backup ohne Reifendaten. Bei der Wiederherstellung werden vorhandene Reifen ebenfalls ersetzt (Reifenliste danach leer).</p>
       </div>
     </div>
 
@@ -189,8 +190,26 @@ export default {
           {{ result.manifest.counts.fillups || 0 }} Tankungen,
           {{ result.manifest.counts.expenses || 0 }} Ausgaben und
           {{ result.assetCount }} Dateien.</p>
+        <p>Reifen: {{ result.manifest.counts.tires || 0 }}</p>
         <p>Weitere Benutzerpasswörter können unter <router-link to="/admin/users">Benutzer</router-link> neu vergeben werden.</p>
         <b-button type="is-primary" @click="logoutAfterRestore">Abmelden und neu anmelden</b-button>
+      </div>
+    </div>
+    <div class="box">
+      <p class="hm-eyebrow">DATENIMPORT</p>
+      <h2 class="title is-5">4. Daten aus anderen Anwendungen übernehmen</h2>
+      <p>Diese Importe unterscheiden sich vom ZIP-Restore: Sie übernehmen ausgewählte Daten aus einem anderen Format.</p>
+      <div class="columns" style="margin-top:.6rem">
+        <div class="column">
+          <h3 class="title is-6">Original-Hammond (SQLite)</h3>
+          <p>Fahrzeuge, Tankungen und Ausgaben aus einer hammond.db mit Vorschau und Duplikatprüfung.</p>
+          <b-button style="margin-top:.6rem" type="is-primary" tag="router-link" :to="{name:'import-hammond'}">Hammond-Migration starten</b-button>
+        </div>
+        <div class="column">
+          <h3 class="title is-6">Fuelly (CSV)</h3>
+          <p>Tankungen aus einer CSV-Datei importieren. Fahrzeuge müssen vorher angelegt sein.</p>
+          <b-button style="margin-top:.6rem" tag="router-link" :to="{name:'import-fuelly'}">CSV importieren</b-button>
+        </div>
       </div>
     </div>
   </Layout>

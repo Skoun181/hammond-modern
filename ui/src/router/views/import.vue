@@ -1,7 +1,7 @@
 <script>
 import Layout from '@layouts/main.vue'
 export default {
-  page: { title: 'Datenimport' },
+  page: { title: 'Backup & Umzug' },
   components: { Layout },
   computed: {
     isAdmin() { return this.$store.state.auth.currentUser && this.$store.state.auth.currentUser.role === 'ADMIN' },
@@ -13,11 +13,12 @@ export default {
   <Layout>
     <div class="hm-page-heading hm-import-heading">
       <div>
-        <p class="hm-eyebrow">DATENÜBERNAHME</p>
-        <h1 class="title hm-page-title">Datenimport</h1>
+        <p class="hm-eyebrow">BACKUP &amp; UMZUG</p>
+        <h1 class="title hm-page-title">Backup &amp; Umzug</h1>
         <p class="hm-page-description">Übernimm deine Fahrzeughistorie sicher in Hammond Modern.</p>
       </div>
     </div>
+    <p v-if="!isAdmin" class="help">Vollständige ZIP-Backups und Wiederherstellungen sind Administratoren vorbehalten. Die folgenden Datenimporte bleiben verfügbar.</p>
     <div class="hm-import-options">
       <div v-if="isAdmin" class="box hm-import-option">
         <p class="hm-eyebrow">SERVERUMZUG</p>

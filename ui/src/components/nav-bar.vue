@@ -13,14 +13,14 @@ export default {
       if (!this.loggedIn) return [{ name: 'login', title: 'Anmelden', icon: '↪' }]
       return [
         { name: 'home', title: 'Dashboard', icon: '▦' },
-        { name: 'vehicle-create', title: 'Fahrzeug hinzufügen', icon: '＋' },
+        { name: 'vehicles', title: 'Fahrzeuge', icon: '▰' },
+        { name: 'tires', title: 'Reifen', icon: '◉' },
         { name: 'drivers', title: 'Fahrer', icon: '♙' },
         { name: 'maintenance', title: 'Wartungscenter', icon: '⚒' },
-        { name: 'import', title: 'Datenimport', icon: '⇩' },
+        { name: this.isAdmin ? 'backup' : 'import', title: 'Backup & Umzug', icon: '⇄' },
         { name: 'settings', title: 'Einstellungen', icon: '⚙' },
         ...(this.isAdmin ? [
           { name: 'site-settings', title: 'Systemeinstellungen', icon: '☷' },
-          { name: 'backup', title: 'Backup & Umzug', icon: '⇄' },
           { name: 'users', title: 'Benutzer', icon: '♙' },
         ] : []),
         { name: 'logout', title: 'Abmelden', icon: '⇥' },
@@ -32,6 +32,12 @@ export default {
   methods: {
     switchTheme() { this.theme = toggleTheme() },
     closeMenu() { this.mobileOpen = false },
+    activeLink(link) {
+      const name = this.$route.name || ''
+      if (link.name === 'vehicles') return name === 'vehicles' || name.indexOf('vehicle-') === 0
+      if (link.name === 'backup' || link.name === 'import') return name === 'backup' || name === 'import' || name.indexOf('import-') === 0
+      return name === link.name
+    },
   },
 }
 </script>
@@ -47,7 +53,7 @@ export default {
       <router-link class="hm-brand hm-desktop-brand" :to="{ name: 'home' }" @click.native="closeMenu">HAMMOND <span>MODERN</span></router-link>
       <p class="hm-nav-heading">WORKSPACE</p>
       <nav class="hm-nav-links">
-        <router-link v-for="link in links" :key="link.name" :to="{ name: link.name }" class="hm-nav-link" :class="{ 'hm-nav-active': $route.name === link.name }" @click.native="closeMenu">
+        <router-link v-for="link in links" :key="link.name" :to="{ name: link.name }" class="hm-nav-link" :class="{ 'hm-nav-active': activeLink(link) }" @click.native="closeMenu">
           <span class="hm-nav-icon" aria-hidden="true">{{ link.icon }}</span>
           <span>{{ link.title }}</span>
           <span v-if="link.badge" class="hm-nav-badge">{{ link.badge }}</span>
