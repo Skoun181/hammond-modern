@@ -163,6 +163,14 @@ func changeTireSet(c *gin.Context){
 	}
 	err=db.DB.Transaction(func(tx *gorm.DB)error{
 		access,err:=tireAccess(tx,userID,req.VehicleID);if err!=nil{return err};if !access{return errTireVehicle}
+		// Validate every incoming tire before any old tire is moved to storage.
+		// This also prevents an order-dependent rotation of an already mounted tire.
+		for _,id:=range req.Positions{
+			if id==""{continue}
+			var count int64
+			if err=tx.Model(&db.Tire{}).Where("id = ? AND owner_user_id = ? AND vehicle_id = ? AND status = ?",id,userID,req.VehicleID,"stored").Count(&count).Error;err!=nil{return err}
+			if count!=1{return mileageError("Nur eingelagerte Reifen dieses Fahrzeugs können montiert werden")}
+		}
 		for position,id:=range req.Positions{
 			var mounted []db.Tire
 			if err=tx.Where("owner_user_id = ? AND vehicle_id = ? AND status = ? AND position = ?",userID,req.VehicleID,"mounted",position).Find(&mounted).Error;err!=nil{return err}

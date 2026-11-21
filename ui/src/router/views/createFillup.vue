@@ -54,10 +54,13 @@ export default {
     ...mapState('users', ['me']),
     ...mapState('vehicles', ['fuelUnitMasters', 'fuelTypeMasters', 'vehicles']),
     filteredFuelSubtypes() {
+      const fuelType = this.selectedVehicle && this.selectedVehicle.fuelType
+      const defaults = fuelType === 0 || fuelType === 6 ? ['Super E5', 'Super E10'] : []
+      const options = Array.from(new Set([...defaults, ...(this.fuelSubTypes || [])])).filter(option => typeof option === 'string')
       if (!this.fillupModel.fuelSubType) {
-        return this.fuelSubTypes
+        return options
       }
-      return this.fuelSubTypes.filter((option) => {
+      return options.filter((option) => {
         return option.toLowerCase().indexOf(this.fillupModel.fuelSubType.toLowerCase()) >= 0
       })
     },
@@ -335,7 +338,8 @@ export default {
         <b-autocomplete
           v-model="fillupModel.fuelSubType"
           :data="filteredFuelSubtypes"
-          placeholder="Octane etc."
+          placeholder="z. B. Super E5 oder Super E10"
+          open-on-focus
           clearable
           autofocus
           @select="(option) => (fillupModel.fuelSubType = option)"

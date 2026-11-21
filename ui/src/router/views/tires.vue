@@ -79,7 +79,7 @@ export default {
     latestOdo(id) {
       const v = this.vehicle(id)
       const readings = (v && v.fillups || []).filter(f => f.distanceUnit === 1 && Number(f.odoReading) >= 0 && new Date(f.date) <= new Date())
-      return readings.length ? Math.max(...readings.map(f => Number(f.odoReading))) : null
+      return readings.length ? readings.reduce((max, f) => Math.max(max, Number(f.odoReading)), 0) : null
     },
     mountedAt(position) { return this.tires.find(t => t.vehicleId === this.changeVehicle && t.status === 'mounted' && t.position === position) },
     resetSwap() {
