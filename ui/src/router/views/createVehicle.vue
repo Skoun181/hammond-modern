@@ -166,10 +166,10 @@ export default {
   <Layout>
     <div class="columns">
       <div class="column is-three-quarters">
-        <h1 class="title">Fahrzeug hinzufügen</h1>
+        <h1 class="title">{{ vehicle.id ? 'Fahrzeug bearbeiten' : 'Fahrzeug hinzufügen' }}</h1>
       </div>
       <div class="column is-one-quarter">
-        <router-link tag="b-button" type="is-primary" to="/">
+        <router-link tag="b-button" type="is-primary" :to="{ name: 'vehicles' }">
           Zur Fahrzeugübersicht
         </router-link>
       </div>
@@ -213,7 +213,7 @@ export default {
 
       <br />
       <b-field>
-        <b-button tag="input" native-type="submit" :disabled="tryingToCreate" type="is-primary" label="Fahrzeug hinzufügen" expanded>
+        <b-button tag="input" native-type="submit" :disabled="tryingToCreate" type="is-primary" :label="vehicle.id ? 'Änderungen speichern' : 'Fahrzeug hinzufügen'" expanded>
           <BaseIcon v-if="tryingToCreate" name="sync" spin />
         </b-button>
         <p v-if="authError">

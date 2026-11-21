@@ -4,9 +4,18 @@
 
 Hammond Modern ist ein unabhängiger Community-Fork von [akhilrex/hammond](https://github.com/akhilrex/hammond). Das Projekt ist **nicht offiziell mit dem Originalautor verbunden**.
 
-**Version: v1.1.6** · [Releases](https://github.com/Skoun181/hammond-modern/releases) · [Änderungsverlauf](CHANGELOG-MODERN.md)
+**Veröffentlichte Stable-Version: v1.1.6** · Develop: 1.1.7-dev (nicht freigegeben) · [Releases](https://github.com/Skoun181/hammond-modern/releases) · [Änderungsverlauf](CHANGELOG-MODERN.md)
 
 > **Teststand:** Die alltäglichen Funktionen und die Migrationsvorschau wurden auf einer privaten Debian-13-LXC-Installation getestet. Das Docker-Hub-Image wurde außerdem erfolgreich auf einer Synology über Dockhand und macvlan gestartet (Anwenderbestätigung). Der portable ZIP-Export und -Import wurden praktisch getestet (Anwenderbestätigung). Ein vollständiger Original-Hammond-Import und umfassender Sicherheits- und Produktionstest sind weiterhin nicht bestätigt.
+
+## Neu im Develop-Branch (1.1.7-dev)
+
+- **Fahrzeuge:** Eigene und freigegebene Fahrzeuge werden in einer eigenen Workspace-Übersicht angezeigt. Eigene Fahrzeuge lassen sich dort bearbeiten oder neu anlegen. Von der Fahrzeugübersicht und den Fahrzeugdetails direkt zu den verknüpften Reifen wechseln.
+- **Reifen:** Einzelne Reifen anlegen, bearbeiten, löschen, suchen und nach Fahrzeug filtern. Hersteller, Modell, Reifengröße, DOT (vierstelliger Produktionscode WWJJ), Reifensatz, Traglast-/Geschwindigkeitsindex, Runflat, Profiltiefe, Druck, Laufleistung, Kaufdatum/-preis, Lagerort, Notizen, Status und Einbauposition erfassen. Zuordnung optional; montierte Reifen brauchen Fahrzeug und Position. Jeder Nutzer verwaltet seine eigenen Reifen und darf nur zugängliche Fahrzeuge verknüpfen.
+- **Fahrer:** Durchsuchbare Liste der eigenen Fahrer mit Hinzufügen und Bearbeiten bei Bedarf, ohne ständig sichtbares Eingabeformular.
+- **Backup & Umzug:** ZIP-Backup sowie Original-Hammond- und Fuelly-Importe befinden sich jetzt an einem gemeinsamen Menüpunkt. Vollständiger ZIP-Restore bleibt Administratoren vorbehalten. Reifen sind in neuen ZIPs enthalten. Alte kompatible ZIPs ohne Reifentabelle werden akzeptiert, ersetzen aber alle vorhandenen Daten einschließlich der Reifen (danach leere Reifenliste).
+
+**Nur Develop:** Tests auf separater Instanz durchführen; v1.1.6 bleibt der veröffentlichte Stable-Release. Vor dem Update externe Datensicherung erstellen. Bei einem Wechsel zurück zu 1.1.6 eine separate kompatible Datenbank bzw. eine vor dem Upgrade gesicherte Version verwenden.
 
 ## Was kann Hammond Modern?
 
@@ -34,7 +43,7 @@ Die Verbrauchsberechnung benötigt mindestens zwei geeignete Volltankungen mit a
 ## Änderungen aus v1.1.5
 
 ### 1. Import von Original-Hammond
-- Neuer Assistent unter **Datenimport → Hammond-Migration starten**.
+- Neuer Assistent unter **Backup & Umzug → Hammond-Migration starten**.
 - Upload einer konsistenten **`hammond.db`-Sicherung** aus der ursprünglichen Hammond-Installation (max. 50 MB).
 - **Vorschau** mit Fahrzeugen, Tankungen und Ausgaben, bevor irgendetwas importiert wird.
 - **Automatische Gruppierung identischer Fahrzeugdatensätze**, z. B. mehrfach gespeicherte Fahrzeuge mit gleichem Namen, Kennzeichen, Hersteller und Modell. Zugehörige Tankungen und Ausgaben bleiben erhalten.
@@ -159,6 +168,42 @@ docker compose -f compose.test.yml ps
 
 Browser: `http://SERVER-IP:3006`. Ohne den optionalen Checkout wird der aktuelle Stable-Branch gebaut. Der technische Containername ist bei dieser Variante `hammond-modern-next`.
 
+### Develop – GitHub Container Registry (GHCR)
+
+Der Entwicklungsstand wird über den Workflow [Publish Develop to GHCR](https://github.com/Skoun181/hammond-modern/actions/workflows/develop-publish.yml) bei Pushes auf `develop/hammond-modern-next` nach Backend-Tests, Docker-Build und einem Starttest veröffentlicht (linux/amd64). Stable auf Docker Hub bleibt unverändert.
+
+Sobald der Workflow erfolgreich abgeschlossen ist:
+
+```bash
+docker login ghcr.io -u DEIN_GITHUB_USERNAME
+docker pull ghcr.io/skoun181/hammond-modern:develop
+```
+
+Bei einem privaten Package wird zum Pull ein GitHub Personal Access Token (classic) mit `read:packages` und Zugriff auf das Package benötigt. Den Token als Passwort eingeben. Neu angelegte GHCR-Packages sind standardmäßig privat; die Sichtbarkeit in den Package-Einstellungen kontrollieren.
+
+In Dockhand die Registry `https://ghcr.io` mit GitHub-Benutzername und Token hinterlegen. Im Pull-Dialog diese Registry wählen, als Image `skoun181/hammond-modern` und als Tag `develop` eintragen (nicht erneut `ghcr.io/` voranstellen). Alternativ in einem separaten Compose-Stack das vollständige Image angeben:
+
+```yaml
+services:
+  hammond-develop:
+    image: ghcr.io/skoun181/hammond-modern:develop
+    container_name: hammond-modern-next
+    restart: unless-stopped
+    ports:
+      - "3007:3000"
+    environment:
+      TZ: Europe/Berlin
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET fehlt}
+      TANKERKOENIG_API_KEY: ${TANKERKOENIG_API_KEY:-}
+    volumes:
+      - ./develop-data/config:/config
+      - ./develop-data/assets:/assets
+```
+
+Für diese separate Testinstanz einen eigenen JWT_SECRET setzen und bei Bedarf die relativen Datenpfade durch eigene absolute Synology-Pfade ersetzen. Bei macvlan eine separate freie IP verwenden. Stable-Datenverzeichnisse niemals gleichzeitig einbinden; stattdessen ein ZIP-Backup aus Stable in die Testinstanz importieren (gleiche Admin-E-Mail, separates Passwort möglich).
+
+Für Updates das Develop-Image erneut pullen und den Testcontainer neu erstellen; `develop` ist ein veränderlicher Tag. Alternativ steht nach jedem erfolgreichen Publish ein commitbezogener Tag `sha-<vollständiger Commit-SHA>` zur Verfügung. Bei `manifest unknown` zuerst den Workflow-Status und den Package-Namen prüfen.
+
 ### Konfiguration
 
 | Variable / Pfad | Bedeutung |
@@ -256,7 +301,7 @@ Serverumzug, Datensicherheit und Offline-Volume-Backups](docs/BACKUP-RESTORE-SER
 
 1. **Original-Hammond stoppen** oder eine konsistente SQLite-Online-Sicherung anlegen. Bei laufendem Betrieb können ungeschriebene Daten in `hammond.db-wal` liegen.
 2. Die ursprüngliche `hammond.db` auf deinen Computer kopieren.
-3. In Hammond Modern **Datenimport → Hammond-Migration starten** öffnen.
+3. In Hammond Modern **Backup & Umzug → Hammond-Migration starten** öffnen.
 4. Die Datenbank über **„Datenbank auswählen“** hochladen und **„Sicherung prüfen“** klicken.
 5. Die **Vorschau** prüfen. Identische Quellfahrzeuge werden zusammengefasst; die angezeigten Tankungen und Ausgaben prüfen.
 6. Nur die gewünschten Fahrzeuge **per Checkbox** auswählen.

@@ -15,7 +15,7 @@ Der Assistent unter **Datenimport → Original-Hammond übernehmen** importiert:
 4. Original und Modern müssen **unterschiedliche** Konfigurations- und Asset-Verzeichnisse verwenden. Niemals eine alte Datenbankdatei direkt über die moderne kopieren.
 
 ## Ablauf
-1. In Hammond Modern anmelden und im Menü **Datenimport** öffnen.
+1. In Hammond Modern anmelden und im Menü **Backup & Umzug** öffnen.
 2. **Hammond-Migration starten** auswählen.
 3. Originale `hammond.db` hochladen (bis 50 MB).
 4. Vorschau ansehen: Anzahl Fahrzeuge, Tankungen und Ausgaben sowie eventuelle vorhandene Fahrzeuge. Identische Quellfahrzeuge mit gleichem Namen, Kennzeichen, Hersteller und Modell werden als ein Fahrzeug angezeigt; die Historie sämtlicher zugehöriger IDs wird zusammengeführt.
