@@ -366,3 +366,10 @@ Für den Fernzugriff **HTTPS über Reverse Proxy oder VPN** verwenden und den HT
 Hammond Modern basiert auf [akhilrex/hammond](https://github.com/akhilrex/hammond) von Akhil Gupta. Vielen Dank an den ursprünglichen Autor und die bisherigen Mitwirkenden. Das Repository steht unter **[AGPL-3.0](LICENSE)**; ursprüngliche Lizenz- und Copyright-Hinweise bleiben erhalten.
 
 [Repository](https://github.com/Skoun181/hammond-modern) · [Issues](https://github.com/Skoun181/hammond-modern/issues) · [Releases](https://github.com/Skoun181/hammond-modern/releases)
+
+
+### Reifen & Fahrzeugübersicht (Develop)
+
+- Beim Anlegen lassen sich 1–4 Reifen mit denselben Angaben in einem Schritt speichern. Jeder Reifen bleibt einzeln bearbeitbar; Kaufpreis und Messwerte gelten pro Reifen. Montierte Reifen benötigen unterschiedliche Radpositionen. Bereits belegte Positionen werden abgewiesen, ohne einen halben Reifensatz anzulegen.
+- Die Reifenkacheln zeigen Fahrzeugname und Kennzeichen prominent. Die Fahrzeugübersicht enthält den zuletzt erfassten Kilometerstand aus Tankungen/Ausgaben (Originaleinheit), Kraftstoff, Baujahr, Hubraum, Historie und eigene zugeordnete Reifen einschließlich Montagezustand und Größen. Fehlende Werte werden als unbekannt angezeigt.
+- Keine neuen Pflichtfelder oder Schemaänderungen; vorhandene Fahrzeuge und Reifen müssen nicht neu angelegt werden.

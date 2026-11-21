@@ -81,4 +81,37 @@ func TestTireCRUDAndAuthorization(t *testing.T) {
 	if updated.VehicleID!=""||updated.Pressure!=nil||updated.RunFlat||updated.DOT!=""||updated.Status!="stored"{t.Fatalf("fields were not cleared: %#v",updated)}
 	call(http.MethodDelete,path,"a",nil,204)
 	call(http.MethodDelete,path,"a",nil,404)
+	// Batch creation: unique IDs, per-tire values and distinct positions.
+	item.VehicleID="v-a";item.Status="mounted";item.Position="";item.Pressure=&pressure
+	four:=4
+	batch:=tireSaveRequest{TireDetails:item,Quantity:&four,Positions:[]string{"front-left","front-right","rear-left","rear-right"}}
+	call(http.MethodPost,"/api/tires","b",batch,403)
+	w=call(http.MethodPost,"/api/tires","a",batch,201)
+	var response struct{Count int `json:"count"`; Tires []db.Tire `json:"tires"`}
+	if err:=json.Unmarshal(w.Body.Bytes(),&response);err!=nil||response.Count!=4||len(response.Tires)!=4{t.Fatalf("invalid batch: %s",w.Body.String())}
+	ids:=map[string]bool{}; positions:=map[string]bool{}
+	for _,tire:=range response.Tires{
+		if tire.ID==""||ids[tire.ID]||positions[tire.Position]||tire.Pressure==nil||*tire.Pressure!=pressure{t.Fatalf("invalid tire in batch: %#v",tire)}
+		ids[tire.ID]=true;positions[tire.Position]=true
+	}
+	call(http.MethodPost,"/api/tires","a",batch,409)
+	for _,tire:=range response.Tires{if tire.Position!="rear-right"{call(http.MethodDelete,"/api/tires/"+tire.ID,"a",nil,204)}}
+	// The last position is occupied: preceding inserts must be rolled back.
+	call(http.MethodPost,"/api/tires","a",batch,409)
+	var count int64
+	if err:=g.Model(&db.Tire{}).Where("owner_user_id = ?","a").Count(&count).Error;err!=nil||count!=1{t.Fatalf("batch rollback failed, count=%d, err=%v",count,err)}
+	two:=2
+	batch.Quantity=&two;batch.Positions=[]string{"front-left","front-left"}
+	call(http.MethodPost,"/api/tires","a",batch,422)
+	batch.Positions=[]string{"front-left"}
+	call(http.MethodPost,"/api/tires","a",batch,422)
+	batch.Positions=nil;batch.Status="stored"
+	w=call(http.MethodPost,"/api/tires","a",batch,201)
+	if err:=json.Unmarshal(w.Body.Bytes(),&response);err!=nil||response.Count!=2||len(response.Tires)!=2{t.Fatalf("invalid stored batch: %s",w.Body.String())}
+	for _,tire:=range response.Tires{if tire.Position!=""{t.Fatal("stored tire has position")}}
+	zero:=0;batch.Quantity=&zero
+	call(http.MethodPost,"/api/tires","a",batch,422)
+	five:=5;batch.Quantity=&five
+	call(http.MethodPost,"/api/tires","a",batch,422)
+
 }
