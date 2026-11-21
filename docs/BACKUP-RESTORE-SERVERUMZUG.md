@@ -2,6 +2,8 @@
 
 > **Stable v1.1.6:** ZIP-Export und Import wurden praktisch getestet. Vor einem produktiven Umzug externe Sicherung anlegen. Ältere Versionen zuerst unter Beibehaltung der bisherigen Datenpfade aktualisieren.
 
+**Develop 1.1.7-dev:** Reifen einschließlich Fahrzeugzuordnungen werden zusätzlich gesichert. Ältere ZIP-Backups ohne Reifentabelle werden akzeptiert, wenn alle übrigen Tabellen und Spalten exakt passen. Ein Restore ersetzt auch bestehende Reifen – ein altes Backup ohne Reifentabelle ergibt eine leere Reifenliste. Ein neuer Reifen-ZIP kann nicht in eine unveränderte 1.1.6-Instanz importiert werden. Vor Umstieg und Rückkehr immer externe Sicherung.
+
 ## Was wird gesichert?
 
 | Bestandteil | Im portablen ZIP? |
@@ -10,6 +12,7 @@
 | Tankungen und Kilometerstände | Ja |
 | Ausgaben und Werkstattkosten | Ja |
 | Wartungen, Fahrer, Zuordnungen und Freigaben | Ja |
+| Reifen und Fahrzeugzuordnungen | Ja (ab 1.1.7-dev) |
 | Rechnungen und zulässige Uploads aus `/assets` | Ja |
 | Benutzerprofile und Rollen | Ja |
 | Währung, Einheit, Datumsformat und Einstellungen aus SQLite | Ja |
@@ -81,7 +84,7 @@ nicht entfernen, bevor ein getestetes externes Backup existiert.
 ## B. Export auf dem alten Rechner
 
 1. Bei Hammond Modern **als Administrator** anmelden.
-2. Links im Menü **Backup & Umzug** auswählen (alternativ über Datenimport).
+2. Links im Menü **Backup & Umzug** auswählen.
 3. Auf **Backup herunterladen (.zip)** klicken.
 4. Der Browser lädt etwa `hammond-modern-backup-2026-11-20-183000.zip` herunter.
 5. Die ZIP-Datei sicher auf dem eigenen Rechner oder einem separaten Backup-Medium ablegen.

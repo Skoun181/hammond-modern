@@ -4,9 +4,18 @@
 
 Hammond Modern ist ein unabhängiger Community-Fork von [akhilrex/hammond](https://github.com/akhilrex/hammond). Das Projekt ist **nicht offiziell mit dem Originalautor verbunden**.
 
-**Version: v1.1.6** · [Releases](https://github.com/Skoun181/hammond-modern/releases) · [Änderungsverlauf](CHANGELOG-MODERN.md)
+**Veröffentlichte Stable-Version: v1.1.6** · Develop: 1.1.7-dev (nicht freigegeben) · [Releases](https://github.com/Skoun181/hammond-modern/releases) · [Änderungsverlauf](CHANGELOG-MODERN.md)
 
 > **Teststand:** Die alltäglichen Funktionen und die Migrationsvorschau wurden auf einer privaten Debian-13-LXC-Installation getestet. Das Docker-Hub-Image wurde außerdem erfolgreich auf einer Synology über Dockhand und macvlan gestartet (Anwenderbestätigung). Der portable ZIP-Export und -Import wurden praktisch getestet (Anwenderbestätigung). Ein vollständiger Original-Hammond-Import und umfassender Sicherheits- und Produktionstest sind weiterhin nicht bestätigt.
+
+## Neu im Develop-Branch (1.1.7-dev)
+
+- **Fahrzeuge:** Eigene und freigegebene Fahrzeuge werden in einer eigenen Workspace-Übersicht angezeigt. Eigene Fahrzeuge lassen sich dort bearbeiten oder neu anlegen. Von der Fahrzeugübersicht und den Fahrzeugdetails direkt zu den verknüpften Reifen wechseln.
+- **Reifen:** Einzelne Reifen anlegen, bearbeiten, löschen, suchen und nach Fahrzeug filtern. Hersteller, Modell, Reifengröße, DOT (vierstelliger Produktionscode WWJJ), Reifensatz, Traglast-/Geschwindigkeitsindex, Runflat, Profiltiefe, Druck, Laufleistung, Kaufdatum/-preis, Lagerort, Notizen, Status und Einbauposition erfassen. Zuordnung optional; montierte Reifen brauchen Fahrzeug und Position. Jeder Nutzer verwaltet seine eigenen Reifen und darf nur zugängliche Fahrzeuge verknüpfen.
+- **Fahrer:** Durchsuchbare Liste der eigenen Fahrer mit Hinzufügen und Bearbeiten bei Bedarf, ohne ständig sichtbares Eingabeformular.
+- **Backup & Umzug:** ZIP-Backup sowie Original-Hammond- und Fuelly-Importe befinden sich jetzt an einem gemeinsamen Menüpunkt. Vollständiger ZIP-Restore bleibt Administratoren vorbehalten. Reifen sind in neuen ZIPs enthalten. Alte kompatible ZIPs ohne Reifentabelle werden akzeptiert, ersetzen aber alle vorhandenen Daten einschließlich der Reifen (danach leere Reifenliste).
+
+**Nur Develop:** Tests auf separater Instanz durchführen; v1.1.6 bleibt der veröffentlichte Stable-Release. Vor dem Update externe Datensicherung erstellen. Bei einem Wechsel zurück zu 1.1.6 eine separate kompatible Datenbank bzw. eine vor dem Upgrade gesicherte Version verwenden.
 
 ## Was kann Hammond Modern?
 
@@ -34,7 +43,7 @@ Die Verbrauchsberechnung benötigt mindestens zwei geeignete Volltankungen mit a
 ## Änderungen aus v1.1.5
 
 ### 1. Import von Original-Hammond
-- Neuer Assistent unter **Datenimport → Hammond-Migration starten**.
+- Neuer Assistent unter **Backup & Umzug → Hammond-Migration starten**.
 - Upload einer konsistenten **`hammond.db`-Sicherung** aus der ursprünglichen Hammond-Installation (max. 50 MB).
 - **Vorschau** mit Fahrzeugen, Tankungen und Ausgaben, bevor irgendetwas importiert wird.
 - **Automatische Gruppierung identischer Fahrzeugdatensätze**, z. B. mehrfach gespeicherte Fahrzeuge mit gleichem Namen, Kennzeichen, Hersteller und Modell. Zugehörige Tankungen und Ausgaben bleiben erhalten.
@@ -256,7 +265,7 @@ Serverumzug, Datensicherheit und Offline-Volume-Backups](docs/BACKUP-RESTORE-SER
 
 1. **Original-Hammond stoppen** oder eine konsistente SQLite-Online-Sicherung anlegen. Bei laufendem Betrieb können ungeschriebene Daten in `hammond.db-wal` liegen.
 2. Die ursprüngliche `hammond.db` auf deinen Computer kopieren.
-3. In Hammond Modern **Datenimport → Hammond-Migration starten** öffnen.
+3. In Hammond Modern **Backup & Umzug → Hammond-Migration starten** öffnen.
 4. Die Datenbank über **„Datenbank auswählen“** hochladen und **„Sicherung prüfen“** klicken.
 5. Die **Vorschau** prüfen. Identische Quellfahrzeuge werden zusammengefasst; die angezeigten Tankungen und Ausgaben prüfen.
 6. Nur die gewünschten Fahrzeuge **per Checkbox** auswählen.

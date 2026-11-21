@@ -1,5 +1,11 @@
 # Hammond Modern – Änderungsverlauf
 
+## 1.1.7-dev – Noch nicht veröffentlicht
+
+- Reifen-Inventar pro Nutzer: Fahrzeugzuordnung, DOT, technische Daten, Zustand, Kauf und Einlagerung; eigene Fahrzeuge und freigegebene Fahrzeuge verknüpfbar.
+- Workspace: Fahrzeugliste mit Bearbeitung und Hinzufügen; Fahrerübersicht mit Suche und bedarfsgesteuertem Formular.
+- Datenimport unter Backup & Umzug zusammengeführt; Reifen in ZIP-Backups; kompatible Backups ohne Reifentabelle bleiben importierbar (vorhandene Reifen werden dabei ersetzt).
+
 ## v1.1.6 – ZIP-Backup und Serverumzug (21. November 2026)
 
 - Portabler Export und Restore von SQLite-Daten und zulässigen Uploads inklusive Manifest und Prüfsummen.
