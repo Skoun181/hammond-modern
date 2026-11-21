@@ -3,7 +3,7 @@ import Layout from '@layouts/main.vue'
 import axios from 'axios'
 import { formatDecimal } from '@utils/format-modern'
 
-const fuelTypes = ['Benzin', 'Diesel', 'Ethanol', 'Erdgas (CNG)', 'Elektro', 'Autogas (LPG)']
+const fuelTypes = ['Super E5', 'Diesel', 'Ethanol', 'Erdgas (CNG)', 'Elektro', 'Autogas (LPG)', 'Super E10']
 const seasons = { summer: 'Sommer', winter: 'Winter', 'all-season': 'Ganzjahr', other: 'Sonstige' }
 const wheelPositions = ['front-left', 'front-right', 'rear-left', 'rear-right']
 

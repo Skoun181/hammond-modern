@@ -162,7 +162,8 @@ export default {
         <p>Erstellt: {{ new Date(preview.manifest.createdAt).toLocaleString('de-DE') }}</p>
         <p>App-Version: {{ preview.manifest.appVersion }} · Backup-Format: {{ preview.manifest.formatVersion }}</p>
         <p>Fahrzeuge: {{ preview.manifest.counts.vehicles || 0 }} · Tankungen: {{ preview.manifest.counts.fillups || 0 }} · Ausgaben: {{ preview.manifest.counts.expenses || 0 }}</p>
-        <p>Wartungen: {{ preview.manifest.counts.maintenance_tasks || 0 }} · Reifen: {{ preview.manifest.counts.tires || 0 }} · Benutzer: {{ preview.manifest.counts.users || 0 }} · Dateien: {{ preview.assetCount }}</p>
+        <p>Wartungen: {{ preview.manifest.counts.maintenance_tasks || 0 }} · Reifen: {{ preview.manifest.counts.tires || 0 }} · Montageintervalle: {{ preview.manifest.counts.tire_mileage_states || 0 }} · Benutzer: {{ preview.manifest.counts.users || 0 }} · Dateien: {{ preview.assetCount }}</p>
+        <p v-if="!Object.prototype.hasOwnProperty.call(preview.manifest.counts, 'tire_mileage_states')" class="has-text-warning-dark">Älteres Backup ohne Montage-Kilometerstände. Automatische Laufleistung muss bei montierten Reifen neu gestartet werden.</p>
         <p v-if="!Object.prototype.hasOwnProperty.call(preview.manifest.counts, 'tires')" class="has-text-warning-dark">Älteres Backup ohne Reifendaten. Bei der Wiederherstellung werden vorhandene Reifen ebenfalls ersetzt (Reifenliste danach leer).</p>
       </div>
     </div>

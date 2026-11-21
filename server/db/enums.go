@@ -20,6 +20,7 @@ const (
 	CNG
 	ELECTRIC
 	LPG
+	SUPER_E10 // Append only: existing persisted enum IDs must not change.
 )
 
 type DistanceUnit int
@@ -81,9 +82,10 @@ var FuelUnitDetails map[FuelUnit]EnumDetail = map[FuelUnit]EnumDetail{
 }
 
 var FuelTypeDetails map[FuelType]EnumDetail = map[FuelType]EnumDetail{
+	SUPER_E10: {Short: "Super E10", Long: "Super E10"},
 	PETROL: {
-		Short: "Petrol",
-		Long:  "Petrol",
+		Short: "Super E5",
+		Long:  "Super E5",
 	},
 	DIESEL: {
 		Short: "Diesel",

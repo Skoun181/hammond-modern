@@ -1,5 +1,11 @@
 # Hammond Modern – Änderungsverlauf
 
+## 1.1.8-dev – Noch nicht veröffentlicht
+
+- Reifenlaufleistung auf Basis des Montage-Kilometerstands und späterer km-Tankungen; Abschluss beim Abmontieren, Fortsetzung beim Wiederaufziehen.
+- Gemeinsamer Reifenwechsel mit Kilometerstand und Radpositionen; automatische Laufleistung in ZIP-Backups, kompatible ältere Backups ohne Montageintervalle.
+- Petrol → Super E5, zusätzlicher Kraftstofftyp Super E10 ohne Änderung der bestehenden Enum-IDs.
+
 ## v1.1.7 – Reifenverwaltung und Fahrzeugübersicht (21. November 2026)
 
 - Mehrfachanlage von 1–4 Reifen mit separaten Datensätzen, eindeutigen montierten Radpositionen und vollständigem Rollback bei Konflikten.

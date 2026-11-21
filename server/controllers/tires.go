@@ -73,6 +73,7 @@ var errTireOccupied = errors.New("Eine gewählte Radposition ist bereits belegt.
 func tireFailure(c *gin.Context,err error) {
 	switch {
 	case errors.Is(err,errTireVehicle): c.JSON(403,gin.H{"error":errTireVehicle.Error()})
+	case errors.Is(err,errTireMileage): c.JSON(422,gin.H{"error":err.Error()})
 	case errors.Is(err,errTireOccupied): c.JSON(409,gin.H{"error":errTireOccupied.Error()})
 	case errors.Is(err,gorm.ErrRecordNotFound): c.JSON(404,gin.H{"error":"Reifen nicht gefunden"})
 	default: log.Printf("tire operation failed: %T",err);c.JSON(500,gin.H{"error":"Reifen konnten nicht verarbeitet werden"})
@@ -93,14 +94,21 @@ func RegisterTireController(r *gin.RouterGroup) {
 	group.GET("",func(c *gin.Context){
 		items:=[]db.Tire{}
 		if err:=db.DB.Where("owner_user_id = ?",c.GetString("userId")).Order("created_at DESC").Find(&items).Error;err!=nil {tireFailure(c,err);return}
-		c.JSON(200,items)
+		views,err:=tireMileageViews(db.DB,c.GetString("userId"),items)
+		if err!=nil {tireFailure(c,err);return}
+		c.JSON(200,views)
 	})
+	group.POST("/change",changeTireSet)
 	group.POST("",func(c *gin.Context){saveTire(c,false)})
 	group.PUT("/:id",func(c *gin.Context){saveTire(c,true)})
 	group.DELETE("/:id",func(c *gin.Context){
-		res:=db.DB.Where("id = ? AND owner_user_id = ?",c.Param("id"),c.GetString("userId")).Delete(&db.Tire{})
-		if res.Error!=nil {tireFailure(c,res.Error);return}
-		if res.RowsAffected!=1 {tireFailure(c,gorm.ErrRecordNotFound);return}
+		err:=db.DB.Transaction(func(tx *gorm.DB) error {
+			res:=tx.Where("id = ? AND owner_user_id = ?",c.Param("id"),c.GetString("userId")).Delete(&db.Tire{})
+			if res.Error!=nil {return res.Error}
+			if res.RowsAffected!=1 {return gorm.ErrRecordNotFound}
+			return tx.Where("tire_id = ?",c.Param("id")).Delete(&db.TireMileageState{}).Error
+		})
+		if err!=nil {tireFailure(c,err);return}
 		c.Status(http.StatusNoContent)
 	})
 }
@@ -111,6 +119,8 @@ type tireSaveRequest struct {
 	db.TireDetails
 	Quantity *int     `json:"quantity"`
 	Positions []string `json:"positions"`
+	ChangeOdo *int64 `json:"changeOdo"`
+	ChangeDate string `json:"changeDate"`
 }
 
 func tireCreateDetails(request tireSaveRequest, editing bool) ([]db.TireDetails, error) {
@@ -193,6 +203,7 @@ func saveTire(c *gin.Context, editing bool) {
 			if input.VehicleID != item.VehicleID || input.Status != item.Status || input.Position != item.Position {
 				if err := checkTirePosition(tx, userID, item.ID, input); err != nil { return err }
 			}
+			if err := updateTireMileage(tx, &item, &input, request.ChangeOdo, request.ChangeDate); err != nil { return err }
 			item.TireDetails = input
 			res := tx.Model(&db.Tire{}).Where("id = ? AND owner_user_id = ?", item.ID, userID).
 				Select("vehicle_id","manufacturer","model","season","size","dot","set_name","load_index","speed_index","run_flat","status","position","tread_depth","pressure","purchase_date","purchase_price","currency","mileage","storage","notes","updated_at").Updates(&item)
@@ -208,6 +219,9 @@ func saveTire(c *gin.Context, editing bool) {
 			if _, err := rand.Read(id[:]); err != nil { return err }
 			newItem := db.Tire{ID:hex.EncodeToString(id[:]), OwnerUserID:userID, TireDetails:details}
 			if err := tx.Create(&newItem).Error; err != nil { return err }
+			if details.Status == "mounted" {
+				if err := beginTireMileage(tx, newItem.ID, details.Position, request.ChangeOdo, request.ChangeDate); err != nil { return err }
+			}
 			created = append(created, newItem)
 		}
 		return nil

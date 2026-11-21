@@ -27,7 +27,7 @@ import (
 
 const (
 	PortableBackupVersion       = 1
-	PortableAppVersion          = "1.1.7"
+	PortableAppVersion          = "1.1.8-dev"
 	PortableMaxZIP        int64 = 512 << 20
 	PortableMaxData       int64 = 1024 << 20
 	PortableMaxFiles            = 10000
@@ -48,7 +48,7 @@ var allowedTables = map[string]bool{
 	"users": true, "vehicles": true, "user_vehicles": true,
 	"fillups": true, "expenses": true, "attachments": true,
 	"vehicle_attachments": true, "drivers": true, "maintenance_tasks": true,
-	"tires": true, "settings": true, "quick_entries": true, "job_locks": true, "migrations": true,
+	"tires": true, "tire_mileage_states": true, "settings": true, "quick_entries": true, "job_locks": true, "migrations": true,
 	"vehicle_alerts": true, "alert_occurances": true, "notifications": true,
 }
 
@@ -112,11 +112,11 @@ func portableCheckSQLite(conn *sql.DB) error {
 }
 
 func portableSchema(conn *sql.DB) (string, []string, error) {
-	return portableSchemaExceptTires(conn, false)
+	return portableSchemaOmitting(conn, nil)
 }
 
-// Only the additive tires table may be omitted for verified pre-tire backups.
-func portableSchemaExceptTires(conn *sql.DB, omitTires bool) (string, []string, error) {
+// Only explicitly supported additive tables may be omitted by the caller.
+func portableSchemaOmitting(conn *sql.DB, omit map[string]bool) (string, []string, error) {
 	// No source-controlled views or triggers are needed for this app. Reject
 	// unexpected SQL objects in untrusted backup databases.
 	var unsafeObjects int
@@ -140,7 +140,7 @@ func portableSchemaExceptTires(conn *sql.DB, omitTires bool) (string, []string, 
 			err = fmt.Errorf("Nicht unterstützte Datenbanktabelle: %s", table)
 			break
 		}
-		if omitTires && table == "tires" { continue }
+		if omit[table] { continue }
 		names = append(names, table)
 	}
 	if closeErr := rows.Close(); err == nil {
@@ -582,12 +582,19 @@ func portableCheckRestore(stage string, m PortableManifest, files map[string]boo
 		if _, exists := m.Counts[table]; !exists { return result, errors.New("Datensatztabelle im Manifest fehlt") }
 	}
 	if liveHash != hash || len(liveTables) != len(tables) {
-		// v1.1.6 archives lack only the new additive tires table. Compare
-		// every other column and table against the live schema as before.
-		_, hasIncomingTires := m.Counts["tires"]
-		legacyHash, legacyTables, legacyErr := portableSchemaExceptTires(sqlDB, true)
-		if hasIncomingTires || len(liveTables) != len(tables)+1 || legacyErr != nil || legacyHash != hash || len(legacyTables) != len(tables) {
-			return result, errors.New("Backup und Zielinstallation haben unterschiedliche Datenbankschemas. Bitte dieselbe App-Version einsetzen.")
+		// v1.1.6 lacks tires and mounting states; v1.1.7 lacks states.
+		// Every other table/column must match exactly.
+		omit:=map[string]bool{}
+		for _,table:=range liveTables{
+			if _,present:=m.Counts[table];!present{
+				if table!="tires"&&table!="tire_mileage_states"{return result,errors.New("Backup und Zielinstallation haben unterschiedliche Datenbankschemas")}
+				omit[table]=true
+			}
+		}
+		_,hasTires:=m.Counts["tires"];_,hasStates:=m.Counts["tire_mileage_states"]
+		legacyHash,legacyTables,legacyErr:=portableSchemaOmitting(sqlDB,omit)
+		if (!hasTires&&hasStates)||len(liveTables)!=len(tables)+len(omit)||legacyErr!=nil||legacyHash!=hash||len(legacyTables)!=len(tables){
+			return result,errors.New("Backup und Zielinstallation haben unterschiedliche Datenbankschemas. Bitte dieselbe App-Version einsetzen.")
 		}
 	}
 	for _, table := range tables {
@@ -598,6 +605,11 @@ func portableCheckRestore(stage string, m PortableManifest, files map[string]boo
 		if value != m.Counts[table] {
 			return result, errors.New("Datensatzanzahl im Backup stimmt nicht")
 		}
+	}
+	if _,present:=m.Counts["tire_mileage_states"];present{
+		var invalid int
+		if err=incoming.QueryRow("SELECT COUNT(*) FROM tire_mileage_states s LEFT JOIN tires t ON t.id=s.tire_id WHERE t.id IS NULL OR t.status <> 'mounted' OR t.position = 'spare' OR s.mount_odo IS NULL OR s.mount_odo < 0 OR s.mount_odo > 10000000 OR s.mounted_on IS NULL OR date(s.mounted_on) IS NULL OR s.mounted_on <> date(s.mounted_on)").Scan(&invalid);err!=nil{return result,err}
+		if invalid!=0{return result,errors.New("Ungültige Reifen-Montagedaten im Backup")}
 	}
 	if err = portableCheckReferences(incoming, files); err != nil {
 		return result, err
@@ -834,7 +846,7 @@ func RestorePortableZIP(path string, admin db.User) (PortableSummary, error) {
 		}
 	}
 	for _, table := range tables {
-		if table == "tires" { if _, present := m.Counts["tires"]; !present { continue } }
+		if table == "tires" || table == "tire_mileage_states" { if _, present := m.Counts[table]; !present { continue } }
 		if _, err = tx.Exec(`INSERT INTO main."` + table + `" SELECT * FROM incoming."` + table + `"`); err != nil {
 			return result, err
 		}

@@ -34,3 +34,12 @@ type Tire struct {
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }
+
+// TireMileageState is the current rolling installation interval only. The
+// completed intervals are accumulated in Tire.Mileage (kilometres). A missing
+// row means no reliable mounting odometer is known, including legacy tires.
+type TireMileageState struct {
+	TireID string `json:"tireId" gorm:"primaryKey;size:32"`
+	MountOdo int64 `json:"mountOdo"`
+	MountedOn string `json:"mountedOn"`
+}

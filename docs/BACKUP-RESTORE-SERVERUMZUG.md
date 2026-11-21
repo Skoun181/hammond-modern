@@ -13,6 +13,7 @@
 | Ausgaben und Werkstattkosten | Ja |
 | Wartungen, Fahrer, Zuordnungen und Freigaben | Ja |
 | Reifen und Fahrzeugzuordnungen | Ja (ab v1.1.7) |
+| Aktive Montageintervalle und bisherige Reifenlaufleistung | Ja (ab 1.1.8-dev); ältere ZIPs ohne Intervalle benötigen erneuten Startstand |
 | Rechnungen und zulässige Uploads aus `/assets` | Ja |
 | Benutzerprofile und Rollen | Ja |
 | Währung, Einheit, Datumsformat und Einstellungen aus SQLite | Ja |

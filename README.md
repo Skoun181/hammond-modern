@@ -8,6 +8,13 @@ Hammond Modern ist ein unabhängiger Community-Fork von [akhilrex/hammond](https
 
 > **Teststand:** Die alltäglichen Funktionen und die Migrationsvorschau wurden auf einer privaten Debian-13-LXC-Installation getestet. Das Docker-Hub-Image wurde außerdem erfolgreich auf einer Synology über Dockhand und macvlan gestartet (Anwenderbestätigung). Der portable ZIP-Export und -Import wurden praktisch getestet (Anwenderbestätigung). Ein vollständiger Original-Hammond-Import und umfassender Sicherheits- und Produktionstest sind weiterhin nicht bestätigt.
 
+## Neu in Develop (1.1.8-dev)
+
+- Automatische Reifenlaufleistung: Montage-/Wechseldatum und Fahrzeug-Kilometerstand erfassen. Bei montierten Reifen wird die Differenz zum höchsten seit Montage erfassten km-Tankstand angezeigt. Beim Einlagern zählt der bestätigte Abmontagestand; beim nächsten Montieren wird zur bisherigen Laufleistung addiert.
+- Reifenwechsel für bis zu vier Radpositionen mit einem gemeinsamen Kilometerstand; alte Reifen einlagern, neue montieren. Bestehende montierte Reifen ohne Startstand können über Bearbeiten nacherfasst werden. Keine rückwirkende Schätzung. Ersatzräder zählen nicht, Meilen-Tankungen werden nicht mit km vermischt.
+- Kraftstofftyp Petrol (bestehende ID) heißt Super E5; Super E10 ist zusätzlich auswählbar. Vorhandene E5/Benzin-Zuordnungen bleiben erhalten und können bei Bedarf geändert werden.
+- Neue Montage-Daten sind im ZIP enthalten. Ältere kompatible ZIPs ohne diese Tabelle sind importierbar, enthalten aber keine aktiven Montageintervalle. Vor dem Test separate Datenverzeichnisse und externes Backup verwenden.
+
 ## Neu in v1.1.7 – Reifen und Fahrzeugübersicht
 
 - **Fahrzeuge:** Eigene und freigegebene Fahrzeuge werden in einer eigenen Workspace-Übersicht angezeigt. Eigene Fahrzeuge lassen sich dort bearbeiten oder neu anlegen. Von der Fahrzeugübersicht und den Fahrzeugdetails direkt zu den verknüpften Reifen wechseln.

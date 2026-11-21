@@ -105,6 +105,11 @@ func TestPortableBackupRoundTripAndPasswordRedaction(t *testing.T) {
 	depth:=6.5
 	tire:=db.Tire{ID:"test-tire",OwnerUserID:user.ID,TireDetails:db.TireDetails{Manufacturer:"Test",Size:"225/45 R17",Season:"winter",DOT:"2325",Status:"stored",TreadDepth:&depth}}
 	if err = g.Create(&tire).Error; err != nil { t.Fatal(err) }
+	preMileageZIP,_,err:=CreatePortableZIP()
+	if err!=nil{t.Fatal(err)}
+	defer os.Remove(preMileageZIP)
+	if err=g.AutoMigrate(&db.TireMileageState{});err!=nil{t.Fatal(err)}
+	if _,err=InspectPortableZIP(preMileageZIP,user);err!=nil{t.Fatalf("v1.1.7 preview: %v",err)}
 	if legacy, previewErr := InspectPortableZIP(legacyZIP,user); previewErr != nil || legacy.Manifest.Counts["tires"] != 0 { t.Fatalf("legacy preview: %v",previewErr) }
 
 	zipFile, summary, err := CreatePortableZIP()
@@ -166,6 +171,8 @@ func TestPortableBackupRoundTripAndPasswordRedaction(t *testing.T) {
 		t.Fatal("admin not found in backup")
 	}
 
+	// Verify v1.1.7 archive clears mounting states and retains tire records.
+	if _,err=RestorePortableZIP(preMileageZIP,user);err!=nil{t.Fatalf("v1.1.7 restore: %v",err)}
 	// Verify old archive clears current tires, then newer archive restores the tire.
 	if _, err = RestorePortableZIP(legacyZIP,user);err != nil {t.Fatalf("legacy restore failed: %v",err)}
 	var tireCount int64

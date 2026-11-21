@@ -15,7 +15,7 @@ export default {
   page: { title: 'Reifen' }, components: { Layout },
   data() {
     return { tires: [], vehicles: [], seasons, statuses, positions, filter: '', search: '',
-      form: emptyTire(), quantity: 1, batchPositions: [], wheelPositions, initialFilterApplied: false, editingId: null, showForm: false, loading: true, busy: false, error: '', success: '' }
+      form: emptyTire(), changeOdo: null, changeDate: '', showChange: false, changeVehicle: '', swapOdo: null, swapDate: '', swapPositions: {}, quantity: 1, batchPositions: [], wheelPositions, initialFilterApplied: false, editingId: null, showForm: false, loading: true, busy: false, error: '', success: '' }
   },
   computed: {
     visibleTires() {
@@ -23,8 +23,27 @@ export default {
       return this.tires.filter(t => (!this.filter || (this.filter === 'unassigned' ? !t.vehicleId : t.vehicleId === this.filter)) &&
         [t.manufacturer,t.model,t.size,t.dot,t.setName,t.storage,this.vehicleName(t.vehicleId)].join(' ').toLowerCase().includes(q))
     },
+    editingTire() { return this.tires.find(t => t.id === this.editingId) },
+    needsOdo() {
+      const old = this.editingTire
+      if (!old) return this.form.status === 'mounted'
+      if (old.status === 'mounted' && this.form.status !== 'mounted') return true
+      if (old.status !== 'mounted' && this.form.status === 'mounted') return true
+      if (old.status === 'mounted' && this.form.status === 'mounted') {
+        return (old.position === 'spare') !== (this.form.position === 'spare') ||
+          (this.form.position !== 'spare' && old.mountOdo == null)
+      }
+      return false
+    },
+    trackedEdit() { return this.editingTire && this.editingTire.mountOdo != null },
+    swapCandidates() { return this.tires.filter(t => t.vehicleId === this.changeVehicle && t.status === 'stored') },
+    swapValid() {
+      const values = Object.values(this.swapPositions).filter(v => v && v !== '__store')
+      return this.changeVehicle && this.validOdo(this.swapOdo) &&
+        Object.values(this.swapPositions).some(Boolean) && new Set(values).size === values.length
+    },
     batchMounted() { return !this.editingId && this.quantity > 1 && this.form.status === 'mounted' },
-    canSave() { return !this.busy && (!this.batchMounted || (this.form.vehicleId && this.batchPositions.length === this.quantity)) },
+    canSave() { return !this.busy && (!this.needsOdo || this.validOdo(this.changeOdo)) && (!this.batchMounted || (this.form.vehicleId && this.batchPositions.length === this.quantity)) },
     unavailableLink() { return this.form.vehicleId && !this.vehicles.some(v => v.id === this.form.vehicleId) },
   },
   watch: {
@@ -52,13 +71,49 @@ export default {
       const v = this.vehicle(id)
       return v ? [v.nickname || [v.make, v.model].filter(Boolean).join(' ') || 'Fahrzeug', v.registration].filter(Boolean).join(' · ') : 'Fahrzeug nicht mehr verfügbar'
     },
+    today() {
+      const d = new Date()
+      return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0')
+    },
+    validOdo(v) { return v !== null && v !== '' && Number.isInteger(Number(v)) && Number(v) >= 0 && Number(v) <= 10000000 },
+    latestOdo(id) {
+      const v = this.vehicle(id)
+      const readings = (v && v.fillups || []).filter(f => f.distanceUnit === 1 && Number(f.odoReading) >= 0 && new Date(f.date) <= new Date())
+      return readings.length ? Math.max(...readings.map(f => Number(f.odoReading))) : null
+    },
+    mountedAt(position) { return this.tires.find(t => t.vehicleId === this.changeVehicle && t.status === 'mounted' && t.position === position) },
+    resetSwap() {
+      this.swapPositions = { 'front-left': '', 'front-right': '', 'rear-left': '', 'rear-right': '' }
+      this.swapOdo = this.latestOdo(this.changeVehicle)
+    },
+    openSwap() {
+      this.cancel(); this.showChange = true; this.error = ''; this.success = ''
+      this.changeVehicle = this.vehicles.some(v => v.id === this.filter) ? this.filter : (this.vehicles[0] || {}).id || ''
+      this.swapDate = this.today(); this.resetSwap()
+    },
+    async saveSwap() {
+      if (this.busy || !this.swapValid) return
+      this.busy = true; this.error = ''; this.success = ''
+      try {
+        const positions = {}
+        Object.keys(this.swapPositions).forEach(p => {
+          const id = this.swapPositions[p]
+          if (id) positions[p] = id === '__store' ? '' : id
+        })
+        await axios.post('/api/tires/change', { vehicleId: this.changeVehicle, odo: Number(this.swapOdo), date: this.swapDate, positions })
+        this.showChange = false; await this.load(); this.success = 'Reifenwechsel gespeichert. Laufleistungen aktualisiert.'
+      } catch (e) { this.error = (e.response && e.response.data && e.response.data.error) || 'Reifenwechsel fehlgeschlagen.' }
+      finally { this.busy = false }
+    },
     add() {
+      this.showChange = false; this.changeOdo = null; this.changeDate = this.today()
       this.form = emptyTire(this.vehicles.some(v => v.id === this.filter) ? this.filter : '')
       this.quantity = 1; this.batchPositions = []; this.editingId = null; this.showForm = true; this.error = ''; this.success = ''
     },
     edit(t) {
+      this.showChange = false; this.changeOdo = null; this.changeDate = this.today()
       this.form = Object.assign(emptyTire(), t)
-      delete this.form.id; delete this.form.createdAt; delete this.form.updatedAt
+      delete this.form.id; delete this.form.createdAt; delete this.form.updatedAt; delete this.form.mountOdo; delete this.form.mountedOn; delete this.form.currentMileage; delete this.form.currentVehicleOdo; delete this.form.tracking
       this.quantity = 1; this.batchPositions = []; this.editingId = t.id; this.showForm = true; this.error = ''; this.success = ''
     },
     cancel() { this.showForm = false; this.editingId = null; this.quantity = 1; this.batchPositions = []; this.form = emptyTire() },
@@ -72,6 +127,7 @@ export default {
           const value = payload[field]
           payload[field] = value === '' || value === null || value === undefined ? null : Number(value)
         }
+        if (this.needsOdo) { payload.changeOdo = Number(this.changeOdo); payload.changeDate = this.changeDate }
         if (payload.status !== 'mounted') payload.position = ''
         if (this.editingId) await axios.put('/api/tires/' + this.editingId, payload)
         else {
@@ -104,10 +160,31 @@ export default {
   <Layout>
     <div class="hm-page-heading">
       <div><p class="hm-eyebrow">VERWALTUNG</p><h1 class="title hm-page-title">Reifen</h1><p class="hm-page-description">Verwalte einzelne Reifen, Reifensätze, Montage und Einlagerung. Verknüpfe Reifen mit deinen Fahrzeugen.</p></div>
-      <b-button type="is-primary" :disabled="busy || loading" @click="add">＋ Reifen hinzufügen</b-button>
+      <div class="buttons">
+        <b-button :disabled="busy || loading || !vehicles.length" @click="openSwap">Reifenwechsel</b-button>
+        <b-button type="is-primary" :disabled="busy || loading" @click="add">＋ Reifen hinzufügen</b-button>
+      </div>
     </div>
     <b-notification v-if="error" type="is-danger" :closable="true" @close="error = ''">{{ error }}</b-notification>
     <b-notification v-if="success" type="is-success" :closable="true" @close="success = ''">{{ success }}</b-notification>
+    <div v-if="showChange" class="box tire-form">
+      <h2 class="title is-5">Reifenwechsel / Saisonwechsel</h2>
+      <p class="help">Kilometerstand einmal eingeben. Die bisherigen Reifen werden eingelagert und ihre Laufleistung abgeschlossen. Neu montierte Reifen zählen ab diesem Stand weiter. Nur ausgewählte Radpositionen ändern sich.</p>
+      <form @submit.prevent="saveSwap">
+        <div class="columns is-multiline">
+          <div class="column is-half"><b-field label="Fahrzeug"><b-select v-model="changeVehicle" expanded required @input="resetSwap"><option v-for="v in vehicles" :key="v.id" :value="v.id">{{ vehicleName(v.id) }}</option></b-select></b-field></div>
+          <div class="column is-half"><b-field label="Aktueller Kilometerstand (km) *" message="Vorschlag aus Tankungen bitte am Tacho prüfen."><b-input v-model="swapOdo" type="number" min="0" max="10000000" step="1" required /></b-field></div>
+          <div class="column is-half"><b-field label="Wechseldatum"><input v-model="swapDate" class="input" type="date" :max="today()" required /></b-field></div>
+        </div>
+        <div v-for="p in wheelPositions" :key="p" class="tire-batch-panel">
+          <p class="label">{{ positions[p] }}</p>
+          <p class="help">Aktuell: {{ mountedAt(p) ? mountedAt(p).manufacturer + ' ' + mountedAt(p).model + ' · ' + seasons[mountedAt(p).season] : 'Nicht belegt' }}</p>
+          <b-field label="Neue Zuordnung"><b-select v-model="swapPositions[p]" expanded><option value="">Unverändert lassen</option><option v-if="mountedAt(p)" value="__store">Nur einlagern</option><option v-for="t in swapCandidates" :key="t.id" :value="t.id" :disabled="Object.keys(swapPositions).some(key => key !== p && swapPositions[key] === t.id)">{{ seasons[t.season] }} · {{ t.manufacturer }} {{ t.model }} · {{ t.size }} · {{ t.setName || 'Einzelreifen' }} · {{ t.id.slice(0,6) }}</option></b-select></b-field>
+        </div>
+        <p class="help">Nur bereits diesem Fahrzeug zugeordnete, eingelagerte Reifen können hier montiert werden. Lege neue Reifen zunächst als eingelagert an. Bei älteren Reifen ohne Montagestand wird die bisherige Laufleistung unverändert übernommen.</p>
+        <div class="buttons"><b-button type="is-primary" native-type="submit" :loading="busy" :disabled="busy || !swapValid">Reifenwechsel speichern</b-button><b-button :disabled="busy" @click="showChange = false">Abbrechen</b-button></div>
+      </form>
+    </div>
     <div v-if="showForm" class="box tire-form">
       <h2 class="title is-5">{{ editingId ? 'Reifen bearbeiten' : 'Reifen hinzufügen' }}</h2>
       <form @submit.prevent="save">
@@ -142,7 +219,15 @@ export default {
           </div>
           <div class="column is-half"><b-field label="Profiltiefe (mm)"><b-input v-model="form.treadDepth" type="number" min="0" max="30" step="0.1" /></b-field></div>
           <div class="column is-half"><b-field label="Reifendruck (bar)"><b-input v-model="form.pressure" type="number" min="0" max="20" step="0.1" /></b-field></div>
-          <div class="column is-half"><b-field label="Laufleistung des Reifens (km)"><b-input v-model="form.mileage" type="number" min="0" max="10000000" step="1" /></b-field></div>
+          <div v-if="needsOdo" class="column is-full">
+            <div class="tire-batch-panel">
+              <p class="label">Montage / Abmontage</p>
+              <b-field label="Aktueller Fahrzeug-Kilometerstand (km) *"><b-input v-model="changeOdo" type="number" min="0" max="10000000" step="1" required /></b-field>
+              <b-field label="Wechseldatum"><input v-model="changeDate" class="input" type="date" :max="today()" required /></b-field>
+              <p class="help">Ab Montage zählen km aus Tankungen weiter. Beim Abmontieren wird die Differenz endgültig gespeichert. Bei alten montierten Reifen bitte einen bekannten Startstand eingeben.</p>
+            </div>
+          </div>
+          <div class="column is-half"><b-field label="Bisherige Reifenlaufleistung (km)" message="Vor dieser Montage gefahrene Kilometer; bei neuen Reifen leer oder 0."><b-input v-model="form.mileage" type="number" min="0" max="10000000" step="1" :disabled="trackedEdit || (editingTire && editingTire.status === 'mounted' && form.status !== 'mounted')" /></b-field></div>
           <div class="column is-half"><b-field label="Kaufdatum"><input v-model="form.purchaseDate" class="input" type="date" /></b-field></div>
           <div class="column is-half"><b-field label="Kaufpreis pro Reifen"><b-input v-model="form.purchasePrice" type="number" min="0" max="1000000" step="0.01" /></b-field></div>
           <div class="column is-half"><b-field label="Währung"><b-input v-model="form.currency" maxlength="3" placeholder="EUR" /></b-field></div>
@@ -182,7 +267,16 @@ export default {
           <div class="tire-metrics">
             <div><p class="tire-label">Profil</p><strong>{{ measure(t.treadDepth,'mm') }}</strong></div>
             <div><p class="tire-label">Druck</p><strong>{{ measure(t.pressure,'bar') }}</strong></div>
-            <div><p class="tire-label">Laufleistung</p><strong>{{ measure(t.mileage,'km') }}</strong></div>
+            <div><p class="tire-label">Laufleistung</p><strong>{{ measure(t.currentMileage,'km') }}</strong></div>
+          </div>
+          <div v-if="t.status === 'mounted'" class="tire-batch-panel">
+            <template v-if="t.tracking">
+              <p class="tire-label">AUTOMATISCHE LAUFLEISTUNG</p>
+              <p>Montiert seit {{ t.mountedOn }} bei {{ measure(t.mountOdo,'km') }}</p>
+              <p>Letzter berücksichtigter Fahrzeugstand: {{ measure(t.currentVehicleOdo,'km') }}</p>
+              <p>Seit Montage: <strong>{{ measure(t.currentVehicleOdo - t.mountOdo,'km') }}</strong></p>
+            </template>
+            <p v-else class="help">{{ t.position === 'spare' ? 'Ersatzrad: keine automatische Laufleistung.' : 'Kein aktiver Kilometerstand verfügbar. Bei vorhandenen Reifen Startstand über Bearbeiten hinterlegen.' }}</p>
           </div>
           <p v-if="t.purchaseDate">Gekauft: {{ t.purchaseDate }}</p><p v-if="t.purchasePrice !== null">Preis: {{ measure(t.purchasePrice,t.currency) }}</p>
           <p v-if="t.storage">Lagerort: {{ t.storage }}</p><p v-if="t.notes" class="tire-notes">{{ t.notes }}</p>
