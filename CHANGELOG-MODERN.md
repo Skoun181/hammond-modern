@@ -1,6 +1,6 @@
 # Hammond Modern – Änderungsverlauf
 
-## 1.1.8-dev – Noch nicht veröffentlicht
+## v1.1.8 – Automatische Reifenlaufleistung und E5/E10
 
 - Reifenlaufleistung auf Basis des Montage-Kilometerstands und späterer km-Tankungen; Abschluss beim Abmontieren, Fortsetzung beim Wiederaufziehen.
 - Gemeinsamer Reifenwechsel mit Kilometerstand und Radpositionen; automatische Laufleistung in ZIP-Backups, kompatible ältere Backups ohne Montageintervalle.
