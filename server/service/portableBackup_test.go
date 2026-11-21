@@ -97,12 +97,22 @@ func TestPortableBackupRoundTripAndPasswordRedaction(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Export a legacy snapshot before adding the tire table.
+	legacyZIP, _, err := CreatePortableZIP()
+	if err != nil { t.Fatal(err) }
+	defer os.Remove(legacyZIP)
+	if err = g.AutoMigrate(&db.Tire{}); err != nil { t.Fatal(err) }
+	depth:=6.5
+	tire:=db.Tire{ID:"test-tire",OwnerUserID:user.ID,TireDetails:db.TireDetails{Manufacturer:"Test",Size:"225/45 R17",Season:"winter",DOT:"2325",Status:"stored",TreadDepth:&depth}}
+	if err = g.Create(&tire).Error; err != nil { t.Fatal(err) }
+	if legacy, previewErr := InspectPortableZIP(legacyZIP,user); previewErr != nil || legacy.Manifest.Counts["tires"] != 0 { t.Fatalf("legacy preview: %v",previewErr) }
+
 	zipFile, summary, err := CreatePortableZIP()
 	if err != nil {
 		t.Fatalf("export failed: %v", err)
 	}
 	defer os.Remove(zipFile)
-	if summary.AssetCount != 1 || summary.Manifest.Counts["users"] != 1 {
+	if summary.AssetCount != 1 || summary.Manifest.Counts["users"] != 1 || summary.Manifest.Counts["tires"] != 1 {
 		t.Fatalf("bad summary: %#v", summary)
 	}
 
@@ -156,6 +166,10 @@ func TestPortableBackupRoundTripAndPasswordRedaction(t *testing.T) {
 		t.Fatal("admin not found in backup")
 	}
 
+	// Verify old archive clears current tires, then newer archive restores the tire.
+	if _, err = RestorePortableZIP(legacyZIP,user);err != nil {t.Fatalf("legacy restore failed: %v",err)}
+	var tireCount int64
+	if err=g.Model(&db.Tire{}).Count(&tireCount).Error;err!=nil||tireCount!=0{t.Fatal("legacy archive did not clear tires")}
 	if err = g.Model(&db.User{}).Where("id=?", user.ID).Update("name", "Neu").Error; err != nil {
 		t.Fatal(err)
 	}
@@ -171,6 +185,8 @@ func TestPortableBackupRoundTripAndPasswordRedaction(t *testing.T) {
 	if err != nil {
 		t.Fatalf("restore failed: %v", err)
 	}
+	var restoredTire db.Tire
+	if err = g.Where("id=?",tire.ID).First(&restoredTire).Error;err!=nil || restoredTire.DOT!="2325" || restoredTire.OwnerUserID!=user.ID || restoredTire.TreadDepth==nil || *restoredTire.TreadDepth!=6.5 { t.Fatalf("tire not restored: %#v %v",restoredTire,err) }
 	if result.SafetyBackup == "" {
 		t.Fatal("missing safety snapshot")
 	}
