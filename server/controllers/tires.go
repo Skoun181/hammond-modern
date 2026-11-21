@@ -40,7 +40,7 @@ func validateTire(t *db.TireDetails) error {
 		if len(t.DOT) != 4 { return errors.New("DOT bitte als vierstelligen Produktionscode WWJJ eingeben") }
 		week, e1 := strconv.Atoi(t.DOT[:2])
 		year, e2 := strconv.Atoi(t.DOT[2:])
-		if e1 != nil || e2 != nil || week < 1 || week > 53 || year < 0 || year > 99 || !digits(t.DOT) { return errors.New("Ungültiger DOT-Code (WWJJ)") }
+		if e1 != nil || e2 != nil || week < 1 || week > 53 || year < 0 || year > 99 || !tireDigits(t.DOT) { return errors.New("Ungültiger DOT-Code (WWJJ)") }
 	}
 	if len(t.LoadIndex)>12 || len(t.SpeedIndex)>12 { return errors.New("Traglast- oder Geschwindigkeitsindex zu lang") }
 	if t.PurchaseDate != "" { if _,err:=time.Parse("2006-01-02",t.PurchaseDate);err!=nil { return errors.New("Ungültiges Kaufdatum") } }
@@ -56,7 +56,7 @@ func validateTire(t *db.TireDetails) error {
 	return nil
 }
 
-func digits(s string) bool { for _,r:=range s {if r<'0'||r>'9' {return false}};return true }
+func tireDigits(s string) bool { for _,r:=range s {if r<'0'||r>'9' {return false}};return true }
 
 func tireAccess(tx *gorm.DB,userID,vehicleID string) (bool,error) {
 	if vehicleID=="" {return true,nil}
