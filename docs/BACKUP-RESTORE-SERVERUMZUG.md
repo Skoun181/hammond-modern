@@ -1,10 +1,6 @@
 # Backup, Wiederherstellung und Serverumzug – Schritt für Schritt
 
-> **Entwicklungsstand:** Diese Funktion ist zunächst ausschließlich im Branch
-> `develop/hammond-modern-next` enthalten. Das bereits veröffentlichte Docker-Hub-Image
-> `skoun181/hammond-modern:1.1.5` enthält sie **noch nicht**.
-> Nicht ohne vollständiges externes Backup auf produktive Daten anwenden.
-> Der Stable-Branch und das Docker-Hub-Image bleiben unverändert.
+> **Stable v1.1.6:** ZIP-Export und Import wurden praktisch getestet. Vor einem produktiven Umzug externe Sicherung anlegen. Ältere Versionen zuerst unter Beibehaltung der bisherigen Datenpfade aktualisieren.
 
 ## Was wird gesichert?
 
@@ -47,12 +43,12 @@ Beschädigte oder fehlende Anhänge werden ebenfalls gemeldet.
 Die portable App-Sicherung ersetzt keine separate sicher gespeicherte Kopie der
 ursprünglichen Datenverzeichnisse.
 
-## A. Entwicklungsinstallation mit benannten Docker-Volumes
+## A. Frische Installation mit benannten Docker-Volumes
 
-Für einen **Test** mit der neuen Funktion:
+Für eine neue Installation des festen Releases:
 
 ```bash
-git clone --branch develop/hammond-modern-next https://github.com/Skoun181/hammond-modern.git
+git clone --branch v1.1.6 https://github.com/Skoun181/hammond-modern.git
 cd hammond-modern
 mkdir -p data
 (umask 077; printf 'JWT_SECRET=%s\n' "$(openssl rand -hex 32)" > .env)
@@ -60,7 +56,7 @@ docker compose up -d --build
 docker compose ps
 ```
 
-Diese **Develop-Compose-Datei** benutzt zwei benannte Docker-Volumes:
+Diese **Compose-Datei** benutzt zwei benannte Docker-Volumes:
 `hammond_config` für `/config` und `hammond_assets` für `/assets`.
 Docker vergibt gewöhnlich Namen mit dem Compose-Projektpräfix, z. B.
 `hammond-modern_hammond_config`. Den tatsächlichen Namen bei Bedarf
@@ -102,12 +98,10 @@ Niemals Secrets öffentlich teilen.
 ## C. Neue Docker-Installation vorbereiten
 
 1. Docker und Docker Compose auf dem Zielserver installieren.
-2. Dieselbe **kompatible Hammond-Modern-Entwicklungsversion** bereitstellen
-   (siehe Abschnitt A). Ein älterer Stable-Container ohne Backup-Feature kann das ZIP
-   nicht importieren.
+2. Hammond Modern **v1.1.6** bzw. dieselbe kompatible Version bereitstellen (Abschnitt A oder Docker-Hub-Installation in der README). Ältere Container ohne Backup-Funktion können das ZIP nicht importieren.
 3. Eigene `.env` mit **neuem** zufälligem `JWT_SECRET` erstellen. Andere API-Keys
    nur bei Bedarf erneut eintragen.
-4. `docker compose up -d --build` starten.
+4. Lokaler Build: `docker compose up -d --build`. Docker Hub: `docker compose pull && docker compose up -d`.
 5. Hammond Modern im Browser öffnen.
 6. **Wichtig:** Den ersten Administrator auf dem neuen Server **mit genau derselben
    E-Mail-Adresse wie einen Administrator der alten Installation** anlegen.
@@ -210,5 +204,4 @@ Archive fremder Herkunft nicht ungeprüft als Root entpacken.
 - ZIP-Backups sind unverschlüsselt und sollten nicht per ungesichertem HTTP
   über das Internet übertragen werden. Reverse Proxy mit HTTPS oder VPN verwenden.
 - Regelmäßig Backup **und Wiederherstellung** testen.
-- Die bestehende v1.1.5-Stable auf GitHub und Docker Hub bleibt unverändert,
-  bis die Entwicklung gründlich getestet und ein neuer Release freigegeben wird.
+- Bestehende Release-Tags bleiben unverändert. Für die Backup-Funktion v1.1.6 oder eine ausdrücklich kompatible neuere Version verwenden.

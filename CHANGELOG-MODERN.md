@@ -1,5 +1,13 @@
 # Hammond Modern – Änderungsverlauf
 
+## v1.1.6 – ZIP-Backup und Serverumzug (21. November 2026)
+
+- Portabler Export und Restore von SQLite-Daten und zulässigen Uploads inklusive Manifest und Prüfsummen.
+- Admin-only, Vorschau, Größen- und Schema-Prüfung, Bestätigung, lokale Rettungskopie, Transaktion und Recovery-Journal.
+- Keine Passwort-Hashes oder Secrets im Export; Ziel-Admin behält sein Passwort, weitere Benutzer benötigen neue Passwörter.
+- Benannte Volumes für Neuinstallationen; bestehende Mounts beibehalten.
+- ZIP-Export und Import praktisch getestet; umfassendes Sicherheits-Audit noch offen.
+
 ## v1.1.5 – Fahrzeugmigration und UI-Verbesserungen (17. November 2026)
 
 ### Neu
