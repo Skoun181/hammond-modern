@@ -1,7 +1,10 @@
 # Hammond Modern – Änderungsverlauf
 
-## 1.1.7-dev – Noch nicht veröffentlicht
+## v1.1.7 – Reifenverwaltung und Fahrzeugübersicht (21. November 2026)
 
+- Mehrfachanlage von 1–4 Reifen mit separaten Datensätzen, eindeutigen montierten Radpositionen und vollständigem Rollback bei Konflikten.
+- Neue kontrastreiche Reifenkacheln mit großem Fahrzeugnamen und Kennzeichen; Fahrzeugkacheln mit Kilometerstand, Historie, Reifenzustand und montierten Größen.
+- Überarbeiteter Develop-Stand praktisch getestet (Anwenderbestätigung); automatisierte Backend-Tests, Frontend-Build und GHCR-Starttest erfolgreich.
 - Reifen-Inventar pro Nutzer: Fahrzeugzuordnung, DOT, technische Daten, Zustand, Kauf und Einlagerung; eigene Fahrzeuge und freigegebene Fahrzeuge verknüpfbar.
 - Workspace: Fahrzeugliste mit Bearbeitung und Hinzufügen; Fahrerübersicht mit Suche und bedarfsgesteuertem Formular.
 - Datenimport unter Backup & Umzug zusammengeführt; Reifen in ZIP-Backups; kompatible Backups ohne Reifentabelle bleiben importierbar (vorhandene Reifen werden dabei ersetzt).

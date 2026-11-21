@@ -4,24 +4,27 @@
 
 Hammond Modern ist ein unabhängiger Community-Fork von [akhilrex/hammond](https://github.com/akhilrex/hammond). Das Projekt ist **nicht offiziell mit dem Originalautor verbunden**.
 
-**Veröffentlichte Stable-Version: v1.1.6** · Develop: 1.1.7-dev (nicht freigegeben) · [Releases](https://github.com/Skoun181/hammond-modern/releases) · [Änderungsverlauf](CHANGELOG-MODERN.md)
+**Stable-Version: v1.1.7** · Weiterentwicklung im Develop-Branch · [Releases](https://github.com/Skoun181/hammond-modern/releases) · [Änderungsverlauf](CHANGELOG-MODERN.md)
 
 > **Teststand:** Die alltäglichen Funktionen und die Migrationsvorschau wurden auf einer privaten Debian-13-LXC-Installation getestet. Das Docker-Hub-Image wurde außerdem erfolgreich auf einer Synology über Dockhand und macvlan gestartet (Anwenderbestätigung). Der portable ZIP-Export und -Import wurden praktisch getestet (Anwenderbestätigung). Ein vollständiger Original-Hammond-Import und umfassender Sicherheits- und Produktionstest sind weiterhin nicht bestätigt.
 
-## Neu im Develop-Branch (1.1.7-dev)
+## Neu in v1.1.7 – Reifen und Fahrzeugübersicht
 
 - **Fahrzeuge:** Eigene und freigegebene Fahrzeuge werden in einer eigenen Workspace-Übersicht angezeigt. Eigene Fahrzeuge lassen sich dort bearbeiten oder neu anlegen. Von der Fahrzeugübersicht und den Fahrzeugdetails direkt zu den verknüpften Reifen wechseln.
 - **Reifen:** Einzelne Reifen anlegen, bearbeiten, löschen, suchen und nach Fahrzeug filtern. Hersteller, Modell, Reifengröße, DOT (vierstelliger Produktionscode WWJJ), Reifensatz, Traglast-/Geschwindigkeitsindex, Runflat, Profiltiefe, Druck, Laufleistung, Kaufdatum/-preis, Lagerort, Notizen, Status und Einbauposition erfassen. Zuordnung optional; montierte Reifen brauchen Fahrzeug und Position. Jeder Nutzer verwaltet seine eigenen Reifen und darf nur zugängliche Fahrzeuge verknüpfen.
+- **Mehrfachanlage:** 1–4 Reifen mit gleichen Angaben pro Reifen gemeinsam anlegen. Montierte Reifen benötigen unterschiedliche freie Radpositionen; die Anlage ist transaktional. Jeder Reifen bleibt einzeln bearbeitbar.
+- **Neue Kacheln:** Heller/dunkler Modus mit besserem Textkontrast, prominente Fahrzeugzuordnung und Kennzeichen, zuletzt erfasster Kilometerstand aus Tankungen/Ausgaben (Originaleinheit), Kraftstoff, Baujahr, Hubraum, Historie sowie Reifenstatus und montierte Größen.
 - **Fahrer:** Durchsuchbare Liste der eigenen Fahrer mit Hinzufügen und Bearbeiten bei Bedarf, ohne ständig sichtbares Eingabeformular.
 - **Backup & Umzug:** ZIP-Backup sowie Original-Hammond- und Fuelly-Importe befinden sich jetzt an einem gemeinsamen Menüpunkt. Vollständiger ZIP-Restore bleibt Administratoren vorbehalten. Reifen sind in neuen ZIPs enthalten. Alte kompatible ZIPs ohne Reifentabelle werden akzeptiert, ersetzen aber alle vorhandenen Daten einschließlich der Reifen (danach leere Reifenliste).
 
-**Nur Develop:** Tests auf separater Instanz durchführen; v1.1.6 bleibt der veröffentlichte Stable-Release. Vor dem Update externe Datensicherung erstellen. Bei einem Wechsel zurück zu 1.1.6 eine separate kompatible Datenbank bzw. eine vor dem Upgrade gesicherte Version verwenden.
+**Update-Hinweis:** Der Entwicklungsstand mit überarbeiteten Fahrzeug- und Reifenkacheln sowie Mehrfachanlage wurde praktisch getestet (Anwenderbestätigung). Vor dem Update externe Datensicherung erstellen. Bei einem Wechsel zurück zu 1.1.6 eine vor dem Upgrade gesicherte, kompatible Datenbank verwenden.
 
 ## Was kann Hammond Modern?
 
 | Bereich | Funktionen |
 | --- | --- |
 | **Fahrzeuge** | Mehrere Fahrzeuge, Hersteller- und Modellsuche, Kennzeichen, Fahrzeugfreigaben |
+| **Reifen** | Reifeninventar, Mehrfachanlage (1–4), DOT, Profil, Druck, Radposition, Kauf und Lagerort |
 | **Tankungen** | Menge, Kraftstoff, Kilometerstand, Preis, Gesamtbetrag, Tankstelle und Fahrer |
 | **Tankstellensuche** | Suche per deutscher PLZ mit eigenem Tankerkönig-API-Key |
 | **Kosten** | Tankkosten, Werkstattkosten, sonstige Ausgaben, Rechnungen und historische Statistiken |
@@ -33,7 +36,7 @@ Hammond Modern ist ein unabhängiger Community-Fork von [akhilrex/hammond](https
 
 Die Verbrauchsberechnung benötigt mindestens zwei geeignete Volltankungen mit aufsteigenden Kilometerständen. NHTSA-Modellvorschläge decken nicht alle europäischen Fahrzeuge ab; Modelle lassen sich manuell eingeben.
 
-## Was ist neu in v1.1.6?
+## Änderungen aus v1.1.6
 
 - Portables ZIP-Backup und Wiederherstellung für Administratoren, inklusive SQLite-Datenbank, Rechnungen und Uploads.
 - Integritäts- und Schema-Prüfung, Vorschau, Sicherheitsbackup und Recovery-Journal vor Datenersetzung.
@@ -80,7 +83,8 @@ Eine automatische Wartungsbenachrichtigung ist derzeit nicht enthalten.
 | --- | --- |
 | [`stable/hammond-modern`](https://github.com/Skoun181/hammond-modern/tree/stable/hammond-modern) | Standardbranch für aktuelle Stable-Installationen |
 | [`develop/hammond-modern-next`](https://github.com/Skoun181/hammond-modern/tree/develop/hammond-modern-next) | Weiterentwicklung; Änderungen zunächst hier testen |
-| [`v1.1.6`](https://github.com/Skoun181/hammond-modern/releases/tag/v1.1.6) | Stable-Release mit ZIP-Backup und Restore |
+| [`v1.1.7`](https://github.com/Skoun181/hammond-modern/releases/tag/v1.1.7) | Stable-Release mit Reifenverwaltung und neuen Fahrzeugkacheln |
+| [`v1.1.6`](https://github.com/Skoun181/hammond-modern/releases/tag/v1.1.6) | Frühere Version mit ZIP-Backup und Restore |
 | [`v1.1.5`](https://github.com/Skoun181/hammond-modern/releases/tag/v1.1.5) | Frühere Version |
 | [`v1.1.0`](https://github.com/Skoun181/hammond-modern/releases/tag/v1.1.0) | Frühere Version |
 | [`v1.0.0`](https://github.com/Skoun181/hammond-modern/releases/tag/v1.0.0) | Erste Stable-Version |
@@ -107,7 +111,7 @@ Datei `compose.yaml` erstellen:
 ```yaml
 services:
   hammond-modern:
-    image: skoun181/hammond-modern:1.1.6
+    image: skoun181/hammond-modern:1.1.7
     container_name: hammond-modern
     restart: unless-stopped
     ports:
@@ -139,7 +143,7 @@ cd hammond-modern
 # Nur bei einer Neuinstallation ausführen:
 (umask 077; printf 'JWT_SECRET=%s\n' "$(openssl rand -hex 32)" > .env)
 printf 'TZ=Europe/Berlin\n' >> .env
-docker pull skoun181/hammond-modern:1.1.6
+docker pull skoun181/hammond-modern:1.1.7
 docker run -d \
   --name hammond-modern \
   --restart unless-stopped \
@@ -147,7 +151,7 @@ docker run -d \
   -p 3006:3000 \
   -v "$PWD/data/config:/config" \
   -v "$PWD/data/assets:/assets" \
-  skoun181/hammond-modern:1.1.6
+  skoun181/hammond-modern:1.1.7
 ```
 
 Browser: `http://SERVER-IP:3006`. Docker Pull allein startet keinen Container.
@@ -158,7 +162,7 @@ Browser: `http://SERVER-IP:3006`. Docker Pull allein startet keinen Container.
 git clone --branch stable/hammond-modern https://github.com/Skoun181/hammond-modern.git
 cd hammond-modern
 # Optional: festen Release-Stand verwenden
-git checkout v1.1.6
+git checkout v1.1.7
 mkdir -p data/config data/assets
 # Nur bei einer Neuinstallation ausführen:
 (umask 077; printf 'JWT_SECRET=%s\n' "$(openssl rand -hex 32)" > .env)
@@ -243,7 +247,7 @@ Vor Updates den Container stoppen und die persistenten Verzeichnisse sowie .env 
 - Docker Run: neues Image pullen, alten Container stoppen und entfernen, vollständigen Run-Befehl mit neuem Tag und unveränderten Bind Mounts erneut ausführen.
 - Git-Build: `git fetch origin --tags`, gewünschten Release-Tag auschecken oder `git switch stable/hammond-modern` und `git pull --ff-only origin stable/hammond-modern`; dann `docker compose -f compose.test.yml up -d --build`.
 
-Der feste Tag `1.1.6` ist für reproduzierbare Installationen empfohlen. `latest` aktualisiert laufende Container nicht automatisch. Stable und Develop nicht gegen dieselben Datenverzeichnisse betreiben.
+Der feste Tag `1.1.7` ist für reproduzierbare Installationen empfohlen. `latest` aktualisiert laufende Container nicht automatisch. Stable und Develop nicht gegen dieselben Datenverzeichnisse betreiben.
 
 ## Backup, Wiederherstellung und Serverumzug
 
@@ -254,7 +258,7 @@ erstellen, das ZIP auf einer frischen Installation prüfen und alle bisherigen
 Anwendungsdaten wiederherstellen.
 
 - **Im ZIP:** Fahrzeuge, Tankungen, Ausgaben, Wartungen, Fahrer, Zuordnungen,
-  Einstellungen und Uploads/Rechnungen aus `/assets`, dazu ein Manifest mit
+  Reifen, Einstellungen und Uploads/Rechnungen aus `/assets`, dazu ein Manifest mit
   Exportzeit, App-/Schema-Version, Anzahl der Datensätze und SHA-256-Prüfsummen.
 - **Nicht im ZIP:** Passwörter und Passwort-Hashes, JWT-Secret, API-Keys, Tokens,
   `.env`, Docker-Compose- oder Netzwerkkonfiguration.
@@ -272,7 +276,7 @@ Anwendungsdaten wiederherstellen.
 ### Frische Installation mit benannten Volumes (optional)
 
 ```bash
-git clone --branch v1.1.6 https://github.com/Skoun181/hammond-modern.git
+git clone --branch v1.1.7 https://github.com/Skoun181/hammond-modern.git
 cd hammond-modern
 (umask 077; printf 'JWT_SECRET=%s\n' "$(openssl rand -hex 32)" > .env)
 docker compose up -d --build
@@ -282,12 +286,12 @@ Die neue `docker-compose.yml` verwendet benannte Volumes
 `hammond_config` und `hammond_assets`. Der öffentliche Port ist über
 `HAMMOND_PORT` in der `.env` einstellbar (Standard `3006`, Containerport `3000`).
 
-**Bestehende Installationen:** Bisherige Compose-Datei, Projektnamen, Mounts und JWT_SECRET beim Update beibehalten. Nicht einfach auf neue leere Volumes wechseln. Alte v1.1.5-Instanz zuerst auf v1.1.6 aktualisieren und dann exportieren.
+**Bestehende Installationen:** Bisherige Compose-Datei, Projektnamen, Mounts und JWT_SECRET beim Update beibehalten. Nicht einfach auf neue leere Volumes wechseln. Alte v1.1.5-Instanz zuerst auf v1.1.7 aktualisieren und dann exportieren.
 
 ### Umzug in fünf Schritten
 
 1. Als Admin auf dem alten Server **Backup & Umzug → Backup herunterladen (.zip)** wählen und extern sichern.
-2. Auf dem neuen Server v1.1.6 installieren und einen Admin mit derselben E-Mail-Adresse wie im Backup anlegen. Neues Passwort und JWT_SECRET sind möglich.
+2. Auf dem neuen Server v1.1.7 installieren und einen Admin mit derselben E-Mail-Adresse wie im Backup anlegen. Neues Passwort und JWT_SECRET sind möglich.
 3. ZIP auswählen und **Backup prüfen**. Maximal 512 MiB ZIP und 1 GiB entpackte Daten.
 4. Warnung bestätigen, Checkbox setzen und `ERSETZEN` eingeben. **Daten endgültig wiederherstellen** startet den Import mit Sicherheitsbackup.
 5. Mit Ziel-Admin-Passwort neu anmelden, weitere Benutzerpasswörter setzen und Fahrzeuge, Tankungen, Wartungen und Rechnungen prüfen. Alten Server erst danach abschalten.
@@ -313,6 +317,7 @@ Doppelte Fahrzeuge werden nur bei passender Identität gruppiert; unterschiedlic
 
 ## Bedienung im Alltag
 
+- **Reifen:** Fahrzeug zuordnen, Reifenart und Status wählen; bis zu vier Reifen gemeinsam anlegen und danach einzeln bearbeiten.
 - **Fahrzeug hinzufügen:** Fahrzeug mit Name, Kennzeichen, Kraftstoffart und weiteren Angaben anlegen.
 - **Tankung hinzufügen:** Fahrzeug auswählen; Datum, Kilometerstand, Liter, Preis und Tankstelle eingeben; speichern. Die Fotoerkennung ist optional und experimentell.
 - **Ausgabe hinzufügen:** Werkstatt- oder sonstige Kosten samt optionaler Rechnung erfassen.
@@ -366,10 +371,3 @@ Für den Fernzugriff **HTTPS über Reverse Proxy oder VPN** verwenden und den HT
 Hammond Modern basiert auf [akhilrex/hammond](https://github.com/akhilrex/hammond) von Akhil Gupta. Vielen Dank an den ursprünglichen Autor und die bisherigen Mitwirkenden. Das Repository steht unter **[AGPL-3.0](LICENSE)**; ursprüngliche Lizenz- und Copyright-Hinweise bleiben erhalten.
 
 [Repository](https://github.com/Skoun181/hammond-modern) · [Issues](https://github.com/Skoun181/hammond-modern/issues) · [Releases](https://github.com/Skoun181/hammond-modern/releases)
-
-
-### Reifen & Fahrzeugübersicht (Develop)
-
-- Beim Anlegen lassen sich 1–4 Reifen mit denselben Angaben in einem Schritt speichern. Jeder Reifen bleibt einzeln bearbeitbar; Kaufpreis und Messwerte gelten pro Reifen. Montierte Reifen benötigen unterschiedliche Radpositionen. Bereits belegte Positionen werden abgewiesen, ohne einen halben Reifensatz anzulegen.
-- Die Reifenkacheln zeigen Fahrzeugname und Kennzeichen prominent. Die Fahrzeugübersicht enthält den zuletzt erfassten Kilometerstand aus Tankungen/Ausgaben (Originaleinheit), Kraftstoff, Baujahr, Hubraum, Historie und eigene zugeordnete Reifen einschließlich Montagezustand und Größen. Fehlende Werte werden als unbekannt angezeigt.
-- Keine neuen Pflichtfelder oder Schemaänderungen; vorhandene Fahrzeuge und Reifen müssen nicht neu angelegt werden.

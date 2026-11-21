@@ -1,8 +1,8 @@
 # Backup, Wiederherstellung und Serverumzug – Schritt für Schritt
 
-> **Stable v1.1.6:** ZIP-Export und Import wurden praktisch getestet. Vor einem produktiven Umzug externe Sicherung anlegen. Ältere Versionen zuerst unter Beibehaltung der bisherigen Datenpfade aktualisieren.
+> **Stable v1.1.7:** ZIP-Export und Import wurden praktisch getestet. Vor einem produktiven Umzug externe Sicherung anlegen. Ältere Versionen zuerst unter Beibehaltung der bisherigen Datenpfade aktualisieren.
 
-**Develop 1.1.7-dev:** Reifen einschließlich Fahrzeugzuordnungen werden zusätzlich gesichert. Ältere ZIP-Backups ohne Reifentabelle werden akzeptiert, wenn alle übrigen Tabellen und Spalten exakt passen. Ein Restore ersetzt auch bestehende Reifen – ein altes Backup ohne Reifentabelle ergibt eine leere Reifenliste. Ein neuer Reifen-ZIP kann nicht in eine unveränderte 1.1.6-Instanz importiert werden. Vor Umstieg und Rückkehr immer externe Sicherung.
+**Ab v1.1.7:** Reifen einschließlich Fahrzeugzuordnungen werden zusätzlich gesichert. Ältere ZIP-Backups ohne Reifentabelle werden akzeptiert, wenn alle übrigen Tabellen und Spalten exakt passen. Ein Restore ersetzt auch bestehende Reifen – ein altes Backup ohne Reifentabelle ergibt eine leere Reifenliste. Ein neuer Reifen-ZIP kann nicht in eine unveränderte 1.1.6-Instanz importiert werden. Vor Umstieg und Rückkehr immer externe Sicherung.
 
 ## Was wird gesichert?
 
@@ -12,7 +12,7 @@
 | Tankungen und Kilometerstände | Ja |
 | Ausgaben und Werkstattkosten | Ja |
 | Wartungen, Fahrer, Zuordnungen und Freigaben | Ja |
-| Reifen und Fahrzeugzuordnungen | Ja (ab 1.1.7-dev) |
+| Reifen und Fahrzeugzuordnungen | Ja (ab v1.1.7) |
 | Rechnungen und zulässige Uploads aus `/assets` | Ja |
 | Benutzerprofile und Rollen | Ja |
 | Währung, Einheit, Datumsformat und Einstellungen aus SQLite | Ja |
@@ -51,7 +51,7 @@ ursprünglichen Datenverzeichnisse.
 Für eine neue Installation des festen Releases:
 
 ```bash
-git clone --branch v1.1.6 https://github.com/Skoun181/hammond-modern.git
+git clone --branch v1.1.7 https://github.com/Skoun181/hammond-modern.git
 cd hammond-modern
 mkdir -p data
 (umask 077; printf 'JWT_SECRET=%s\n' "$(openssl rand -hex 32)" > .env)
@@ -101,7 +101,7 @@ Niemals Secrets öffentlich teilen.
 ## C. Neue Docker-Installation vorbereiten
 
 1. Docker und Docker Compose auf dem Zielserver installieren.
-2. Hammond Modern **v1.1.6** bzw. dieselbe kompatible Version bereitstellen (Abschnitt A oder Docker-Hub-Installation in der README). Ältere Container ohne Backup-Funktion können das ZIP nicht importieren.
+2. Hammond Modern **v1.1.7** bzw. dieselbe kompatible Version bereitstellen (Abschnitt A oder Docker-Hub-Installation in der README). Ältere Container ohne Backup-Funktion können das ZIP nicht importieren.
 3. Eigene `.env` mit **neuem** zufälligem `JWT_SECRET` erstellen. Andere API-Keys
    nur bei Bedarf erneut eintragen.
 4. Lokaler Build: `docker compose up -d --build`. Docker Hub: `docker compose pull && docker compose up -d`.
