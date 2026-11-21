@@ -87,14 +87,15 @@ export default {
   },
 }
 </script>
+
 <template>
   <Layout>
     <div class="hm-page-heading">
       <div><p class="hm-eyebrow">VERWALTUNG</p><h1 class="title hm-page-title">Reifen</h1><p class="hm-page-description">Verwalte einzelne Reifen, Reifensätze, Montage und Einlagerung. Verknüpfe Reifen mit deinen Fahrzeugen.</p></div>
       <b-button type="is-primary" :disabled="busy || loading" @click="add">＋ Reifen hinzufügen</b-button>
     </div>
-    <b-notification v-if="error" type="is-danger" :closable="true" @close="error=''">{{ error }}</b-notification>
-    <b-notification v-if="success" type="is-success" :closable="true" @close="success=''">{{ success }}</b-notification>
+    <b-notification v-if="error" type="is-danger" :closable="true" @close="error = ''">{{ error }}</b-notification>
+    <b-notification v-if="success" type="is-success" :closable="true" @close="success = ''">{{ success }}</b-notification>
     <div v-if="showForm" class="box">
       <h2 class="title is-5">{{ editingId ? 'Reifen bearbeiten' : 'Reifen hinzufügen' }}</h2>
       <form @submit.prevent="save">
@@ -109,7 +110,7 @@ export default {
           <div class="column is-half"><b-field label="Geschwindigkeitsindex"><b-input v-model="form.speedIndex" maxlength="12" placeholder="V" /></b-field></div>
           <div class="column is-half"><b-field label="Fahrzeug"><b-select v-model="form.vehicleId" expanded @input="updateVehicle"><option value="">Nicht zugeordnet</option><option v-if="unavailableLink" :value="form.vehicleId" disabled>Nicht mehr verfügbar – bitte neu zuordnen</option><option v-for="v in vehicles" :key="v.id" :value="v.id">{{ vehicleName(v.id) }}</option></b-select></b-field></div>
           <div class="column is-half"><b-field label="Status"><b-select v-model="form.status" expanded><option v-for="(label,key) in statuses" :key="key" :value="key">{{ label }}</option></b-select></b-field></div>
-          <div v-if="form.status==='mounted'" class="column is-half"><b-field label="Einbauposition *"><b-select v-model="form.position" expanded required><option v-for="(label,key) in positions" :key="key" :value="key">{{ label }}</option></b-select></b-field></div>
+          <div v-if="form.status === 'mounted'" class="column is-half"><b-field label="Einbauposition *"><b-select v-model="form.position" expanded required><option v-for="(label,key) in positions" :key="key" :value="key">{{ label }}</option></b-select></b-field></div>
           <div class="column is-half"><b-field label="Profiltiefe (mm)"><b-input v-model="form.treadDepth" type="number" min="0" max="30" step="0.1" /></b-field></div>
           <div class="column is-half"><b-field label="Reifendruck (bar)"><b-input v-model="form.pressure" type="number" min="0" max="20" step="0.1" /></b-field></div>
           <div class="column is-half"><b-field label="Laufleistung des Reifens (km)"><b-input v-model="form.mileage" type="number" min="0" max="10000000" step="1" /></b-field></div>
@@ -146,7 +147,7 @@ export default {
             <div class="column"><p class="heading">Druck</p><strong>{{ measure(t.pressure,'bar') }}</strong></div>
             <div class="column"><p class="heading">Laufleistung</p><strong>{{ measure(t.mileage,'km') }}</strong></div>
           </div>
-          <p v-if="t.purchaseDate">Gekauft: {{ t.purchaseDate }}</p><p v-if="t.purchasePrice!==null">Preis: {{ measure(t.purchasePrice,t.currency) }}</p>
+          <p v-if="t.purchaseDate">Gekauft: {{ t.purchaseDate }}</p><p v-if="t.purchasePrice !== null">Preis: {{ measure(t.purchasePrice,t.currency) }}</p>
           <p v-if="t.storage">Lagerort: {{ t.storage }}</p><p v-if="t.notes" class="tire-notes">{{ t.notes }}</p>
           <div class="buttons" style="margin-top:1rem"><b-button type="is-primary" size="is-small" :disabled="busy" @click="edit(t)">Bearbeiten</b-button><b-button size="is-small" type="is-danger is-light" :disabled="busy" @click="remove(t)">Löschen</b-button></div>
         </article>
@@ -154,6 +155,7 @@ export default {
     </div>
   </Layout>
 </template>
+
 <style scoped>
 .tire-card { height: 100%; overflow-wrap: anywhere; }
 .tire-notes { white-space: pre-wrap; margin-top: .6rem; }

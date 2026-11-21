@@ -169,7 +169,7 @@ export default {
         <h1 class="title">{{ vehicle.id ? 'Fahrzeug bearbeiten' : 'Fahrzeug hinzufügen' }}</h1>
       </div>
       <div class="column is-one-quarter">
-        <router-link tag="b-button" type="is-primary" :to="{name: 'vehicles'}">
+        <router-link tag="b-button" type="is-primary" :to="{ name: 'vehicles' }">
           Zur Fahrzeugübersicht
         </router-link>
       </div>

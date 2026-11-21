@@ -53,8 +53,8 @@ export default {
       <div><p class="hm-eyebrow">VERWALTUNG</p><h1 class="title hm-page-title">Fahrer</h1><p class="hm-page-description">Deine angelegten Fahrer bearbeiten oder neue Fahrer erfassen. Keine Führerscheinnummer nötig.</p></div>
       <b-button type="is-primary" :disabled="saving" @click="add">＋ Fahrer hinzufügen</b-button>
     </div>
-    <b-notification v-if="error" type="is-danger" :closable="true" @close="error=''">{{ error }}</b-notification>
-    <b-notification v-if="success" type="is-success" :closable="true" @close="success=''">{{ success }}</b-notification>
+    <b-notification v-if="error" type="is-danger" :closable="true" @close="error = ''">{{ error }}</b-notification>
+    <b-notification v-if="success" type="is-success" :closable="true" @close="success = ''">{{ success }}</b-notification>
     <div v-if="showForm" class="box">
       <h2 class="title is-5">{{ editingId ? 'Fahrer bearbeiten' : 'Fahrer hinzufügen' }}</h2>
       <form @submit.prevent="save">

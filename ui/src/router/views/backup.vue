@@ -203,12 +203,12 @@ export default {
         <div class="column">
           <h3 class="title is-6">Original-Hammond (SQLite)</h3>
           <p>Fahrzeuge, Tankungen und Ausgaben aus einer hammond.db mit Vorschau und Duplikatprüfung.</p>
-          <b-button style="margin-top:.6rem" type="is-primary" tag="router-link" :to="{name:'import-hammond'}">Hammond-Migration starten</b-button>
+          <b-button style="margin-top:.6rem" type="is-primary" tag="router-link" :to="{ name: 'import-hammond' }">Hammond-Migration starten</b-button>
         </div>
         <div class="column">
           <h3 class="title is-6">Fuelly (CSV)</h3>
           <p>Tankungen aus einer CSV-Datei importieren. Fahrzeuge müssen vorher angelegt sein.</p>
-          <b-button style="margin-top:.6rem" tag="router-link" :to="{name:'import-fuelly'}">CSV importieren</b-button>
+          <b-button style="margin-top:.6rem" tag="router-link" :to="{ name: 'import-fuelly' }">CSV importieren</b-button>
         </div>
       </div>
     </div>

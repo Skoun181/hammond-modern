@@ -21,6 +21,7 @@ export default {
   },
 }
 </script>
+
 <template>
   <Layout>
     <div class="hm-page-heading">
@@ -39,9 +40,9 @@ export default {
             <h2 class="title is-5">{{ v.nickname }} · {{ v.registration }}</h2>
             <p>{{ [v.make, v.model, v.yearOfManufacture].filter(Boolean).join(' · ') || 'Keine weiteren Stammdaten' }}</p>
             <div class="buttons" style="margin-top:1rem">
-              <b-button tag="router-link" :to="{name:'vehicle-detail',params:{vehicleId:v.id}}">Details</b-button>
-              <b-button v-if="v.isOwner" type="is-primary" tag="router-link" :to="{name:'vehicle-edit',params:{vehicleId:v.id}}">Bearbeiten</b-button>
-              <b-button tag="router-link" :to="{name:'tires',query:{vehicleId:v.id}}">Reifen</b-button>
+              <b-button tag="router-link" :to="{ name: 'vehicle-detail', params: { vehicleId: v.id } }">Details</b-button>
+              <b-button v-if="v.isOwner" type="is-primary" tag="router-link" :to="{ name: 'vehicle-edit', params: { vehicleId: v.id } }">Bearbeiten</b-button>
+              <b-button tag="router-link" :to="{ name: 'tires', query: { vehicleId: v.id } }">Reifen</b-button>
             </div>
           </div>
         </div>
