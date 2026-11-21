@@ -27,7 +27,7 @@ import (
 
 const (
 	PortableBackupVersion       = 1
-	PortableAppVersion          = "1.1.6-dev"
+	PortableAppVersion          = "1.1.6"
 	PortableMaxZIP        int64 = 512 << 20
 	PortableMaxData       int64 = 1024 << 20
 	PortableMaxFiles            = 10000

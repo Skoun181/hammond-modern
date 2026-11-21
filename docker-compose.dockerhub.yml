@@ -3,7 +3,7 @@
 # Application: http://192.168.0.36:3000
 services:
   hammond-modern:
-    image: skoun181/hammond-modern:1.1.5
+    image: skoun181/hammond-modern:1.1.6
     pull_policy: always
     platform: linux/amd64
     container_name: hammond-modern
