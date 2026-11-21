@@ -168,6 +168,42 @@ docker compose -f compose.test.yml ps
 
 Browser: `http://SERVER-IP:3006`. Ohne den optionalen Checkout wird der aktuelle Stable-Branch gebaut. Der technische Containername ist bei dieser Variante `hammond-modern-next`.
 
+### Develop – GitHub Container Registry (GHCR)
+
+Der Entwicklungsstand wird über den Workflow [Publish Develop to GHCR](https://github.com/Skoun181/hammond-modern/actions/workflows/develop-publish.yml) bei Pushes auf `develop/hammond-modern-next` nach Backend-Tests, Docker-Build und einem Starttest veröffentlicht (linux/amd64). Stable auf Docker Hub bleibt unverändert.
+
+Sobald der Workflow erfolgreich abgeschlossen ist:
+
+```bash
+docker login ghcr.io -u DEIN_GITHUB_USERNAME
+docker pull ghcr.io/skoun181/hammond-modern:develop
+```
+
+Bei einem privaten Package wird zum Pull ein GitHub Personal Access Token (classic) mit `read:packages` und Zugriff auf das Package benötigt. Den Token als Passwort eingeben. Neu angelegte GHCR-Packages sind standardmäßig privat; die Sichtbarkeit in den Package-Einstellungen kontrollieren.
+
+In Dockhand die Registry `https://ghcr.io` mit GitHub-Benutzername und Token hinterlegen. Im Pull-Dialog diese Registry wählen, als Image `skoun181/hammond-modern` und als Tag `develop` eintragen (nicht erneut `ghcr.io/` voranstellen). Alternativ in einem separaten Compose-Stack das vollständige Image angeben:
+
+```yaml
+services:
+  hammond-develop:
+    image: ghcr.io/skoun181/hammond-modern:develop
+    container_name: hammond-modern-next
+    restart: unless-stopped
+    ports:
+      - "3007:3000"
+    environment:
+      TZ: Europe/Berlin
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET fehlt}
+      TANKERKOENIG_API_KEY: ${TANKERKOENIG_API_KEY:-}
+    volumes:
+      - ./develop-data/config:/config
+      - ./develop-data/assets:/assets
+```
+
+Für diese separate Testinstanz einen eigenen JWT_SECRET setzen und bei Bedarf die relativen Datenpfade durch eigene absolute Synology-Pfade ersetzen. Bei macvlan eine separate freie IP verwenden. Stable-Datenverzeichnisse niemals gleichzeitig einbinden; stattdessen ein ZIP-Backup aus Stable in die Testinstanz importieren (gleiche Admin-E-Mail, separates Passwort möglich).
+
+Für Updates das Develop-Image erneut pullen und den Testcontainer neu erstellen; `develop` ist ein veränderlicher Tag. Alternativ steht nach jedem erfolgreichen Publish ein commitbezogener Tag `sha-<vollständiger Commit-SHA>` zur Verfügung. Bei `manifest unknown` zuerst den Workflow-Status und den Package-Namen prüfen.
+
 ### Konfiguration
 
 | Variable / Pfad | Bedeutung |
