@@ -48,7 +48,7 @@ var allowedTables = map[string]bool{
 	"users": true, "vehicles": true, "user_vehicles": true,
 	"fillups": true, "expenses": true, "attachments": true,
 	"vehicle_attachments": true, "drivers": true, "maintenance_tasks": true,
-	"tires": true, "tire_mileage_states": true, "maintenance_rules": true, "recurring_costs": true, "financing_terms": true, "financing_calculations": true, "settings": true, "quick_entries": true, "job_locks": true, "migrations": true,
+	"tires": true, "tire_mileage_states": true, "maintenance_rules": true, "recurring_costs": true, "financing_terms": true, "financing_calculations": true, "home_assistant_keys": true, "settings": true, "quick_entries": true, "job_locks": true, "migrations": true,
 	"vehicle_alerts": true, "alert_occurances": true, "notifications": true,
 }
 
@@ -200,6 +200,14 @@ func portableSanitise(path string) (string, []string, error) {
 		return "", nil, err
 	}
 	for _, table := range tables {
+		// API keys are never portable: copying them would grant a different
+		// server the same authorization. Do not even export their hashes.
+		if table == "home_assistant_keys" {
+			if _, err = conn.Exec("DELETE FROM home_assistant_keys"); err != nil {
+				return "", nil, err
+			}
+			continue
+		}
 		rows, queryErr := conn.Query(`PRAGMA table_info("` + table + `")`)
 		if queryErr != nil {
 			return "", nil, queryErr
@@ -587,7 +595,7 @@ func portableCheckRestore(stage string, m PortableManifest, files map[string]boo
 		omit:=map[string]bool{}
 		for _,table:=range liveTables{
 			if _,present:=m.Counts[table];!present{
-				if table!="tires"&&table!="tire_mileage_states"&&table!="maintenance_rules"&&table!="recurring_costs"&&table!="financing_terms"&&table!="financing_calculations"{return result,errors.New("Backup und Zielinstallation haben unterschiedliche Datenbankschemas")}
+				if table!="tires"&&table!="tire_mileage_states"&&table!="maintenance_rules"&&table!="recurring_costs"&&table!="financing_terms"&&table!="financing_calculations"&&table!="home_assistant_keys"{return result,errors.New("Backup und Zielinstallation haben unterschiedliche Datenbankschemas")}
 				omit[table]=true
 			}
 		}
@@ -630,6 +638,11 @@ func portableCheckRestore(stage string, m PortableManifest, files map[string]boo
 		var invalid int
 		if err=incoming.QueryRow("SELECT COUNT(*) FROM financing_calculations c LEFT JOIN financing_terms t ON t.plan_id=c.plan_id WHERE t.plan_id IS NULL OR (c.monthly_rate_ppm IS NULL AND c.first_interest_cents IS NULL) OR (c.monthly_rate_ppm IS NOT NULL AND c.monthly_rate_ppm NOT BETWEEN 0 AND 100000) OR (c.first_interest_cents IS NOT NULL AND c.first_interest_cents NOT BETWEEN 0 AND 100000000)").Scan(&invalid);err!=nil{return result,err}
 		if invalid!=0{return result,errors.New("Ungültige Zinsberechnungsdaten im Backup")}
+	}
+	if _,present:=m.Counts["home_assistant_keys"];present{
+		var count int
+		if err=incoming.QueryRow("SELECT COUNT(*) FROM home_assistant_keys").Scan(&count);err!=nil{return result,err}
+		if count!=0{return result,errors.New("Ein Backup darf keine Home-Assistant-Zugangsschlüssel enthalten")}
 	}
 	if err = portableCheckReferences(incoming, files); err != nil {
 		return result, err
@@ -866,7 +879,7 @@ func RestorePortableZIP(path string, admin db.User) (PortableSummary, error) {
 		}
 	}
 	for _, table := range tables {
-		if table == "tires" || table == "tire_mileage_states" || table == "maintenance_rules" || table == "recurring_costs" || table == "financing_terms" || table == "financing_calculations" { if _, present := m.Counts[table]; !present { continue } }
+		if table == "tires" || table == "tire_mileage_states" || table == "maintenance_rules" || table == "recurring_costs" || table == "financing_terms" || table == "financing_calculations" || table == "home_assistant_keys" { if _, present := m.Counts[table]; !present { continue } }
 		if _, err = tx.Exec(`INSERT INTO main."` + table + `" SELECT * FROM incoming."` + table + `"`); err != nil {
 			return result, err
 		}

@@ -49,8 +49,11 @@ func main() {
 	controllers.RegisterAnonController(router)
 	controllers.RegisterAnonMasterConroller(router)
 	controllers.RegisterSetupController(router)
+	// Dedicated read-only bearer authentication, independent of the normal JWT.
+	controllers.RegisterHomeAssistantReadController(router)
 
 	router.Use(controllers.AuthMiddleware(true))
+	controllers.RegisterHomeAssistantKeyController(router)
 	controllers.RegisterUserController(router)
 	controllers.RegisterMastersController(router)
 	controllers.RegisterAuthController(router)

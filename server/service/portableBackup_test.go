@@ -134,11 +134,14 @@ func TestPortableBackupRoundTripAndPasswordRedaction(t *testing.T) {
 	calc:=db.FinancingCalculation{PlanID:plan.ID,MonthlyRatePPM:&monthly,FirstInterestCents:&first}
 	if err=g.Create(&calc).Error;err!=nil{t.Fatal(err)}
 	if _,err=InspectPortableZIP(preCalcZIP,user);err!=nil{t.Fatalf("pre-calculation preview: %v",err)}
+	if err=g.AutoMigrate(&db.HomeAssistantKey{});err!=nil{t.Fatal(err)}
+	if err=g.Create(&db.HomeAssistantKey{OwnerUserID:user.ID,TokenHash:"private-test-key-hash"}).Error;err!=nil{t.Fatal(err)}
 	zipFile, summary, err := CreatePortableZIP()
 	if err != nil {
 		t.Fatalf("export failed: %v", err)
 	}
 	defer os.Remove(zipFile)
+	if summary.Manifest.Counts["home_assistant_keys"] != 0 {t.Fatal("Home Assistant API key leaked into portable backup")}
 	if summary.AssetCount != 1 || summary.Manifest.Counts["users"] != 1 || summary.Manifest.Counts["tires"] != 1 || summary.Manifest.Counts["tire_mileage_states"] != 1 {
 		t.Fatalf("bad summary: %#v", summary)
 	}
@@ -230,6 +233,8 @@ func TestPortableBackupRoundTripAndPasswordRedaction(t *testing.T) {
 	if err=g.Where("plan_id = ?",plan.ID).First(&restoredTerms).Error;err!=nil||restoredTerms.DownPaymentCents!=200000||restoredTerms.NominalBps==nil||*restoredTerms.NominalBps!=450||!restoredTerms.AlreadyRecorded{t.Fatalf("financing terms not restored: %#v %v",restoredTerms,err)}
 	var restoredCalc db.FinancingCalculation
 	if err=g.Where("plan_id = ?",plan.ID).First(&restoredCalc).Error;err!=nil||restoredCalc.MonthlyRatePPM==nil||*restoredCalc.MonthlyRatePPM!=3750||restoredCalc.FirstInterestCents==nil||*restoredCalc.FirstInterestCents!=6500{t.Fatalf("calculation not restored: %#v %v",restoredCalc,err)}
+	var restoredKeyCount int64
+	if err=g.Model(&db.HomeAssistantKey{}).Count(&restoredKeyCount).Error;err!=nil||restoredKeyCount!=0{t.Fatal("Home Assistant token unexpectedly restored")}
 	if result.SafetyBackup == "" {
 		t.Fatal("missing safety snapshot")
 	}
