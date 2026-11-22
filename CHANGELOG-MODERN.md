@@ -1,8 +1,11 @@
 # Hammond Modern – Änderungsverlauf
 
-## 1.1.11-dev – Noch nicht veröffentlicht
+## v1.1.11 – Home Assistant (22. November 2026)
 
-- Home Assistant Custom-Integration mit read-only Wartungssensoren, API-Schlüsselverwaltung, automatischer Wartungserkennung und datensparsamem Backup-Verhalten.
+- Eigene, schreibgeschützte Wartungs-REST-API für Home Assistant mit persönlichem, rotierbarem und widerrufbarem API-Schlüssel. Der Schlüssel wird nur als Hash gespeichert und ist nicht der JWT_SECRET.
+- Native Home-Assistant-REST-Sensoren mit secrets.yaml und Beispiel-Package für Wartungsübersicht, überfällige, fällige, bald fällige und geplante Wartungen sowie nächste Wartung – ohne Custom Integration.
+- Optionale experimentelle Home-Assistant-Custom-Integration mit dynamischen Sensoren für einzelne Wartungen weiterhin enthalten.
+- Nur Wartungen der berechtigten Benutzer/Fahrzeuge sind über die API sichtbar; API-Schlüssel werden aus portablen Backups ausgeschlossen.
 
 ## v1.1.10 – Erweiterte Finanzierung (22. November 2026)
 

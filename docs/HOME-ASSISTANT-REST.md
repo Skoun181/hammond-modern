@@ -1,4 +1,4 @@
-# Home Assistant ohne Custom Integration (Develop)
+# Home Assistant ohne Custom Integration (ab v1.1.11)
 
 Hammond Modern stellt bereits den **schreibgeschützten** Endpunkt
 `GET /api/integrations/homeassistant/maintenance` bereit. Die Authentifizierung
@@ -30,7 +30,7 @@ erfolgt mit einem separaten `hmha_`-API-Schlüssel, **nicht** mit `JWT_SECRET`.
    um doppelte Sensoren zu vermeiden. Anschließend YAML-Konfiguration prüfen
    und Home Assistant neu starten.
 
-Die Paketdatei verwendet die **Develop-Testadresse**
+Die Paketdatei verwendet als Beispiel die **Develop-Testadresse**
 `http://192.168.0.68:3007`. Bei anderer Adresse die `resource`-URL
 in der Paketdatei ändern. Die Abfrage erfolgt alle 5 Minuten.
 

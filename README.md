@@ -4,16 +4,17 @@
 
 Hammond Modern ist ein unabhängiger Community-Fork von [akhilrex/hammond](https://github.com/akhilrex/hammond). Das Projekt ist **nicht offiziell mit dem Originalautor verbunden**.
 
-**Stable-Version: v1.1.10** · Weiterentwicklung im Develop-Branch · [Releases](https://github.com/Skoun181/hammond-modern/releases) · [Änderungsverlauf](CHANGELOG-MODERN.md)
+**Stable-Version: v1.1.11** · Weiterentwicklung im Develop-Branch · [Releases](https://github.com/Skoun181/hammond-modern/releases) · [Änderungsverlauf](CHANGELOG-MODERN.md)
 
 > **Teststand:** Die alltäglichen Funktionen und die Migrationsvorschau wurden auf einer privaten Debian-13-LXC-Installation getestet. Das Docker-Hub-Image wurde außerdem erfolgreich auf einer Synology über Dockhand und macvlan gestartet (Anwenderbestätigung). Der portable ZIP-Export und -Import wurden praktisch getestet (Anwenderbestätigung). Ein vollständiger Original-Hammond-Import und umfassender Sicherheits- und Produktionstest sind weiterhin nicht bestätigt.
 
-## Neu in Develop (1.1.11-dev)
+## Neu in v1.1.11 – Home Assistant
 
 - Home Assistant: eigene read-only API für offene Wartungen mit persönlich widerrufbarem API-Schlüssel (nur Hash in der Datenbank). Neue Seite **Home Assistant** im Hammond-Menü für Schlüssel-Erstellung, Rotation und Widerruf.
-- Offizielle Home Assistant Custom-Integration im Repository: Wartungen offen, bald fällig, heute fällig, überfällig, nächste Wartung und dynamische Sensoren für einzelne Wartungen. Integration über die Home-Assistant-Oberfläche, Aktualisierung alle fünf Minuten; keine Änderungen an Wartungen oder sonstigen Daten.
-- Installation manuell unter `/config/custom_components/hammond_modern`. In Home Assistant unter Einstellungen → Geräte & Dienste hinzufügen. Kein offizieller Marketplace-Eintrag.
-- API-Schlüssel werden **nicht** in portable ZIP-Backups übernommen; nach einem Serverumzug bitte neu ausstellen. Siehe [Home-Assistant-Anleitung](docs/HOME-ASSISTANT.md).
+- **Empfohlen:** Native Home-Assistant-REST-Sensoren mit `secrets.yaml`, ohne Custom-Integration. Beispiel unter [`homeassistant/hammond_modern.yaml`](homeassistant/hammond_modern.yaml), Anleitung unter [`docs/HOME-ASSISTANT-REST.md`](docs/HOME-ASSISTANT-REST.md). Abfrage alle fünf Minuten.
+- **Optional/experimentell:** Home-Assistant-Custom-Integration mit dynamischen Sensoren pro Wartung; keine Schreibzugriffe.
+- Nur für die optionale Custom-Integration: manuell unter `/config/custom_components/hammond_modern` installieren und über Einstellungen → Geräte & Dienste einrichten. Kein offizieller Marketplace-Eintrag.
+- API-Schlüssel werden **nicht** in portable ZIP-Backups übernommen; nach einem Serverumzug bitte neu ausstellen. Siehe [Home Assistant ohne Integration](docs/HOME-ASSISTANT-REST.md) oder [optionale Custom-Integration](docs/HOME-ASSISTANT.md).
 
 ## Neu in v1.1.10 – Erweiterte Finanzierung
 
@@ -122,6 +123,7 @@ Eine automatische Wartungsbenachrichtigung ist derzeit nicht enthalten.
 | --- | --- |
 | [`stable/hammond-modern`](https://github.com/Skoun181/hammond-modern/tree/stable/hammond-modern) | Standardbranch für aktuelle Stable-Installationen |
 | [`develop/hammond-modern-next`](https://github.com/Skoun181/hammond-modern/tree/develop/hammond-modern-next) | Weiterentwicklung; Änderungen zunächst hier testen |
+| [`v1.1.11`](https://github.com/Skoun181/hammond-modern/releases/tag/v1.1.11) | Home-Assistant-Wartungs-API, read-only API-Key und native REST-Anbindung | 
 | [`v1.1.10`](https://github.com/Skoun181/hammond-modern/releases/tag/v1.1.10) | Stable-Release mit erweiterter Finanzierung und transparenter Restschuldübersicht |
 | [`v1.1.9`](https://github.com/Skoun181/hammond-modern/releases/tag/v1.1.9) | Frühere Version mit Wartungserinnerungen, Fixkosten und Finanzierung |
 | [`v1.1.8`](https://github.com/Skoun181/hammond-modern/releases/tag/v1.1.8) | Frühere Version mit automatischer Reifenlaufleistung, Saisonwechsel und E5/E10 |
@@ -153,7 +155,7 @@ Datei `compose.yaml` erstellen:
 ```yaml
 services:
   hammond-modern:
-    image: skoun181/hammond-modern:1.1.10
+    image: skoun181/hammond-modern:1.1.11
     container_name: hammond-modern
     restart: unless-stopped
     ports:
@@ -185,7 +187,7 @@ cd hammond-modern
 # Nur bei einer Neuinstallation ausführen:
 (umask 077; printf 'JWT_SECRET=%s\n' "$(openssl rand -hex 32)" > .env)
 printf 'TZ=Europe/Berlin\n' >> .env
-docker pull skoun181/hammond-modern:1.1.10
+docker pull skoun181/hammond-modern:1.1.11
 docker run -d \
   --name hammond-modern \
   --restart unless-stopped \
@@ -193,7 +195,7 @@ docker run -d \
   -p 3006:3000 \
   -v "$PWD/data/config:/config" \
   -v "$PWD/data/assets:/assets" \
-  skoun181/hammond-modern:1.1.10
+  skoun181/hammond-modern:1.1.11
 ```
 
 Browser: `http://SERVER-IP:3006`. Docker Pull allein startet keinen Container.
@@ -204,7 +206,7 @@ Browser: `http://SERVER-IP:3006`. Docker Pull allein startet keinen Container.
 git clone --branch stable/hammond-modern https://github.com/Skoun181/hammond-modern.git
 cd hammond-modern
 # Optional: festen Release-Stand verwenden
-git checkout v1.1.10
+git checkout v1.1.11
 mkdir -p data/config data/assets
 # Nur bei einer Neuinstallation ausführen:
 (umask 077; printf 'JWT_SECRET=%s\n' "$(openssl rand -hex 32)" > .env)
@@ -216,7 +218,7 @@ Browser: `http://SERVER-IP:3006`. Ohne den optionalen Checkout wird der aktuelle
 
 ### Develop – GitHub Container Registry (GHCR)
 
-Der Entwicklungsstand wird über den Workflow [Publish Develop to GHCR](https://github.com/Skoun181/hammond-modern/actions/workflows/develop-publish.yml) bei Pushes auf `develop/hammond-modern-next` nach Backend-Tests, Docker-Build und einem Starttest veröffentlicht (linux/amd64). Stable auf Docker Hub bleibt unverändert.
+Der Entwicklungsstand wird über den Workflow [Publish Develop to GHCR](https://github.com/Skoun181/hammond-modern/actions/workflows/develop-publish.yml) bei Pushes auf `develop/hammond-modern-next` nach Backend-Tests, Docker-Build und einem Starttest veröffentlicht (linux/amd64). Stable auf Docker Hub wird separat über die getestete Release-Pipeline veröffentlicht.
 
 Sobald der Workflow erfolgreich abgeschlossen ist:
 
@@ -289,7 +291,7 @@ Vor Updates den Container stoppen und die persistenten Verzeichnisse sowie .env 
 - Docker Run: neues Image pullen, alten Container stoppen und entfernen, vollständigen Run-Befehl mit neuem Tag und unveränderten Bind Mounts erneut ausführen.
 - Git-Build: `git fetch origin --tags`, gewünschten Release-Tag auschecken oder `git switch stable/hammond-modern` und `git pull --ff-only origin stable/hammond-modern`; dann `docker compose -f compose.test.yml up -d --build`.
 
-Der feste Tag `1.1.10` ist für reproduzierbare Installationen empfohlen. `latest` aktualisiert laufende Container nicht automatisch. Stable und Develop nicht gegen dieselben Datenverzeichnisse betreiben.
+Der feste Tag `1.1.11` ist für reproduzierbare Installationen empfohlen. `latest` aktualisiert laufende Container nicht automatisch. Stable und Develop nicht gegen dieselben Datenverzeichnisse betreiben.
 
 ## Backup, Wiederherstellung und Serverumzug
 
@@ -318,7 +320,7 @@ Anwendungsdaten wiederherstellen.
 ### Frische Installation mit benannten Volumes (optional)
 
 ```bash
-git clone --branch v1.1.10 https://github.com/Skoun181/hammond-modern.git
+git clone --branch v1.1.11 https://github.com/Skoun181/hammond-modern.git
 cd hammond-modern
 (umask 077; printf 'JWT_SECRET=%s\n' "$(openssl rand -hex 32)" > .env)
 docker compose up -d --build
@@ -328,12 +330,12 @@ Die neue `docker-compose.yml` verwendet benannte Volumes
 `hammond_config` und `hammond_assets`. Der öffentliche Port ist über
 `HAMMOND_PORT` in der `.env` einstellbar (Standard `3006`, Containerport `3000`).
 
-**Bestehende Installationen:** Bisherige Compose-Datei, Projektnamen, Mounts und JWT_SECRET beim Update beibehalten. Nicht einfach auf neue leere Volumes wechseln. Alte v1.1.5-Instanz zuerst auf v1.1.10 aktualisieren und dann exportieren.
+**Bestehende Installationen:** Bisherige Compose-Datei, Projektnamen, Mounts und JWT_SECRET beim Update beibehalten. Nicht einfach auf neue leere Volumes wechseln. Alte v1.1.5-Instanz zuerst auf v1.1.11 aktualisieren und dann exportieren.
 
 ### Umzug in fünf Schritten
 
 1. Als Admin auf dem alten Server **Backup & Umzug → Backup herunterladen (.zip)** wählen und extern sichern.
-2. Auf dem neuen Server v1.1.10 installieren und einen Admin mit derselben E-Mail-Adresse wie im Backup anlegen. Neues Passwort und JWT_SECRET sind möglich.
+2. Auf dem neuen Server v1.1.11 installieren und einen Admin mit derselben E-Mail-Adresse wie im Backup anlegen. Neues Passwort und JWT_SECRET sind möglich.
 3. ZIP auswählen und **Backup prüfen**. Maximal 512 MiB ZIP und 1 GiB entpackte Daten.
 4. Warnung bestätigen, Checkbox setzen und `ERSETZEN` eingeben. **Daten endgültig wiederherstellen** startet den Import mit Sicherheitsbackup.
 5. Mit Ziel-Admin-Passwort neu anmelden, weitere Benutzerpasswörter setzen und Fahrzeuge, Tankungen, Wartungen und Rechnungen prüfen. Alten Server erst danach abschalten.
