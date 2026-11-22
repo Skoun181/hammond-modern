@@ -15,9 +15,16 @@ export default {
     totals(){
       const result=Object.create(null)
       for(const p of this.active){
-        if(!result[p.currency])result[p.currency]={currency:p.currency,monthly:0,remaining:0,hasFinite:false}
+        if(!result[p.currency])result[p.currency]={currency:p.currency,monthly:0,remaining:0,hasFinite:false,loanCount:0,knownBalances:0,balance:0}
         const x=result[p.currency];x.monthly+=p.amountCents/p.intervalMonths
         if(p.remainingCents!=null){x.remaining+=p.remainingCents;x.hasFinite=true}
+        if (p.category === 'Finanzierung') {
+          x.loanCount++
+          if (p.estimatedBalanceCents != null) {
+            x.knownBalances++
+            x.balance += p.estimatedBalanceCents
+          }
+        }
       }
       return Object.values(result)
     },
@@ -170,7 +177,13 @@ export default {
     <b-field label="Fahrzeug filtern"><b-select v-model="filter" expanded><option value="">Alle Fahrzeuge</option><option v-for="v in vehicles" :key="v.id" :value="v.id">{{ vehicleName(v.id) }}</option></b-select></b-field>
     <div v-for="t in totals" :key="t.currency" class="box plan-summary">
       <div><p class="heading">Reguläre monatliche Fixkosten (Durchschnitt)</p><strong>{{ money(t.monthly,t.currency) }}</strong></div>
-      <div v-if="t.hasFinite"><p class="heading">Noch geplante Raten (begrenzte Pläne)</p><strong>{{ money(t.remaining,t.currency) }}</strong></div>
+      <div v-if="t.hasFinite"><p class="heading">Ausstehende Zahlungen inkl. Zinsen</p><strong>{{ money(t.remaining,t.currency) }}</strong><p class="help">Alle aktiven befristeten Kostenpläne, inklusive Schlussraten.</p></div>
+      <div v-if="t.loanCount"><p class="heading">Geschätzte aktuelle Kreditrestschuld</p>
+        <strong v-if="t.knownBalances">{{ money(t.balance,t.currency) }}</strong>
+        <strong v-else>–</strong>
+        <p v-if="t.knownBalances < t.loanCount" class="help">Nur {{ t.knownBalances }} von {{ t.loanCount }} aktiven Finanzierungen berechenbar. Fehlende Darlehens- oder Zinsdaten ergänzen.</p>
+        <p v-else class="help">Aktive Finanzierungen, ohne zukünftige Zinsen. Modellrechnung, kein bestätigter Bankrestsaldo.</p>
+      </div>
     </div>
     <p v-if="loading">Kostenpläne werden geladen …</p>
     <p v-else-if="!visible.length" class="box">Noch keine Kostenpläne vorhanden.</p>
@@ -183,7 +196,19 @@ export default {
           <p>Erste Fälligkeit: {{ date(p.startDate) }}<span v-if="p.lastDate"> · Letzte Fälligkeit: {{ date(p.lastDate) }}</span></p>
           <template v-if="p.installments">
             <p class="heading">Ratenfortschritt: {{ p.generated }} / {{ p.installments }} erfasst</p><progress class="progress is-warning" :value="p.generated" :max="p.installments">{{ p.generated }}</progress>
-            <p>{{ p.remainingInstallments }} noch nicht erfasste Raten · <strong>{{ money(p.remainingCents,p.currency) }}</strong></p><p v-if="p.finalCents !== null && p.finalCents !== undefined">Letzte Rate: {{ money(p.finalCents,p.currency) }}</p><p class="help">Geplante Ratensumme, kein Kreditrestsaldo. Gestoppte Pläne werden nicht weiter gebucht.</p>
+            <div class="plan-grid">
+              <div>
+                <p class="heading">{{ p.category === 'Finanzierung' ? 'Ausstehende Zahlungen inkl. Zinsen' : 'Ausstehende Zahlungen' }}</p>
+                <strong>{{ money(p.remainingCents,p.currency) }}</strong>
+                <p>{{ p.remainingInstallments }} noch nicht erfasste Raten, inkl. letzter Rate.</p>
+              </div>
+              <div v-if="p.category === 'Finanzierung'">
+                <p class="heading">Geschätzte aktuelle Kreditrestschuld</p>
+                <strong v-if="p.estimatedBalanceCents !== null">{{ money(p.estimatedBalanceCents,p.currency) }}</strong><strong v-else>–</strong>
+                <p class="help">Ohne zukünftige Zinsen; auf Basis berücksichtigter Raten.</p>
+              </div>
+            </div>
+            <p v-if="p.finalCents !== null && p.finalCents !== undefined">Letzte Rate: {{ money(p.finalCents,p.currency) }}</p><p class="help">Gestoppte Pläne werden nicht weiter gebucht. Die verbleibenden Werte sind rechnerische Planwerte.</p>
           </template>
           <section v-if="p.category === 'Finanzierung'" class="plan-preview">
             <p class="heading">Gesamte geplante Zahlungen inkl. Anzahlung</p><strong>{{ money(p.totalCents,p.currency) }}</strong>
@@ -193,7 +218,6 @@ export default {
               <p v-if="p.financing.nominalBps !== null">Sollzins: {{ (p.financing.nominalBps / 100).toLocaleString('de-DE') }} % p. a.</p>
               <p v-if="p.financing.effectiveBps !== null">Effektiver Jahreszins: {{ (p.financing.effectiveBps / 100).toLocaleString('de-DE') }} %</p>
               <p v-if="p.financingCostCents !== null">Raten minus Nettodarlehen: {{ money(p.financingCostCents,p.currency) }}</p>
-              <p v-if="p.estimatedBalanceCents !== null">Geschätzte Restschuld: {{ money(p.estimatedBalanceCents,p.currency) }}</p>
               <template v-if="p.financing.calculation">
                 <p v-if="p.financing.calculation.monthlyRatePpm !== null">Monatlicher Berechnungszins: {{ (p.financing.calculation.monthlyRatePpm / 10000).toLocaleString('de-DE', { maximumFractionDigits: 4 }) }} %</p>
                 <p v-if="p.financing.calculation.firstInterestCents !== null">Zinsanteil erste Rate: {{ money(p.financing.calculation.firstInterestCents,p.currency) }}</p>
@@ -217,7 +241,9 @@ export default {
 .plan-vehicle{font-size:1.15rem;font-weight:750;color:var(--hm-text)}
 .plan-highlight,.plan-grid>div,.plan-preview{background:var(--hm-input);border:1px solid var(--hm-border);padding:12px;border-radius:9px}
 .plan-highlight strong,.plan-summary strong{font-size:1.65rem}
-.plan-grid,.plan-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.plan-summary{grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr))}
+.plan-grid,.plan-summary{display:grid;gap:12px}
+.plan-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 .plan-actions{margin-top:auto;padding-top:12px}
 .plan-notes{white-space:pre-wrap}
 .plan-form .checkbox{color:var(--hm-text)!important}
