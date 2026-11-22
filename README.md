@@ -10,10 +10,19 @@ Hammond Modern ist ein unabhängiger Community-Fork von [akhilrex/hammond](https
 
 ## Neu in Develop (1.1.9-dev)
 
-- Wartungserinnerungen im Dashboard und Wartungscenter: nach Kalendertagen oder km-Stand aus Tankungen und Ausgaben, konfigurierbare Vorwarnung (Standard 30 Tage/1.000 km). Beim Abschluss mit tatsächlichem Datum und km-Stand erzeugen Wiederholungsregeln den Folgetermin und behalten die Historie. Noch keine externen Push-/E-Mail-Dienste.
+- Wartungserinnerungen im Dashboard und Wartungscenter: nach Kalendertagen oder km-Stand aus Tankungen und Ausgaben, konfigurierbare Vorwarnung (Standard 30 Tage/1.000 km). Beim Abschluss mit tatsächlichem Datum und km-Stand erzeugen Wiederholungsregeln den Folgetermin und behalten die Historie. Optionaler ntfy-Push (pro Wartung aktivieren); E-Mail/andere Dienste sind noch nicht enthalten.
 - Fixkosten & Finanzierung: monatliche, vierteljährliche, halbjährliche oder jährliche Sollbuchungen für Versicherung, Steuer, Leasing, Finanzierung usw. Bei Finanzierung monatliche Ratenanzahl einschließlich optional abweichender letzter Rate. Nur noch nicht erfasste Raten ab heute planen; es werden keine Zahlungen ausgelöst.
 - Der Server verbucht fällige Raten beim Start und periodisch im laufenden Betrieb, auch nach einem Neustart. Pro Rate sind Ausgabenerfassung und Fortschritt transaktional gekoppelt. Bereits gebuchte Raten werden beim manuellen Löschen nicht erneut erzeugt. Plan stoppen beendet weitere Buchungen; bestehende Ausgaben bleiben. Rest-Ratensumme ist kein Tilgungsplan/Kreditrestsaldo.
 - Neue Tabellen für Wartungsregeln und Kostenpläne sind im portablen ZIP enthalten, ältere kompatible ZIPs bleiben importierbar. Separate Develop-Daten und externes Backup verwenden.
+
+### Optional: ntfy-Erinnerungen
+
+In der Develop-Compose-Datei unter environment ergänzen:
+```yaml
+HAMMOND_NTFY_URL: https://ntfy.example.org/dein-privater-topic
+HAMMOND_NTFY_TOKEN: ${HAMMOND_NTFY_TOKEN:-}
+```
+Die URL ist der vollständige Publish-Endpunkt inklusive Topic. Token bei authentifiziertem ntfy setzen und geheim halten. Einen privaten, zugriffsgeschützten Topic verwenden; keine öffentliche Beispiel-URL übernehmen. Pro Wartung den Schalter aktivieren. Der gemeinsame Kanal erhält generische Erinnerungen ohne Fahrzeug-/Benutzerdetails beim Vorwarnzeitpunkt und bei der Fälligkeit jeweils einmal (bei einem Absturz direkt nach Zustellung kann sich eine Nachricht wiederholen). Der Server prüft alle fünf Minuten, ohne URL wird nichts versendet. URL und Token sind Container-Konfiguration und nicht Teil des ZIP.
 
 ## Neu in v1.1.8 – Automatische Reifenlaufleistung und Kraftstoffsorten
 

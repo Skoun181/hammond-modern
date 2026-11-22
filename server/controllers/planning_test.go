@@ -12,7 +12,7 @@ func TestMaintenanceDueAndRepeat(t *testing.T){
  g,err:=gorm.Open(sqlite.Open(filepath.Join(t.TempDir(),"maintenance.sqlite")),&gorm.Config{DisableForeignKeyConstraintWhenMigrating:true})
  if err!=nil{t.Fatal(err)}
  raw,_:=g.DB();defer raw.Close()
- if err=g.AutoMigrate(&db.Vehicle{},&db.UserVehicle{},&db.MaintenanceTask{},&db.MaintenanceRule{});err!=nil{t.Fatal(err)}
+ if err=g.AutoMigrate(&db.User{},&db.Vehicle{},&db.UserVehicle{},&db.MaintenanceTask{},&db.MaintenanceRule{});err!=nil{t.Fatal(err)}
  v:=db.Vehicle{Nickname:"Test"};if err=g.Create(&v).Error;err!=nil{t.Fatal(err)}
  if err=g.Create(&db.UserVehicle{UserID:"owner",VehicleID:v.ID,IsOwner:true}).Error;err!=nil{t.Fatal(err)}
  now:=time.Date(2024,1,31,12,0,0,0,time.Local);due:=now.AddDate(0,0,45);odo:=15000

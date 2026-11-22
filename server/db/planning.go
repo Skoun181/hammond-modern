@@ -8,6 +8,8 @@ type MaintenanceRule struct {
 	ReminderDays int `json:"reminderDays"`
 	ReminderKm int `json:"reminderKm"`
 	CompletedOdo *int `json:"completedOdo"`
+	Notify bool `json:"notify"`
+	NotificationStage int `json:"-"`
 }
 type RecurringCost struct {
 	Base

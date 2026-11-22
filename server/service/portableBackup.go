@@ -613,7 +613,7 @@ func portableCheckRestore(stage string, m PortableManifest, files map[string]boo
 	}
 	if _,present:=m.Counts["maintenance_rules"];present{
 		var invalid int
-		if err=incoming.QueryRow("SELECT COUNT(*) FROM maintenance_rules r LEFT JOIN maintenance_tasks t ON t.id=r.task_id WHERE t.id IS NULL OR r.repeat_months IS NULL OR r.repeat_months NOT BETWEEN 0 AND 120 OR r.repeat_km IS NULL OR r.repeat_km NOT BETWEEN 0 AND 1000000 OR r.reminder_days IS NULL OR r.reminder_days NOT BETWEEN 0 AND 365 OR r.reminder_km IS NULL OR r.reminder_km NOT BETWEEN 0 AND 1000000 OR (r.completed_odo IS NOT NULL AND r.completed_odo NOT BETWEEN 0 AND 10000000)").Scan(&invalid);err!=nil{return result,err}
+		if err=incoming.QueryRow("SELECT COUNT(*) FROM maintenance_rules r LEFT JOIN maintenance_tasks t ON t.id=r.task_id WHERE t.id IS NULL OR r.repeat_months IS NULL OR r.repeat_months NOT BETWEEN 0 AND 120 OR r.repeat_km IS NULL OR r.repeat_km NOT BETWEEN 0 AND 1000000 OR r.reminder_days IS NULL OR r.reminder_days NOT BETWEEN 0 AND 365 OR r.reminder_km IS NULL OR r.reminder_km NOT BETWEEN 0 AND 1000000 OR r.notification_stage IS NULL OR r.notification_stage NOT BETWEEN 0 AND 2 OR (r.completed_odo IS NOT NULL AND r.completed_odo NOT BETWEEN 0 AND 10000000)").Scan(&invalid);err!=nil{return result,err}
 		if invalid!=0{return result,errors.New("Ungültige Wartungsregeln im Backup")}
 	}
 	if _,present:=m.Counts["recurring_costs"];present{

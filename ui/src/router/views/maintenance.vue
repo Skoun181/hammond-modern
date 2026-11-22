@@ -4,7 +4,7 @@ import MaintenanceOverview from '@components/maintenanceOverview.vue'
 import axios from 'axios'
 import {mapState} from 'vuex'
 const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
-const blank=(id='')=>({vehicleId:id,title:'',notes:'',dueDate:'',dueOdo:'',repeatMonths:0,repeatKm:0,reminderDays:30,reminderKm:1000})
+const blank=(id='')=>({vehicleId:id,title:'',notes:'',dueDate:'',dueOdo:'',repeatMonths:0,repeatKm:0,reminderDays:30,reminderKm:1000,notify:false})
 export default {
   page:{title:'Wartungscenter'},components:{Layout,MaintenanceOverview},
   data(){return {tasks:[],loading:false,saving:false,error:'',success:'',editingId:'',showForm:false,overviewKey:0,form:blank(),completion:null,completionDate:'',completionOdo:''}},
@@ -27,7 +27,7 @@ export default {
       if(this.saving)return
       this.saving=true;this.error='';this.success=''
       const p=this.form
-      try{const data={vehicleId:p.vehicleId,title:p.title,notes:p.notes,dueDate:p.dueDate?p.dueDate+'T12:00:00Z':null,dueOdo:this.optional(p.dueOdo),repeatMonths:Number(p.repeatMonths||0),repeatKm:Number(p.repeatKm||0),reminderDays:Number(p.reminderDays),reminderKm:Number(p.reminderKm)}
+      try{const data={vehicleId:p.vehicleId,title:p.title,notes:p.notes,dueDate:p.dueDate?p.dueDate+'T12:00:00Z':null,dueOdo:this.optional(p.dueOdo),repeatMonths:Number(p.repeatMonths||0),repeatKm:Number(p.repeatKm||0),reminderDays:Number(p.reminderDays),reminderKm:Number(p.reminderKm),notify:!!p.notify}
         if(this.editingId)await axios.put('/api/maintenance/'+this.editingId,data);else await axios.post('/api/maintenance',data)
         this.reset();await this.loadTasks();this.overviewKey++;this.success='Wartung gespeichert.'
       }catch(e){this.error=(e.response&&e.response.data&&e.response.data.error)||'Speichern fehlgeschlagen.'}finally{this.saving=false}
@@ -72,6 +72,7 @@ export default {
           <p class="help">Für ein Intervall das entsprechende erste Fälligkeitsdatum bzw. den ersten Fälligkeits-Kilometerstand eintragen. Beispiel: 12 Monate / 15.000 km (nach Herstellervorgabe anpassen).</p>
         </div>
         <div class="maintenance-panel"><h3 class="title is-6">Vorwarnung im Dashboard</h3><div class="columns"><div class="column"><b-field label="Tage vorher"><b-input v-model="form.reminderDays" type="number" min="0" max="365" step="1" required /></b-field></div><div class="column"><b-field label="Kilometer vorher"><b-input v-model="form.reminderKm" type="number" min="0" max="1000000" step="1" required /></b-field></div></div></div>
+        <b-field><b-checkbox v-model="form.notify">Zusätzlich per ntfy erinnern</b-checkbox></b-field><p class="help">Optional: Der Betreiber muss HAMMOND_NTFY_URL setzen. Aktivierte Push-Erinnerungen gehen an den gemeinsamen Kanal ohne Fahrzeug- oder Benutzerdetails.</p>
         <b-field label="Notizen"><b-input v-model="form.notes" type="textarea" maxlength="2000" /></b-field>
         <div class="buttons"><b-button type="is-primary" native-type="submit" :loading="saving">Wartung speichern</b-button><b-button :disabled="saving" @click="reset">Abbrechen</b-button></div>
       </form>

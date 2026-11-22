@@ -21,6 +21,7 @@ type maintenanceInput struct {
  RepeatKm int `json:"repeatKm"`
  ReminderDays *int `json:"reminderDays"`
  ReminderKm *int `json:"reminderKm"`
+ Notify bool `json:"notify"`
 }
 type maintenanceView struct{
  db.MaintenanceTask
@@ -52,6 +53,8 @@ func setMaintenanceRule(tx *gorm.DB,id string,in maintenanceInput)error{
  r.RepeatMonths=in.RepeatMonths;r.RepeatKm=in.RepeatKm
  if in.ReminderDays!=nil{r.ReminderDays=*in.ReminderDays}
  if in.ReminderKm!=nil{r.ReminderKm=*in.ReminderKm}
+ if in.Notify&&!r.Notify{r.NotificationStage=0}
+ r.Notify=in.Notify
  return tx.Save(&r).Error
 }
 func maintenanceStatus(task db.MaintenanceTask,rule db.MaintenanceRule,odo *int,now time.Time)maintenanceView{
@@ -94,7 +97,7 @@ func completeMaintenance(tx *gorm.DB,userID,id string,in maintenanceCompletion,n
  if rule.RepeatMonths>0{d:=service.PlanningMonth(date,rule.RepeatMonths);next.DueDate=&d}
  if rule.RepeatKm>0{n:=*in.Odo+rule.RepeatKm;next.DueOdo=&n}
  if err=tx.Create(&next).Error;err!=nil{return err}
- rule.TaskID=next.ID;rule.CompletedOdo=nil
+ rule.TaskID=next.ID;rule.CompletedOdo=nil;rule.NotificationStage=0
  return tx.Create(&rule).Error
 }
 func maintenanceError(c *gin.Context,err error){

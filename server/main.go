@@ -90,6 +90,7 @@ func intiCron() {
 	//gocron.Every(uint64(checkFrequency)).Minutes().Do(service.DownloadMissingEpisodes)
 	service.RunRecurringCosts()
 	gocron.Every(1).Minutes().Do(service.RunRecurringCosts)
+	gocron.Every(5).Minutes().Do(controllers.RunMaintenanceReminders)
 	gocron.Every(2).Days().Do(service.CreateBackup)
 	<-gocron.Start()
 }

@@ -24,7 +24,8 @@ export default {
     urgent() { return this.tasks.filter(t => ['overdue','due'].includes(t.severity)).length },
     soon() { return this.tasks.filter(t => t.severity === 'soon').length },
   },
-  mounted() { this.load() },
+  mounted() { this.load(); this.refreshTimer = setInterval(() => { if (!this.loading) this.load() }, 60000) },
+  beforeDestroy() { clearInterval(this.refreshTimer) },
   methods: {
     async load() {
       this.loading = true
