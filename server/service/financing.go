@@ -16,6 +16,10 @@ func ValidFinancingTerms(t db.FinancingTerms,now time.Time)bool{
  }else if t.DownPaymentDate!=""||t.AlreadyRecorded{return false}
  if t.PrincipalCents!=nil&&(*t.PrincipalCents<=0||*t.PrincipalCents>100000000){return false}
  for _,r:=range []*int{t.NominalBps,t.EffectiveBps}{if r!=nil&&(*r<0||*r>10000){return false}}
+ if c:=t.Calculation;c!=nil{
+  if c.MonthlyRatePPM!=nil&&(*c.MonthlyRatePPM<0||*c.MonthlyRatePPM>100000){return false}
+  if c.FirstInterestCents!=nil&&(*c.FirstInterestCents<0||*c.FirstInterestCents>100000000){return false}
+ }
  return true
 }
 // Caller owns transaction. Metadata and expense commit together.
@@ -30,6 +34,13 @@ func SaveFinancingTerms(tx *gorm.DB,plan db.RecurringCost,user db.User,t db.Fina
  if exists{
   if err=tx.Model(&db.FinancingTerms{}).Where("plan_id = ?",plan.ID).Select("down_payment_cents","down_payment_date","already_recorded","principal_cents","nominal_bps","effective_bps").Updates(&t).Error;err!=nil{return err}
  }else if err=tx.Create(&t).Error;err!=nil{return err}
+ // Replace only the calculation settings, never the installment progress.
+ if err=tx.Where("plan_id = ?",plan.ID).Delete(&db.FinancingCalculation{}).Error;err!=nil{return err}
+ if t.Calculation!=nil&&(t.Calculation.MonthlyRatePPM!=nil||t.Calculation.FirstInterestCents!=nil){
+  calculation:=*t.Calculation
+  calculation.PlanID=plan.ID
+  if err=tx.Create(&calculation).Error;err!=nil{return err}
+ }
  if old.DownPaymentCents>0||t.DownPaymentCents==0||t.AlreadyRecorded{return nil}
  d,err:=time.ParseInLocation("2006-01-02",t.DownPaymentDate,time.Local)
  if err!=nil{return err}
@@ -48,14 +59,23 @@ func FinancingSummary(p db.RecurringCost,t *db.FinancingTerms)(total,creditCost,
  if t==nil||t.PrincipalCents==nil{return}
  cost:=sum-*t.PrincipalCents
  creditCost=&cost
- if t.NominalBps==nil||p.IntervalMonths!=1{return}
- b:=float64(*t.PrincipalCents)
- rate:=float64(*t.NominalBps)/120000
+ if p.IntervalMonths!=1{return}
+ rate:=float64(-1)
+ if t.NominalBps!=nil{rate=float64(*t.NominalBps)/120000}
+ if t.Calculation!=nil&&t.Calculation.MonthlyRatePPM!=nil{rate=float64(*t.Calculation.MonthlyRatePPM)/1000000}
+ if rate<0{return}
+ // The calculated interest is rounded to cents at EACH installment.
+ // The optional first-interest value and monthly rate are taken from
+ // the user's bank schedule, not inferred from the APR or down payment.
+ b:=*t.PrincipalCents
  for i:=0;i<p.Generated&&i<p.Installments;i++{
-  b=b*(1+rate)-float64(CostAmount(p,i))
+  interest:=math.Round(float64(b)*rate)
+  if i==0&&t.Calculation!=nil&&t.Calculation.FirstInterestCents!=nil{interest=float64(*t.Calculation.FirstInterestCents)}
+  if math.IsInf(interest,0)||math.IsNaN(interest)||interest>1e15{return}
+  b+=int64(interest)-CostAmount(p,i)
   if b<0{b=0}
-  if math.IsInf(b,0)||math.IsNaN(b)||b>1e15{return}
+  if b>1000000000000000{return}
  }
- v:=int64(math.Round(b));balance=&v
+ balance=&b
  return
 }

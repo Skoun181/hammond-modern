@@ -4,7 +4,7 @@ import axios from 'axios'
 import {formatMoney} from '@utils/format-modern'
 const categories=['Finanzierung','Leasing','Versicherung','Kfz-Steuer','Stellplatz','Abonnement','Sonstiges']
 const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
-const emptyTerms = () => ({ down: '', downDate: today(), already: false, principal: '', nominal: '', effective: '' })
+const emptyTerms = () => ({ down: '', downDate: today(), already: false, principal: '', nominal: '', effective: '', monthlyRate: '', firstInterest: '' })
 const blank=()=>({vehicleId:'',title:'',category:'Finanzierung',amount:'',startDate:today(),intervalMonths:1,installments:48,final:'',notes:'',confirmed:false,historyMode:'',alreadyRecorded:0,terms:emptyTerms()})
 export default {
   page:{title:'Fixkosten & Finanzierung'},components:{Layout},
@@ -58,13 +58,14 @@ export default {
   mounted(){this.load()},
   methods:{
     financePayload(t) {
-      return { downPaymentCents: this.cents(t.down || 0), downPaymentDate: Number(t.down) > 0 ? t.downDate : '', alreadyRecorded: Number(t.down) > 0 && t.already, principalCents: t.principal === '' ? null : this.cents(t.principal), nominalBps: t.nominal === '' ? null : this.cents(t.nominal), effectiveBps: t.effective === '' ? null : this.cents(t.effective) }
+      return { downPaymentCents: this.cents(t.down || 0), downPaymentDate: Number(t.down) > 0 ? t.downDate : '', alreadyRecorded: Number(t.down) > 0 && t.already, principalCents: t.principal === '' ? null : this.cents(t.principal), nominalBps: t.nominal === '' ? null : this.cents(t.nominal), effectiveBps: t.effective === '' ? null : this.cents(t.effective), calculation: { monthlyRatePpm: t.monthlyRate === '' ? null : Math.round(Number(t.monthlyRate) * 10000), firstInterestCents: t.firstInterest === '' ? null : this.cents(t.firstInterest) } }
     },
     startFinance(p) {
       const t = p.financing || {}
       this.showForm = false
       this.editingFinance = p
-      this.editTerms = { down: t.downPaymentCents ? t.downPaymentCents / 100 : '', downDate: t.downPaymentDate || today(), already: !!t.alreadyRecorded, principal: t.principalCents == null ? '' : t.principalCents / 100, nominal: t.nominalBps == null ? '' : t.nominalBps / 100, effective: t.effectiveBps == null ? '' : t.effectiveBps / 100 }
+      const calculation = t.calculation || {}
+      this.editTerms = { down: t.downPaymentCents ? t.downPaymentCents / 100 : '', downDate: t.downPaymentDate || today(), already: !!t.alreadyRecorded, principal: t.principalCents == null ? '' : t.principalCents / 100, nominal: t.nominalBps == null ? '' : t.nominalBps / 100, effective: t.effectiveBps == null ? '' : t.effectiveBps / 100, monthlyRate: calculation.monthlyRatePpm == null ? '' : calculation.monthlyRatePpm / 10000, firstInterest: calculation.firstInterestCents == null ? '' : calculation.firstInterestCents / 100 }
       this.$nextTick(() => { const el = this.$el.querySelector('#finance-edit'); if (el) el.scrollIntoView({ block: 'start' }) })
     },
     async saveFinance() {
@@ -113,6 +114,9 @@ export default {
           <div class="column is-half"><b-field label="Nettodarlehensbetrag" message="Kreditbetrag laut Vertrag, ohne Anzahlung."><b-input v-model="editTerms.principal" type="number" min="0.01" max="1000000" step="0.01" /></b-field></div>
           <div class="column is-half"><b-field label="Sollzins p. a. (%)"><b-input v-model="editTerms.nominal" type="number" min="0" max="100" step="0.01" /></b-field></div>
           <div class="column is-half"><b-field label="Effektiver Jahreszins (%)"><b-input v-model="editTerms.effective" type="number" min="0" max="100" step="0.01" /></b-field></div>
+          <div class="column is-full"><h3 class="title is-6">Abweichende Zinsberechnung (optional)</h3><p class="help">Nur wenn der Tilgungsplan der Bank von Sollzins / 12 abweicht. Vertragszinsen bleiben unverändert.</p></div>
+          <div class="column is-half"><b-field label="Monatlicher Berechnungszins (%)" message="Leer = Sollzins geteilt durch 12. Wert aus dem Tilgungsplan."><b-input v-model="editTerms.monthlyRate" type="number" min="0" max="10" step="0.0001" /></b-field></div>
+          <div class="column is-half"><b-field label="Zinsanteil der ersten Rate" message="Nicht die erste Rate selbst. Leer = reguläre Zinsberechnung."><b-input v-model="editTerms.firstInterest" type="number" min="0" max="1000000" step="0.01" /></b-field></div>
         </div><p class="help">Vertragsraten bleiben unverändert. Ohne Häkchen wird die Anzahlung einmalig zum angegebenen Datum als Ausgabe gebucht. Nach dem Speichern bleiben Betrag und Datum der Anzahlung festgeschrieben.</p>
         <div class="buttons"><b-button type="is-primary" native-type="submit" :loading="busy" :disabled="busy">Details speichern</b-button><b-button :disabled="busy" @click="editingFinance = null">Abbrechen</b-button></div>
       </form>
@@ -138,6 +142,9 @@ export default {
           <div class="column is-half"><b-field label="Nettodarlehensbetrag" message="Kreditbetrag laut Vertrag, ohne Anzahlung."><b-input v-model="form.terms.principal" type="number" min="0.01" max="1000000" step="0.01" /></b-field></div>
           <div class="column is-half"><b-field label="Sollzins p. a. (%)"><b-input v-model="form.terms.nominal" type="number" min="0" max="100" step="0.01" /></b-field></div>
           <div class="column is-half"><b-field label="Effektiver Jahreszins (%)"><b-input v-model="form.terms.effective" type="number" min="0" max="100" step="0.01" /></b-field></div>
+          <div class="column is-full"><h3 class="title is-6">Abweichende Zinsberechnung (optional)</h3><p class="help">Nur wenn der Tilgungsplan der Bank von Sollzins / 12 abweicht. Vertragszinsen bleiben unverändert.</p></div>
+          <div class="column is-half"><b-field label="Monatlicher Berechnungszins (%)" message="Leer = Sollzins geteilt durch 12. Wert aus dem Tilgungsplan."><b-input v-model="form.terms.monthlyRate" type="number" min="0" max="10" step="0.0001" /></b-field></div>
+          <div class="column is-half"><b-field label="Zinsanteil der ersten Rate" message="Nicht die erste Rate selbst. Leer = reguläre Zinsberechnung."><b-input v-model="form.terms.firstInterest" type="number" min="0" max="1000000" step="0.01" /></b-field></div>
         </div><p class="help">Vertragsraten bleiben unverändert. Ohne Häkchen wird die Anzahlung einmalig zum angegebenen Datum als Ausgabe gebucht. Nach dem Speichern bleiben Betrag und Datum der Anzahlung festgeschrieben.</p></div>
         <p v-if="previewTotal !== null" class="plan-preview">Geplante Gesamtsumme: <strong>{{ (previewTotal / 100).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</strong> in deiner Währung</p>
         <div v-if="pastStart" class="plan-preview">
@@ -187,7 +194,11 @@ export default {
               <p v-if="p.financing.effectiveBps !== null">Effektiver Jahreszins: {{ (p.financing.effectiveBps / 100).toLocaleString('de-DE') }} %</p>
               <p v-if="p.financingCostCents !== null">Raten minus Nettodarlehen: {{ money(p.financingCostCents,p.currency) }}</p>
               <p v-if="p.estimatedBalanceCents !== null">Geschätzte Restschuld: {{ money(p.estimatedBalanceCents,p.currency) }}</p>
-              <p class="help">Restschuld unter Annahme monatlicher Sollzinsen und planmäßiger Zahlungen, ohne Gebühren, Sondertilgungen oder abweichende Zinstage. Kein Bankrestsaldo.</p>
+              <template v-if="p.financing.calculation">
+                <p v-if="p.financing.calculation.monthlyRatePpm !== null">Monatlicher Berechnungszins: {{ (p.financing.calculation.monthlyRatePpm / 10000).toLocaleString('de-DE', { maximumFractionDigits: 4 }) }} %</p>
+                <p v-if="p.financing.calculation.firstInterestCents !== null">Zinsanteil erste Rate: {{ money(p.financing.calculation.firstInterestCents,p.currency) }}</p>
+              </template>
+              <p class="help">Restschuld mit centgenauer monatlicher Zinsrundung und optionalen Berechnungswerten der Bank. Planmäßige Zahlungen, ohne Gebühren oder Sondertilgungen; kein bestätigter Bankrestsaldo.</p>
             </template>
             <b-button size="is-small" :disabled="busy" @click="startFinance(p)">Finanzierungsdetails ergänzen / bearbeiten</b-button>
           </section>

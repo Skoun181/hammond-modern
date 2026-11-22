@@ -2,6 +2,8 @@
 
 ## 1.1.10-dev – Noch nicht veröffentlicht
 
+- Centgenaue Restschuldmodellierung mit optionalem monatlichen Berechnungszins und abweichendem Zinsanteil der ersten Rate.
+
 - Anzahlung mit einmaliger Ausgabenerfassung, Vertragszinsen und Nettodarlehen für neue und bestehende Finanzierungen; Gesamtaufwand und modellierte Restschuld ohne Änderung des Ratenplans.
 
 ## v1.1.9 – Wartungserinnerungen, Fixkosten und Finanzierung (22. November 2026)

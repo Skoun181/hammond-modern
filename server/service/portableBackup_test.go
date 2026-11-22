@@ -126,6 +126,14 @@ func TestPortableBackupRoundTripAndPasswordRedaction(t *testing.T) {
 	terms:=db.FinancingTerms{PlanID:plan.ID,DownPaymentCents:200000,DownPaymentDate:"2025-12-15",AlreadyRecorded:true,PrincipalCents:&principal,NominalBps:&nominal,EffectiveBps:&effective}
 	if err=g.Create(&terms).Error;err!=nil{t.Fatal(err)}
 	if _,err=InspectPortableZIP(oldFinanceZIP,user);err!=nil{t.Fatalf("pre-finance preview: %v",err)}
+	preCalcZIP,_,err:=CreatePortableZIP()
+	if err!=nil{t.Fatal(err)}
+	defer os.Remove(preCalcZIP)
+	if err=g.AutoMigrate(&db.FinancingCalculation{});err!=nil{t.Fatal(err)}
+	monthly:=3750;first:=int64(6500)
+	calc:=db.FinancingCalculation{PlanID:plan.ID,MonthlyRatePPM:&monthly,FirstInterestCents:&first}
+	if err=g.Create(&calc).Error;err!=nil{t.Fatal(err)}
+	if _,err=InspectPortableZIP(preCalcZIP,user);err!=nil{t.Fatalf("pre-calculation preview: %v",err)}
 	zipFile, summary, err := CreatePortableZIP()
 	if err != nil {
 		t.Fatalf("export failed: %v", err)
@@ -185,6 +193,9 @@ func TestPortableBackupRoundTripAndPasswordRedaction(t *testing.T) {
 		t.Fatal("admin not found in backup")
 	}
 
+	if _,err=RestorePortableZIP(preCalcZIP,user);err!=nil{t.Fatalf("pre-calculation restore: %v",err)}
+	var calculationCount int64
+	if err=g.Model(&db.FinancingCalculation{}).Count(&calculationCount).Error;err!=nil||calculationCount!=0{t.Fatal("older backup must clear calculation settings")}
 	if _,err=RestorePortableZIP(oldFinanceZIP,user);err!=nil{t.Fatalf("pre-finance restore: %v",err)}
 	var financeCount int64
 	if err=g.Model(&db.FinancingTerms{}).Count(&financeCount).Error;err!=nil||financeCount!=0{t.Fatal("older backup must clear financing details")}
@@ -217,6 +228,8 @@ func TestPortableBackupRoundTripAndPasswordRedaction(t *testing.T) {
 	if err=g.Where("tire_id = ?",tire.ID).First(&restoredMount).Error;err!=nil||restoredMount.MountOdo!=1000||restoredMount.MountedOn!="2026-03-01"{t.Fatalf("mounting interval not restored: %#v %v",restoredMount,err)}
 	var restoredTerms db.FinancingTerms
 	if err=g.Where("plan_id = ?",plan.ID).First(&restoredTerms).Error;err!=nil||restoredTerms.DownPaymentCents!=200000||restoredTerms.NominalBps==nil||*restoredTerms.NominalBps!=450||!restoredTerms.AlreadyRecorded{t.Fatalf("financing terms not restored: %#v %v",restoredTerms,err)}
+	var restoredCalc db.FinancingCalculation
+	if err=g.Where("plan_id = ?",plan.ID).First(&restoredCalc).Error;err!=nil||restoredCalc.MonthlyRatePPM==nil||*restoredCalc.MonthlyRatePPM!=3750||restoredCalc.FirstInterestCents==nil||*restoredCalc.FirstInterestCents!=6500{t.Fatalf("calculation not restored: %#v %v",restoredCalc,err)}
 	if result.SafetyBackup == "" {
 		t.Fatal("missing safety snapshot")
 	}

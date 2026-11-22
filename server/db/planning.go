@@ -37,4 +37,13 @@ type FinancingTerms struct {
  PrincipalCents *int64 `json:"principalCents"`
  NominalBps *int `json:"nominalBps"`
  EffectiveBps *int `json:"effectiveBps"`
+ Calculation *FinancingCalculation `gorm:"-" json:"calculation"`
+}
+
+// Optional bank-specific calculation basis, separate from contractual rates.
+// A separate table preserves compatibility with earlier portable backups.
+type FinancingCalculation struct {
+ PlanID string `gorm:"primaryKey" json:"-"`
+ MonthlyRatePPM *int `json:"monthlyRatePpm"` // 0.56% = 5600 ppm
+ FirstInterestCents *int64 `json:"firstInterestCents"`
 }

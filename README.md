@@ -12,6 +12,7 @@ Hammond Modern ist ein unabhängiger Community-Fork von [akhilrex/hammond](https
 
 - Finanzierung: optionale Anzahlung mit Zahlungsdatum bis heute, automatisch einmalig als Fahrzeugausgabe oder als bereits erfasst markieren. Bestehende Pläne über „Finanzierungsdetails ergänzen / bearbeiten“ erweitern; kein erneutes Anlegen der Raten erforderlich. Gespeicherte Anzahlungen sind festgeschrieben, die Vertragszinsen bleiben editierbar.
 - Optional Nettodarlehensbetrag, Sollzins und effektiver Jahreszins laut Vertrag erfassen. Gesamte geplante Zahlungen inklusive Anzahlung sowie Differenz aus Ratensumme und Nettodarlehen; geschätzte Restschuld aus Sollzins und berücksichtigten Raten (vereinfachtes Monatsmodell, keine Gebühren oder Sondertilgungen). Effektivzins wird dokumentiert, nicht als Sollzins verwendet. Vertragliche Raten und Schlussrate bleiben maßgeblich.
+- Optional abweichenden monatlichen Berechnungszins und Zinsanteil der ersten Rate aus dem Bank-Tilgungsplan hinterlegen. Zinsrundung je Rate auf Cent; die Vertragszinsen und automatischen Ausgaben bleiben unverändert. Ohne Zusatzwerte wird Sollzins / 12 genutzt.
 - Zusätzliche Finanzierungsdetails im portablen ZIP; ältere kompatible Backups bleiben importierbar. Separate Testinstanz und externe Datensicherung verwenden.
 
 ## Neu in v1.1.9 – Wartungserinnerungen, Fixkosten und Finanzierung

@@ -14,7 +14,7 @@ func TestRecurringFinancingBookings(t *testing.T){
  if err!=nil{t.Fatal(err)}
  db.DB=g
  t.Cleanup(func(){db.DB=old;sql,_:=g.DB();sql.Close()})
- if err=g.AutoMigrate(&db.User{},&db.Vehicle{},&db.UserVehicle{},&db.Expense{},&db.Fillup{},&db.RecurringCost{},&db.FinancingTerms{});err!=nil{t.Fatal(err)}
+ if err=g.AutoMigrate(&db.User{},&db.Vehicle{},&db.UserVehicle{},&db.Expense{},&db.Fillup{},&db.RecurringCost{},&db.FinancingTerms{},&db.FinancingCalculation{});err!=nil{t.Fatal(err)}
  user:=db.User{Email:"plan@example.test",Currency:"EUR",DistanceUnit:db.KILOMETERS}
  v:=db.Vehicle{Nickname:"Auto"}
  for _,x:=range []interface{}{&user,&v}{if err=g.Create(x).Error;err!=nil{t.Fatal(err)}}
@@ -53,6 +53,12 @@ func TestRecurringFinancingBookings(t *testing.T){
  if err=save();err!=nil{t.Fatal(err)}
  if err=save();err!=nil{t.Fatal(err)}
  nominal=500;if err=save();err!=nil{t.Fatal(err)}
+ monthly:=5600;firstInterest:=11700
+ terms.Calculation=&db.FinancingCalculation{MonthlyRatePPM:&monthly,FirstInterestCents:func()*int64{v:=int64(firstInterest);return &v}()}
+ if err=save();err!=nil{t.Fatal(err)}
+ var calc db.FinancingCalculation
+ if err=g.Where("plan_id = ?",historical.ID).First(&calc).Error;err!=nil||calc.MonthlyRatePPM==nil||*calc.MonthlyRatePPM!=5600{t.Fatalf("calculation not persisted: %#v %v",calc,err)}
+ if err=save();err!=nil{t.Fatal(err)}
  var payments []db.Expense
  if err=g.Where("source = ?","FinancingDownPayment").Find(&payments).Error;err!=nil||len(payments)!=1||payments[0].Amount!=2000{t.Fatalf("down payment duplicated: %#v %v",payments,err)}
  if err=g.First(&historical,"id = ?",historical.ID).Error;err!=nil||historical.Generated!=18||historical.BookedCents!=540000{t.Fatal("installment progress changed")}
@@ -62,4 +68,21 @@ func TestRecurringFinancingBookings(t *testing.T){
  if err=save();err==nil{t.Fatal("changing recorded down payment accepted")}
  terms.DownPaymentDate="2027-01-01";if ValidFinancingTerms(terms,historyNow){t.Fatal("future payment accepted")}
 
+}
+
+// Synthetic contract: check the opening-interest override, monthly
+// calculation rate and exact cent rounding independently of nominal APR.
+func TestBankCalculationRounding(t *testing.T){
+ principal:=int64(1000000);nominal:=678;monthly:=5600;first:=int64(7000)
+ plan:=db.RecurringCost{Category:"Finanzierung",IntervalMonths:1,Installments:60,AmountCents:20000}
+ terms:=db.FinancingTerms{PrincipalCents:&principal,NominalBps:&nominal,Calculation:&db.FinancingCalculation{MonthlyRatePPM:&monthly,FirstInterestCents:&first}}
+ for i,want:=range []int64{1000000,987000,972527,957973}{
+  plan.Generated=i
+  _,_,balance:=FinancingSummary(plan,&terms)
+  if balance==nil||*balance!=want{t.Fatalf("after %d installments, want %d got %v",i,want,balance)}
+ }
+ terms.Calculation=nil
+ plan.Generated=1
+ _,_,balance:=FinancingSummary(plan,&terms)
+ if balance==nil||*balance!=985650{t.Fatalf("default nominal calculation: %v",balance)}
 }

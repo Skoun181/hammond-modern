@@ -76,6 +76,9 @@ func RegisterRecurringCostController(router *gin.RouterGroup){
   if err:=db.DB.Where("plan_id IN (?)",db.DB.Model(&db.RecurringCost{}).Select("id").Where("owner_user_id = ? AND deleted_at IS NULL",c.GetString("userId"))).Find(&terms).Error;err!=nil{c.JSON(500,gin.H{"error":"Finanzierungsdetails konnten nicht geladen werden"});return}
   byPlan:=map[string]*db.FinancingTerms{}
   for i:=range terms{byPlan[terms[i].PlanID]=&terms[i]}
+  var calculations []db.FinancingCalculation
+  if err:=db.DB.Where("plan_id IN (?)",db.DB.Model(&db.RecurringCost{}).Select("id").Where("owner_user_id = ? AND deleted_at IS NULL",c.GetString("userId"))).Find(&calculations).Error;err!=nil{c.JSON(500,gin.H{"error":"Berechnungsdaten konnten nicht geladen werden"});return}
+  for i:=range calculations{if t:=byPlan[calculations[i].PlanID];t!=nil{t.Calculation=&calculations[i]}}
   views:=make([]costView,0,len(plans));for _,p:=range plans{views=append(views,costOutput(p,byPlan[p.ID]))};c.JSON(200,views)
  })
  group.POST("",func(c *gin.Context){
