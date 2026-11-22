@@ -12,6 +12,7 @@ Hammond Modern ist ein unabhängiger Community-Fork von [akhilrex/hammond](https
 
 - Home Assistant: eigene read-only API für offene Wartungen mit persönlich widerrufbarem API-Schlüssel (nur Hash in der Datenbank). Neue Seite **Home Assistant** im Hammond-Menü für Schlüssel-Erstellung, Rotation und Widerruf.
 - Offizielle Home Assistant Custom-Integration im Repository: Wartungen offen, bald fällig, heute fällig, überfällig, nächste Wartung und dynamische Sensoren für einzelne Wartungen. Integration über die Home-Assistant-Oberfläche, Aktualisierung alle fünf Minuten; keine Änderungen an Wartungen oder sonstigen Daten.
+- Installation manuell unter `/config/custom_components/hammond_modern`. In Home Assistant unter Einstellungen → Geräte & Dienste hinzufügen. Kein offizieller Marketplace-Eintrag.
 - API-Schlüssel werden **nicht** in portable ZIP-Backups übernommen; nach einem Serverumzug bitte neu ausstellen. Siehe [Home-Assistant-Anleitung](docs/HOME-ASSISTANT.md).
 
 ## Neu in v1.1.10 – Erweiterte Finanzierung

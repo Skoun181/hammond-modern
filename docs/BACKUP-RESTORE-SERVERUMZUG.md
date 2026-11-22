@@ -19,6 +19,7 @@
 | Ausgaben und Werkstattkosten | Ja |
 | Wartungen, Fahrer, Zuordnungen und Freigaben | Ja |
 | Reifen und Fahrzeugzuordnungen | Ja (ab v1.1.7) |
+| Home-Assistant-Leseschlüssel | **Nein** – werden absichtlich nicht exportiert; nach Restore neu ausstellen |
 | Optionale Zinsberechnungswerte aus Bank-Tilgungsplan | Ja (ab v1.1.10) |
 | Finanzierungsdetails inkl. Anzahlung und Vertragszinsen | Ja (ab v1.1.10); ältere ZIPs enthalten diese Tabelle nicht |
 | Wartungsregeln und wiederkehrende Kosten inkl. Buchungsfortschritt | Ja (ab v1.1.9); ältere ZIPs enthalten diese neuen Tabellen nicht |

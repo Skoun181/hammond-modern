@@ -43,9 +43,21 @@ jobs:
           NODE_OPTIONS: --openssl-legacy-provider
         run: npm run build
 
+  home-assistant:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Compile and validate Home Assistant integration
+        run: |
+          python -m compileall -q custom_components/hammond_modern
+          python -m unittest discover -s tests/home_assistant -p 'test_*.py'
+
   release:
     if: github.ref == 'refs/heads/stable/hammond-modern' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
-    needs: [backend, frontend]
+    needs: [backend, frontend, home-assistant]
     runs-on: ubuntu-latest
     permissions:
       contents: write
