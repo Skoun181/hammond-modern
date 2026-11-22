@@ -18,6 +18,7 @@ export default {
         { name: 'drivers', title: 'Fahrer', icon: '♙' },
         { name: 'recurring-costs', title: 'Fixkosten & Finanzierung', icon: '€' },
         { name: 'maintenance', title: 'Wartungscenter', icon: '⚒' },
+        { name: 'home-assistant', title: 'Home Assistant', icon: '⌂' },
         { name: this.isAdmin ? 'backup' : 'import', title: 'Backup & Umzug', icon: '⇄' },
         { name: 'settings', title: 'Einstellungen', icon: '⚙' },
         ...(this.isAdmin ? [

@@ -1,5 +1,9 @@
 # Hammond Modern – Änderungsverlauf
 
+## 1.1.11-dev – Noch nicht veröffentlicht
+
+- Home Assistant Custom-Integration mit read-only Wartungssensoren, API-Schlüsselverwaltung, automatischer Wartungserkennung und datensparsamem Backup-Verhalten.
+
 ## v1.1.10 – Erweiterte Finanzierung (22. November 2026)
 
 - Verständlichere Fixkostenübersicht: ausstehende Zahlungen inklusive Zinsen und Schlussrate sowie separat geschätzte aktuelle Kreditrestschuld.

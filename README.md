@@ -8,6 +8,12 @@ Hammond Modern ist ein unabhängiger Community-Fork von [akhilrex/hammond](https
 
 > **Teststand:** Die alltäglichen Funktionen und die Migrationsvorschau wurden auf einer privaten Debian-13-LXC-Installation getestet. Das Docker-Hub-Image wurde außerdem erfolgreich auf einer Synology über Dockhand und macvlan gestartet (Anwenderbestätigung). Der portable ZIP-Export und -Import wurden praktisch getestet (Anwenderbestätigung). Ein vollständiger Original-Hammond-Import und umfassender Sicherheits- und Produktionstest sind weiterhin nicht bestätigt.
 
+## Neu in Develop (1.1.11-dev)
+
+- Home Assistant: eigene read-only API für offene Wartungen mit persönlich widerrufbarem API-Schlüssel (nur Hash in der Datenbank). Neue Seite **Home Assistant** im Hammond-Menü für Schlüssel-Erstellung, Rotation und Widerruf.
+- Offizielle Home Assistant Custom-Integration im Repository: Wartungen offen, bald fällig, heute fällig, überfällig, nächste Wartung und dynamische Sensoren für einzelne Wartungen. Integration über die Home-Assistant-Oberfläche, Aktualisierung alle fünf Minuten; keine Änderungen an Wartungen oder sonstigen Daten.
+- API-Schlüssel werden **nicht** in portable ZIP-Backups übernommen; nach einem Serverumzug bitte neu ausstellen. Siehe [Home-Assistant-Anleitung](docs/HOME-ASSISTANT.md).
+
 ## Neu in v1.1.10 – Erweiterte Finanzierung
 
 - Finanzierungsübersicht: ausstehende Zahlungen inklusive zukünftiger Zinsen und Schlussrate getrennt von der geschätzten aktuellen Kreditrestschuld. Übersicht pro Währung über aktive Pläne; fehlende Berechnungsdaten werden ausdrücklich angezeigt.
