@@ -1,0 +1,30 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Hammond Modern",
+        "description": "Enter the Hammond URL (reachable by Home Assistant) and the read-only API key from Hammond > Home Assistant.",
+        "data": {
+          "url": "Hammond URL",
+          "api_key": "Read-only API key"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Reconnect Hammond Modern",
+        "description": "The API key has been revoked or rotated. Enter the new one from Hammond > Home Assistant.",
+        "data": {
+          "api_key": "New read-only API key"
+        }
+      }
+    },
+    "error": {
+      "invalid_url": "Invalid Hammond URL",
+      "invalid_auth": "Invalid or revoked API key",
+      "cannot_connect": "Cannot connect to Hammond Modern",
+      "different_account": "Key belongs to another Hammond user"
+    },
+    "abort": {
+      "already_configured": "This Hammond user is already configured"
+    }
+  }
+}

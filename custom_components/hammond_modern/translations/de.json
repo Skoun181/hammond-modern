@@ -1,0 +1,30 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Hammond Modern",
+        "description": "Hammond-Adresse (von Home Assistant erreichbar) und persönlichen Lese-API-Schlüssel aus Hammond > Home Assistant eingeben.",
+        "data": {
+          "url": "Hammond-Adresse",
+          "api_key": "API-Schlüssel (nur Lesen)"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Hammond Modern erneut verbinden",
+        "description": "Der Schlüssel wurde widerrufen oder erneuert. Den neuen Schlüssel aus Hammond > Home Assistant eingeben.",
+        "data": {
+          "api_key": "Neuer API-Schlüssel"
+        }
+      }
+    },
+    "error": {
+      "invalid_url": "Ungültige Hammond-Adresse",
+      "invalid_auth": "Ungültiger oder widerrufener Schlüssel",
+      "cannot_connect": "Hammond Modern nicht erreichbar",
+      "different_account": "Der Schlüssel gehört einem anderen Hammond-Benutzer"
+    },
+    "abort": {
+      "already_configured": "Dieser Hammond-Benutzer ist bereits eingerichtet"
+    }
+  }
+}
