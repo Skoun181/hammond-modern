@@ -1,4 +1,4 @@
-# Hammond Modern v1.1.8 – Synology DSM / Dockhand
+# Hammond Modern v1.1.9 – Synology DSM / Dockhand
 
 ## Status
 
@@ -10,7 +10,7 @@ Das Docker-Hub-Image `skoun181/hammond-modern:1.1.5` wurde per GitHub Actions er
 
 1. In Dockhand einen **normalen Compose-Stack** anlegen (kein Git-Stack und kein lokaler Build erforderlich).
 2. Die Datei [`docker-compose.dockerhub.yml`](../docker-compose.dockerhub.yml) als Vorlage verwenden. Sie enthält das veröffentlichte Image und die bereits getestete Synology-Konfiguration:
-   - Image: `skoun181/hammond-modern:1.1.8`
+   - Image: `skoun181/hammond-modern:1.1.9`
    - Externes Docker-Netzwerk `macvlan`
    - Container-IP: `192.168.0.36`, Anwendung auf Port `3000`
    - Persistente Daten: `/volume2/docker/Hammond/Hammond-config` und `/volume2/docker/Hammond/Hammond-assets`

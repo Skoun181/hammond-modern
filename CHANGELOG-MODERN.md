@@ -1,6 +1,6 @@
 # Hammond Modern – Änderungsverlauf
 
-## 1.1.9-dev – Noch nicht veröffentlicht
+## v1.1.9 – Wartungserinnerungen, Fixkosten und Finanzierung (22. November 2026)
 
 - Bestehende Finanzierungen ab ursprünglicher erster Fälligkeit erfassen; historische Raten nachtragen oder ausdrücklich bereits erfasste Raten berücksichtigen, mit Vorschau und Vertragsende.
 

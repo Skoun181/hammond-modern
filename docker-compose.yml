@@ -1,11 +1,11 @@
-# Hammond Modern v1.1.8 local build with portable export/restore.
+# Hammond Modern v1.1.9 local build with portable export/restore.
 # This creates Docker-managed named volumes (not bind mounts).
 # For fresh installations; keep existing data mounts when upgrading.
 # Requires a local clone and a .env containing JWT_SECRET.
 services:
   hammond-modern:
     build: .
-    image: hammond-modern:1.1.8
+    image: hammond-modern:1.1.9
     container_name: hammond-modern
     restart: unless-stopped
     ports:
