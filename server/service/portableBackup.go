@@ -192,6 +192,11 @@ func portableSanitise(path string) (string, []string, error) {
 	}
 	defer conn.Close()
 	conn.SetMaxOpenConns(1)
+	// Overwriting/deleting credential rows must also erase old SQLite page
+	// content, not merely make the sensitive rows unreachable to SQL.
+	if _, err = conn.Exec("PRAGMA secure_delete=ON"); err != nil {
+		return "", nil, err
+	}
 	if err = portableCheckSQLite(conn); err != nil {
 		return "", nil, err
 	}
@@ -242,6 +247,11 @@ func portableSanitise(path string) (string, []string, error) {
 				return "", nil, fmt.Errorf("Zugangsdaten konnten nicht entfernt werden: %w", err)
 			}
 		}
+	}
+	// Rebuild the snapshot after all redactions. This also prevents credential
+	// fragments in free pages from being included in the ZIP file.
+	if _, err = conn.Exec("VACUUM"); err != nil {
+		return "", nil, err
 	}
 	if err = portableCheckSQLite(conn); err != nil {
 		return "", nil, err

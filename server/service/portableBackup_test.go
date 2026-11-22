@@ -2,6 +2,7 @@ package service
 
 import (
 	"archive/zip"
+	"bytes"
 	"database/sql"
 	"io"
 	"os"
@@ -175,6 +176,9 @@ func TestPortableBackupRoundTripAndPasswordRedaction(t *testing.T) {
 	if !found {
 		t.Fatal("SQLite snapshot missing")
 	}
+	snapshotBytes,err:=os.ReadFile(restoredSnapshot)
+	if err!=nil{t.Fatal(err)}
+	if bytes.Contains(snapshotBytes,[]byte("private-test-key-hash")){t.Fatal("redacted backup still contains Home Assistant token hash in SQLite pages")}
 	snap, err := sql.Open("sqlite3", restoredSnapshot)
 	if err != nil {
 		t.Fatal(err)
