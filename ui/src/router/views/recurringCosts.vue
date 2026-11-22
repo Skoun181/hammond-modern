@@ -20,7 +20,11 @@ export default {
       }
       return Object.values(result)
     },
-    previewTotal(){const n=Number(this.form.installments),a=this.cents(this.form.amount);return n>0&&a>0?(n-1)*a+(this.form.final===''?a:this.cents(this.form.final)):null},
+    previewTotal() {
+      const n = Number(this.form.installments)
+      const a = this.cents(this.form.amount)
+      return n > 0 && a > 0 ? (n - 1) * a + (this.form.final === '' ? a : this.cents(this.form.final)) : null
+    },
   },
   watch:{'form.category'(v){if(v==='Finanzierung'){this.form.intervalMonths=1;if(!Number(this.form.installments))this.form.installments=48}else{this.form.installments=0;this.form.final=''}}},
   mounted(){this.load()},
@@ -42,14 +46,15 @@ export default {
   }
 }
 </script>
+
 <template>
   <Layout>
     <div class="hm-page-heading">
       <div><p class="hm-eyebrow">KOSTENPLANUNG</p><h1 class="title hm-page-title">Fixkosten &amp; Finanzierung</h1><p class="hm-page-description">Wiederkehrende Fahrzeugkosten und Finanzierungsraten automatisch als Ausgaben erfassen.</p></div>
-      <div class="buttons"><b-button :disabled="busy||loading" @click="run">Fällige verbuchen</b-button><b-button type="is-primary" :disabled="busy||loading||!vehicles.length" @click="add">＋ Kostenplan</b-button></div>
+      <div class="buttons"><b-button :disabled="busy || loading" @click="run">Fällige verbuchen</b-button><b-button type="is-primary" :disabled="busy || loading || !vehicles.length" @click="add">＋ Kostenplan</b-button></div>
     </div>
-    <b-notification v-if="error" type="is-danger" @close="error=''">{{ error }}</b-notification>
-    <b-notification v-if="success" type="is-success" @close="success=''">{{ success }}</b-notification>
+    <b-notification v-if="error" type="is-danger" @close="error = ''">{{ error }}</b-notification>
+    <b-notification v-if="success" type="is-success" @close="success = ''">{{ success }}</b-notification>
     <p class="box">Automatische Sollbuchungen sind keine Zahlungsnachweise. Es werden keine Überweisungen ausgelöst. Bei einer laufenden Finanzierung nur noch nicht erfasste Raten ab der nächsten Fälligkeit planen.</p>
     <div v-if="showForm" class="box plan-form">
       <h2 class="title is-5">Kostenplan anlegen</h2>
@@ -60,14 +65,14 @@ export default {
           <div class="column is-half"><b-field label="Bezeichnung *"><b-input v-model="form.title" required maxlength="120" placeholder="z. B. Autofinanzierung" /></b-field></div>
           <div class="column is-half"><b-field label="Reguläre Rate / Betrag *" message="Währung aus deinen Einstellungen."><b-input v-model="form.amount" type="number" min="0.01" max="1000000" step="0.01" required /></b-field></div>
           <div class="column is-half"><b-field label="Erste noch nicht erfasste Fälligkeit *"><input v-model="form.startDate" class="input" type="date" :min="today()" required /></b-field></div>
-          <div class="column is-half"><b-field label="Intervall"><b-select v-model.number="form.intervalMonths" :disabled="form.category==='Finanzierung'" expanded><option :value="1">Monatlich</option><option :value="3">Vierteljährlich</option><option :value="6">Halbjährlich</option><option :value="12">Jährlich</option></b-select></b-field></div>
-          <div class="column is-half"><b-field label="Noch zu erfassende Raten" :message="form.category==='Finanzierung'?'Anzahl inklusive letzter Rate.':'0 = unbegrenzt'"><b-input v-model="form.installments" type="number" :min="form.category==='Finanzierung'?1:0" max="600" step="1" required /></b-field></div>
-          <div v-if="Number(form.installments)>0" class="column is-half"><b-field label="Abweichende letzte Rate / Schlussrate" message="Gesamtbetrag der letzten Rate, nicht zusätzlich zur normalen Rate. Leer = normale Rate."><b-input v-model="form.final" type="number" min="0.01" max="1000000" step="0.01" /></b-field></div>
+          <div class="column is-half"><b-field label="Intervall"><b-select v-model.number="form.intervalMonths" :disabled="form.category === 'Finanzierung'" expanded><option :value="1">Monatlich</option><option :value="3">Vierteljährlich</option><option :value="6">Halbjährlich</option><option :value="12">Jährlich</option></b-select></b-field></div>
+          <div class="column is-half"><b-field label="Noch zu erfassende Raten" :message="form.category === 'Finanzierung' ? 'Anzahl inklusive letzter Rate.' : '0 = unbegrenzt'"><b-input v-model="form.installments" type="number" :min="form.category === 'Finanzierung' ? 1 : 0" max="600" step="1" required /></b-field></div>
+          <div v-if="Number(form.installments) > 0" class="column is-half"><b-field label="Abweichende letzte Rate / Schlussrate" message="Gesamtbetrag der letzten Rate, nicht zusätzlich zur normalen Rate. Leer = normale Rate."><b-input v-model="form.final" type="number" min="0.01" max="1000000" step="0.01" /></b-field></div>
           <div class="column is-full"><b-field label="Notizen"><b-input v-model="form.notes" maxlength="2000" type="textarea" /></b-field></div>
         </div>
-        <p v-if="previewTotal!==null" class="plan-preview">Geplante Gesamtsumme: <strong>{{ (previewTotal/100).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2}) }}</strong> in deiner Währung</p>
+        <p v-if="previewTotal !== null" class="plan-preview">Geplante Gesamtsumme: <strong>{{ (previewTotal / 100).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</strong> in deiner Währung</p>
         <b-field><b-checkbox v-model="form.confirmed">Ich möchte die fälligen Raten automatisch als Ausgaben erfassen lassen und habe bereits erfasste Raten berücksichtigt.</b-checkbox></b-field>
-        <div class="buttons"><b-button type="is-primary" native-type="submit" :loading="busy" :disabled="busy||!form.confirmed">Kostenplan speichern</b-button><b-button :disabled="busy" @click="showForm=false">Abbrechen</b-button></div>
+        <div class="buttons"><b-button type="is-primary" native-type="submit" :loading="busy" :disabled="busy || !form.confirmed">Kostenplan speichern</b-button><b-button :disabled="busy" @click="showForm = false">Abbrechen</b-button></div>
       </form>
     </div>
     <b-field label="Fahrzeug filtern"><b-select v-model="filter" expanded><option value="">Alle Fahrzeuge</option><option v-for="v in vehicles" :key="v.id" :value="v.id">{{ vehicleName(v.id) }}</option></b-select></b-field>
@@ -85,15 +90,16 @@ export default {
           <div class="plan-grid"><div><p class="heading">Nächste Fälligkeit</p><strong>{{ date(p.nextDate) }}</strong><p v-if="p.nextDate">{{ money(p.nextCents,p.currency) }}</p></div><div><p class="heading">Erfasst (Soll)</p><strong>{{ money(p.bookedCents,p.currency) }}</strong><p>{{ p.generated }} Buchungen</p></div></div>
           <template v-if="p.installments">
             <p class="heading">Ratenfortschritt: {{ p.generated }} / {{ p.installments }} erfasst</p><progress class="progress is-warning" :value="p.generated" :max="p.installments">{{ p.generated }}</progress>
-            <p>{{ p.remainingInstallments }} noch nicht erfasste Raten · <strong>{{ money(p.remainingCents,p.currency) }}</strong></p><p v-if="p.finalCents!=null">Letzte Rate: {{ money(p.finalCents,p.currency) }}</p><p class="help">Geplante Ratensumme, kein Kreditrestsaldo. Gestoppte Pläne werden nicht weiter gebucht.</p>
+            <p>{{ p.remainingInstallments }} noch nicht erfasste Raten · <strong>{{ money(p.remainingCents,p.currency) }}</strong></p><p v-if="p.finalCents !== null && p.finalCents !== undefined">Letzte Rate: {{ money(p.finalCents,p.currency) }}</p><p class="help">Geplante Ratensumme, kein Kreditrestsaldo. Gestoppte Pläne werden nicht weiter gebucht.</p>
           </template>
           <p v-if="p.notes" class="plan-notes">{{ p.notes }}</p>
-          <div class="buttons plan-actions"><b-button tag="router-link" :to="{name:'vehicle-detail',params:{vehicleId:p.vehicleId}}">Fahrzeugdetails</b-button><b-button v-if="!p.stopped&&p.nextDate" :disabled="busy" type="is-danger" outlined @click="stop(p)">Plan stoppen</b-button></div>
+          <div class="buttons plan-actions"><b-button tag="router-link" :to="{ name: 'vehicle-detail', params: { vehicleId: p.vehicleId } }">Fahrzeugdetails</b-button><b-button v-if="!p.stopped && p.nextDate" :disabled="busy" type="is-danger" outlined @click="stop(p)">Plan stoppen</b-button></div>
         </article>
       </div>
     </div>
   </Layout>
 </template>
+
 <style scoped>
 .plan-card{height:100%;display:flex;flex-direction:column;gap:10px;overflow-wrap:anywhere}
 .plan-card strong,.plan-summary strong,.plan-preview strong{color:var(--hm-text)!important}

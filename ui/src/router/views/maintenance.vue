@@ -45,23 +45,24 @@ export default {
   }
 }
 </script>
+
 <template>
   <Layout>
     <div class="hm-page-heading"><div><p class="hm-eyebrow">FAHRZEUGPFLEGE</p><h1 class="title hm-page-title">Wartungscenter</h1><p class="hm-page-description">Erinnerungen nach Datum oder Kilometerstand. Wiederkehrende Wartungen werden nach dem Abschluss automatisch neu geplant.</p></div><b-button type="is-primary" @click="add">＋ Wartung planen</b-button></div>
-    <b-notification v-if="error" type="is-danger" @close="error=''">{{ error }}</b-notification>
-    <b-notification v-if="success" type="is-success" @close="success=''">{{ success }}</b-notification>
+    <b-notification v-if="error" type="is-danger" @close="error = ''">{{ error }}</b-notification>
+    <b-notification v-if="success" type="is-success" @close="success = ''">{{ success }}</b-notification>
     <MaintenanceOverview :key="overviewKey" heading="Was steht als Nächstes an?" :show-actions="true" @edit="edit" @complete="complete" @remove="remove" />
     <div v-if="completion" id="maintenance-form" class="box maintenance-form">
       <h2 class="title is-5">{{ completion.title }} abschließen</h2>
       <form @submit.prevent="saveComplete">
         <b-field label="Tatsächliches Wartungsdatum *"><input v-model="completionDate" class="input" type="date" :max="today()" required /></b-field>
-        <b-field label="Tatsächlicher Kilometerstand (km)" message="Letzten erfassten Stand am Tacho prüfen. Bei km-Intervall erforderlich."><b-input v-model="completionOdo" type="number" min="0" max="10000000" step="1" :required="!!(completion.rule&&completion.rule.repeatKm)" /></b-field>
-        <p class="help" v-if="completion.rule&&(completion.rule.repeatMonths||completion.rule.repeatKm)">Der neue Termin wird ab dem tatsächlichen Wartungsdatum bzw. Kilometerstand berechnet.</p>
-        <div class="buttons"><b-button type="is-primary" native-type="submit" :loading="saving">Erledigt speichern</b-button><b-button :disabled="saving" @click="completion=null">Abbrechen</b-button></div>
+        <b-field label="Tatsächlicher Kilometerstand (km)" message="Letzten erfassten Stand am Tacho prüfen. Bei km-Intervall erforderlich."><b-input v-model="completionOdo" type="number" min="0" max="10000000" step="1" :required="!!(completion.rule && completion.rule.repeatKm)" /></b-field>
+        <p v-if="completion.rule && (completion.rule.repeatMonths || completion.rule.repeatKm)" class="help">Der neue Termin wird ab dem tatsächlichen Wartungsdatum bzw. Kilometerstand berechnet.</p>
+        <div class="buttons"><b-button type="is-primary" native-type="submit" :loading="saving">Erledigt speichern</b-button><b-button :disabled="saving" @click="completion = null">Abbrechen</b-button></div>
       </form>
     </div>
     <div v-if="showForm" id="maintenance-form" class="box maintenance-form">
-      <h2 class="title is-5">{{ editingId?'Wartung bearbeiten':'Neue Wartung planen' }}</h2>
+      <h2 class="title is-5">{{ editingId ? 'Wartung bearbeiten' : 'Neue Wartung planen' }}</h2>
       <form @submit.prevent="save">
         <b-field label="Fahrzeug"><b-select v-model="form.vehicleId" required expanded><option v-for="v in vehicles" :key="v.id" :value="v.id">{{ v.nickname }} – {{ v.registration }}</option></b-select></b-field>
         <b-field label="Wartung / Termin"><b-input v-model="form.title" required maxlength="120" placeholder="z. B. Ölwechsel, HU / TÜV, Inspektion" /></b-field>
@@ -79,10 +80,11 @@ export default {
     </div>
     <h2 v-if="completedTasks.length" class="title is-5">Wartungshistorie ({{ completedTasks.length }})</h2>
     <div v-for="t in completedTasks" :key="t.id" class="box maintenance-history">
-      <strong>{{ t.title }}</strong> · {{ vehicleName(t.vehicleId) }}<p class="help">Erledigt am {{ t.completedAt.slice(0,10).split('-').reverse().join('.') }}<span v-if="t.rule&&t.rule.completedOdo!=null"> · {{ t.rule.completedOdo.toLocaleString('de-DE') }} km</span></p><b-button size="is-small" type="is-danger" outlined @click="remove(t)">Löschen</b-button>
+      <strong>{{ t.title }}</strong> · {{ vehicleName(t.vehicleId) }}<p class="help">Erledigt am {{ t.completedAt.slice(0,10).split('-').reverse().join('.') }}<span v-if="t.rule && t.rule.completedOdo !== null && t.rule.completedOdo !== undefined"> · {{ t.rule.completedOdo.toLocaleString('de-DE') }} km</span></p><b-button size="is-small" type="is-danger" outlined @click="remove(t)">Löschen</b-button>
     </div>
   </Layout>
 </template>
+
 <style scoped>
 .maintenance-panel{padding:14px;border:1px solid var(--hm-border);border-radius:10px;background:var(--hm-input);margin:14px 0}
 .maintenance-history strong{color:var(--hm-text)!important}

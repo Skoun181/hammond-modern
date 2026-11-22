@@ -75,7 +75,7 @@ export default {
         <strong>{{ task.title }}</strong>
         <p class="help">{{ label(task.vehicleId) }}</p>
       </div>
-      <span class="hm-maintenance-status" :class="'maintenance-'+task.severity">{{ ({overdue:'Überfällig',due:'Fällig',soon:'Demnächst',planned:'Geplant'})[task.severity] }} · {{ task.status }}</span>
+      <span class="hm-maintenance-status" :class="'maintenance-' + task.severity">{{ ({ overdue: 'Überfällig', due: 'Fällig', soon: 'Demnächst', planned: 'Geplant' })[task.severity] }} · {{ task.status }}</span>
       <div v-if="showActions" class="hm-maintenance-actions">
         <b-button size="is-small" @click="$emit('edit', task)">Bearbeiten</b-button>
         <b-button size="is-small" type="is-primary" @click="$emit('complete', task)">Erledigt</b-button>
