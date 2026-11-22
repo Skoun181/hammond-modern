@@ -21,6 +21,8 @@ export default {
       return this.limit > 0 ? items.slice(0, this.limit) : items
     },
     count() { return this.tasks.filter(task => !task.completedAt).length },
+    urgent() { return this.tasks.filter(t => ['overdue','due'].includes(t.severity)).length },
+    soon() { return this.tasks.filter(t => t.severity === 'soon').length },
   },
   mounted() { this.load() },
   methods: {
@@ -35,31 +37,20 @@ export default {
       const vehicle = this.vehicles.find(v => v.id === id)
       return vehicle ? vehicle.nickname + ' – ' + vehicle.registration : 'Fahrzeug'
     },
-    odo(id) {
-      const vehicle = this.vehicles.find(v => v.id === id)
-      if (!vehicle) return null
-      const values = (vehicle.fillups || []).map(f => Number(f.odoReading)).filter(n => n > 0 && Number.isFinite(n))
-      return values.length ? Math.max(...values) : null
-    },
     status(task) {
-      const items = []
-      if (task.dueDate) {
-        const date = new Date(task.dueDate)
-        const days = Math.ceil((date.getTime() - Date.now()) / 86400000)
-        items.push(days < 0 ? 'Termin überfällig' : days === 0 ? 'Heute fällig' : 'In ' + days + ' Tagen')
-      }
-      if (task.dueOdo !== null && task.dueOdo !== undefined) {
-        const current = this.odo(task.vehicleId)
-        items.push(current == null ? 'Kilometerstand noch unbekannt' : current >= task.dueOdo ? 'Kilometer erreicht' : 'Noch ' + (task.dueOdo - current).toLocaleString('de-DE') + ' km')
-      }
+      const items=[]
+      if(task.daysLeft!=null)items.push(task.daysLeft<0?'Seit '+(-task.daysLeft)+' Tagen überfällig':task.daysLeft===0?'Heute fällig':'In '+task.daysLeft+' Tagen')
+      if(task.dueOdo!=null)items.push(task.kmLeft==null?'km-Stand unbekannt':task.kmLeft<0?(-task.kmLeft).toLocaleString('de-DE')+' km überfällig':task.kmLeft===0?'Kilometer erreicht':'Noch '+task.kmLeft.toLocaleString('de-DE')+' km')
       return items.join(' · ')
     },
     priority(task) {
-      const dates = []
-      if (task.dueDate) dates.push((new Date(task.dueDate).getTime() - Date.now()) / 86400000)
-      if (task.dueOdo != null && this.odo(task.vehicleId) != null) dates.push((task.dueOdo - this.odo(task.vehicleId)) / 50)
-      return dates.length ? Math.min(...dates) : 99999
+      const group={overdue:0,due:1,soon:2,planned:3}[task.severity]
+      const values=[]
+      if(task.daysLeft!=null)values.push(task.daysLeft)
+      if(task.kmLeft!=null)values.push(task.kmLeft/50)
+      return (group==null?4:group)*1000000+Math.max(-99999,Math.min(99999,values.length?Math.min(...values):99999))
     },
+
   },
 }
 </script>
@@ -74,6 +65,7 @@ export default {
       </div>
       <b-button type="is-primary" size="is-small" tag="router-link" :to="{ name: 'maintenance', query: { neu: '1' } }">＋ Neue Wartung hinzufügen</b-button>
     </div>
+    <div v-if="urgent || soon" class="maintenance-reminder"><strong>{{ urgent }} fällig / überfällig</strong> · {{ soon }} demnächst fällig</div>
     <p v-if="loading" class="help">Wartungen werden geladen…</p>
     <b-notification v-if="error" type="is-danger" :closable="false">{{ error }}</b-notification>
     <p v-if="!loading && !error && !count" class="help">Keine offenen Wartungen. Über „Neue Wartung“ kannst du TÜV, Ölwechsel oder Inspektionen planen.</p>
@@ -82,7 +74,7 @@ export default {
         <strong>{{ task.title }}</strong>
         <p class="help">{{ label(task.vehicleId) }}</p>
       </div>
-      <span class="hm-maintenance-status">{{ task.status }}</span>
+      <span class="hm-maintenance-status" :class="'maintenance-'+task.severity">{{ ({overdue:'Überfällig',due:'Fällig',soon:'Demnächst',planned:'Geplant'})[task.severity] }} · {{ task.status }}</span>
       <div v-if="showActions" class="hm-maintenance-actions">
         <b-button size="is-small" @click="$emit('edit', task)">Bearbeiten</b-button>
         <b-button size="is-small" type="is-primary" @click="$emit('complete', task)">Erledigt</b-button>
@@ -92,3 +84,10 @@ export default {
     <router-link v-if="limit && count > limit" :to="{ name: 'maintenance' }" class="hm-maintenance-more">Alle {{ count }} Wartungen ansehen</router-link>
   </section>
 </template>
+
+<style scoped>
+.maintenance-reminder{border:1px solid var(--hm-border);border-left:4px solid var(--hm-accent);background:var(--hm-input);padding:10px 12px;border-radius:8px;margin-bottom:10px;color:var(--hm-text)}
+.maintenance-reminder strong{color:var(--hm-text)!important}
+.maintenance-overdue,.maintenance-due{color:var(--hm-text)!important;text-decoration:underline;text-decoration-color:var(--hm-accent)}
+.maintenance-planned{color:var(--hm-muted)!important}
+</style>

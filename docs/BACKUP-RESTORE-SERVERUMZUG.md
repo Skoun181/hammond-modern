@@ -15,6 +15,7 @@
 | Ausgaben und Werkstattkosten | Ja |
 | Wartungen, Fahrer, Zuordnungen und Freigaben | Ja |
 | Reifen und Fahrzeugzuordnungen | Ja (ab v1.1.7) |
+| Wartungsregeln und wiederkehrende Kosten inkl. Buchungsfortschritt | Ja (ab 1.1.9-dev); ältere ZIPs enthalten diese neuen Tabellen nicht |
 | Aktive Montageintervalle und bisherige Reifenlaufleistung | Ja (ab v1.1.8); ältere ZIPs ohne Intervalle benötigen erneuten Startstand |
 | Rechnungen und zulässige Uploads aus `/assets` | Ja |
 | Benutzerprofile und Rollen | Ja |

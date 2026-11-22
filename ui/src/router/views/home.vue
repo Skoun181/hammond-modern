@@ -108,6 +108,7 @@ export default {
     </b-notification>
     <p v-if="vehiclesLoading" class="help">Fahrzeuge werden geladen…</p>
     <MaintenanceOverview :limit="4" />
+    <div class="box"><div class="hm-page-heading"><div><h2 class="title is-5">Fixkosten &amp; Finanzierung</h2><p class="help">Versicherung, Steuer, Leasing und Finanzierungsraten automatisch erfassen.</p></div><b-button tag="router-link" :to="{name:'recurring-costs'}">Kostenpläne</b-button></div></div>
     <StatsWidget :user="me" />
     <CostHistory />
     <br />

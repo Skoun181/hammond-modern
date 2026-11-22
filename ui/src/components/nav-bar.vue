@@ -16,6 +16,7 @@ export default {
         { name: 'vehicles', title: 'Fahrzeuge', icon: '▰' },
         { name: 'tires', title: 'Reifen', icon: '◉' },
         { name: 'drivers', title: 'Fahrer', icon: '♙' },
+        { name: 'recurring-costs', title: 'Fixkosten & Finanzierung', icon: '€' },
         { name: 'maintenance', title: 'Wartungscenter', icon: '⚒' },
         { name: this.isAdmin ? 'backup' : 'import', title: 'Backup & Umzug', icon: '⇄' },
         { name: 'settings', title: 'Einstellungen', icon: '⚙' },

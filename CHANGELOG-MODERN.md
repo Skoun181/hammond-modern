@@ -1,5 +1,11 @@
 # Hammond Modern – Änderungsverlauf
 
+## 1.1.9-dev – Noch nicht veröffentlicht
+
+- Intelligente Wartungserinnerungen nach Datum/km und einstellbarer Vorwarnung im Dashboard; Folgetermine und Historie bei wiederkehrenden Wartungen.
+- Fixkosten und Finanzierung: automatische Sollbuchung, feste Intervalle und Ratenzahl, optionale Schlussrate, Fortschritt und ausstehende Ratensumme; transaktionale Buchung ohne doppelte Erzeugung.
+- Neue Planungsdaten in portablen ZIP-Backups; kompatible alte Backups ohne neue Tabellen bleiben importierbar.
+
 ## v1.1.8 – Automatische Reifenlaufleistung und E5/E10
 
 - Reifenlaufleistung auf Basis des Montage-Kilometerstands und späterer km-Tankungen; Abschluss beim Abmontieren, Fortsetzung beim Wiederaufziehen.

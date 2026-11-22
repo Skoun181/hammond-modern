@@ -35,6 +35,7 @@ export default [
     component: () => lazyLoadView(import('@views/home.vue')),
     props: (route) => ({ user: store.state.auth.currentUser || {} }),
   },
+  { path: '/recurring-costs', name: 'recurring-costs', component: () => lazyLoadView(import('@views/recurringCosts.vue')), meta: { authRequired: true } },
   { path: '/maintenance', name: 'maintenance', component: () => lazyLoadView(import('@views/maintenance.vue')), meta: { authRequired: true } },
   { path: '/vehicles', name: 'vehicles', component: () => lazyLoadView(import('@views/vehicles.vue')), meta: { authRequired: true } },
   { path: '/tires', name: 'tires', component: () => lazyLoadView(import('@views/tires.vue')), meta: { authRequired: true } },

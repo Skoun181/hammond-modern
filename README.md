@@ -8,6 +8,13 @@ Hammond Modern ist ein unabhängiger Community-Fork von [akhilrex/hammond](https
 
 > **Teststand:** Die alltäglichen Funktionen und die Migrationsvorschau wurden auf einer privaten Debian-13-LXC-Installation getestet. Das Docker-Hub-Image wurde außerdem erfolgreich auf einer Synology über Dockhand und macvlan gestartet (Anwenderbestätigung). Der portable ZIP-Export und -Import wurden praktisch getestet (Anwenderbestätigung). Ein vollständiger Original-Hammond-Import und umfassender Sicherheits- und Produktionstest sind weiterhin nicht bestätigt.
 
+## Neu in Develop (1.1.9-dev)
+
+- Wartungserinnerungen im Dashboard und Wartungscenter: nach Kalendertagen oder km-Stand aus Tankungen und Ausgaben, konfigurierbare Vorwarnung (Standard 30 Tage/1.000 km). Beim Abschluss mit tatsächlichem Datum und km-Stand erzeugen Wiederholungsregeln den Folgetermin und behalten die Historie. Noch keine externen Push-/E-Mail-Dienste.
+- Fixkosten & Finanzierung: monatliche, vierteljährliche, halbjährliche oder jährliche Sollbuchungen für Versicherung, Steuer, Leasing, Finanzierung usw. Bei Finanzierung monatliche Ratenanzahl einschließlich optional abweichender letzter Rate. Nur noch nicht erfasste Raten ab heute planen; es werden keine Zahlungen ausgelöst.
+- Der Server verbucht fällige Raten beim Start und periodisch im laufenden Betrieb, auch nach einem Neustart. Pro Rate sind Ausgabenerfassung und Fortschritt transaktional gekoppelt. Bereits gebuchte Raten werden beim manuellen Löschen nicht erneut erzeugt. Plan stoppen beendet weitere Buchungen; bestehende Ausgaben bleiben. Rest-Ratensumme ist kein Tilgungsplan/Kreditrestsaldo.
+- Neue Tabellen für Wartungsregeln und Kostenpläne sind im portablen ZIP enthalten, ältere kompatible ZIPs bleiben importierbar. Separate Develop-Daten und externes Backup verwenden.
+
 ## Neu in v1.1.8 – Automatische Reifenlaufleistung und Kraftstoffsorten
 
 - Automatische Reifenlaufleistung: Montage-/Wechseldatum und Fahrzeug-Kilometerstand erfassen. Bei montierten Reifen wird die Differenz zum höchsten seit Montage erfassten km-Tankstand angezeigt. Beim Einlagern zählt der bestätigte Abmontagestand; beim nächsten Montieren wird zur bisherigen Laufleistung addiert.

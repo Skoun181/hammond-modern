@@ -61,6 +61,7 @@ func main() {
 	controllers.RegisterVehicleCatalogController(router)
 	controllers.RegisterInvoiceController(router)
 	controllers.RegisterMaintenanceController(router)
+	controllers.RegisterRecurringCostController(router)
 	controllers.RegisterReceiptController(router)
 	controllers.RegisterFilesController(router)
 	controllers.RegisteImportController(router)
@@ -87,6 +88,8 @@ func setupSettings() gin.HandlerFunc {
 func intiCron() {
 
 	//gocron.Every(uint64(checkFrequency)).Minutes().Do(service.DownloadMissingEpisodes)
+	service.RunRecurringCosts()
+	gocron.Every(1).Minutes().Do(service.RunRecurringCosts)
 	gocron.Every(2).Days().Do(service.CreateBackup)
 	<-gocron.Start()
 }
