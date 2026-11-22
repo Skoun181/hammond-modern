@@ -2,6 +2,8 @@
 
 ## 1.1.9-dev – Noch nicht veröffentlicht
 
+- Bestehende Finanzierungen ab ursprünglicher erster Fälligkeit erfassen; historische Raten nachtragen oder ausdrücklich bereits erfasste Raten berücksichtigen, mit Vorschau und Vertragsende.
+
 - Intelligente Wartungserinnerungen nach Datum/km und einstellbarer Vorwarnung im Dashboard und optionalem ntfy-Push; Folgetermine und Historie bei wiederkehrenden Wartungen.
 - Fixkosten und Finanzierung: automatische Sollbuchung, feste Intervalle und Ratenzahl, optionale Schlussrate, Fortschritt und ausstehende Ratensumme; transaktionale Buchung ohne doppelte Erzeugung.
 - Neue Planungsdaten in portablen ZIP-Backups; kompatible alte Backups ohne neue Tabellen bleiben importierbar.

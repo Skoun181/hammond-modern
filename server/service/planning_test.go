@@ -35,4 +35,16 @@ func TestRecurringFinancingBookings(t *testing.T){
  if len(expenses)!=3||expenses[2].Amount!=1000||expenses[0].Amount!=300{t.Fatalf("expenses %#v",expenses)}
  if err=g.First(&p,"id = ?",p.ID).Error;err!=nil{t.Fatal(err)}
  if p.Generated!=3||p.BookedCents!=160000{t.Fatalf("progress %#v",p)}
+ // An existing financing can acknowledge its first 17 already recorded
+ // installments. The worker must only generate the missing 18th and future ones.
+ historical:=db.RecurringCost{OwnerUserID:user.ID,VehicleID:v.ID,Title:"Altvertrag",Category:"Finanzierung",Currency:"EUR",AmountCents:30000,StartDate:"2025-06-01",IntervalMonths:1,Installments:60,Generated:17,BookedCents:510000}
+ historyNow:=time.Date(2026,11,22,12,0,0,0,time.Local)
+ count,e:=CostDueCount(historical,historyNow);if e!=nil||count!=18{t.Fatalf("historical count %d %v",count,e)}
+ if err=g.Create(&historical).Error;err!=nil{t.Fatal(err)}
+ n,e=BookRecurringCosts(user.ID,historyNow);if e!=nil||n!=1{t.Fatalf("history book %d %v",n,e)}
+ n,e=BookRecurringCosts(user.ID,historyNow);if e!=nil||n!=0{t.Fatalf("history duplicate %d %v",n,e)}
+ if err=g.First(&historical,"id = ?",historical.ID).Error;err!=nil{t.Fatal(err)}
+ if historical.Generated!=18||historical.BookedCents!=540000{t.Fatalf("history progress %#v",historical)}
+ next,e:=CostDue(historical,historical.Generated);if e!=nil||next.Format("2006-01-02")!="2026-12-01"{t.Fatalf("next %v %v",next,e)}
+
 }

@@ -4,7 +4,7 @@ import axios from 'axios'
 import {formatMoney} from '@utils/format-modern'
 const categories=['Finanzierung','Leasing','Versicherung','Kfz-Steuer','Stellplatz','Abonnement','Sonstiges']
 const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
-const blank=()=>({vehicleId:'',title:'',category:'Finanzierung',amount:'',startDate:today(),intervalMonths:1,installments:48,final:'',notes:'',confirmed:false})
+const blank=()=>({vehicleId:'',title:'',category:'Finanzierung',amount:'',startDate:today(),intervalMonths:1,installments:48,final:'',notes:'',confirmed:false,historyMode:'',alreadyRecorded:0})
 export default {
   page:{title:'Fixkosten & Finanzierung'},components:{Layout},
   data(){return {plans:[],vehicles:[],form:blank(),categories,showForm:false,loading:true,busy:false,error:'',success:'',filter:''}},
@@ -20,13 +20,40 @@ export default {
       }
       return Object.values(result)
     },
+    dueCount() {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(this.form.startDate) || this.form.startDate > today()) return 0
+      const [year, month, day] = this.form.startDate.split('-').map(Number)
+      if (year < 1900 || month < 1 || month > 12 || day < 1 || day > 31) return 0
+      const cap = Number(this.form.installments) > 0 ? Math.min(600, Number(this.form.installments)) : 12000
+      const interval = Number(this.form.intervalMonths)
+      if (![1, 3, 6, 12].includes(interval)) return 0
+      let count = 0
+      for (let i = 0; i < cap; i++) {
+        const first = new Date(Date.UTC(year, month - 1 + i * interval, 1))
+        const last = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + 1, 0)).getUTCDate()
+        first.setUTCDate(Math.min(day, last))
+        if (first.toISOString().slice(0, 10) > today()) break
+        count++
+      }
+      return count
+    },
+    pastStart() { return !!this.form.startDate && this.form.startDate < today() },
+    acknowledgedCount() { return this.pastStart && this.form.historyMode === 'recorded' ? Number(this.form.alreadyRecorded) : 0 },
+    historyValid() {
+      if (!this.pastStart) return true
+      return this.form.historyMode === 'backfill' || (this.form.historyMode === 'recorded' && Number.isInteger(this.acknowledgedCount) && this.acknowledgedCount >= 0 && this.acknowledgedCount <= this.dueCount)
+    },
     previewTotal() {
       const n = Number(this.form.installments)
       const a = this.cents(this.form.amount)
       return n > 0 && a > 0 ? (n - 1) * a + (this.form.final === '' ? a : this.cents(this.form.final)) : null
     },
   },
-  watch:{'form.category'(v){if(v==='Finanzierung'){this.form.intervalMonths=1;if(!Number(this.form.installments))this.form.installments=48}else{this.form.installments=0;this.form.final=''}}},
+  watch:{
+    dueCount(n) { this.form.alreadyRecorded = n; this.form.confirmed = false },
+    'form.historyMode'(v) { if (v === 'recorded') this.form.alreadyRecorded = this.dueCount; this.form.confirmed = false },
+    'form.alreadyRecorded'() { this.form.confirmed = false },
+    'form.category'(v){if(v==='Finanzierung'){this.form.intervalMonths=1;if(!Number(this.form.installments))this.form.installments=48}else{this.form.installments=0;this.form.final=''}}},
   mounted(){this.load()},
   methods:{
     today,money(cents,currency){return formatMoney(cents/100,currency)},cents(v){return Math.round(Number(v)*100)},
@@ -35,9 +62,9 @@ export default {
     async load(){this.loading=true;try{const [r,v]=await Promise.all([axios.get('/api/recurring-costs'),this.$store.dispatch('vehicles/fetchVehicles')]);this.plans=r.data||[];this.vehicles=v||[]}catch(e){this.error='Kostenpläne konnten nicht geladen werden.'}finally{this.loading=false}},
     add(){this.form=blank();this.form.vehicleId=this.filter||(this.vehicles[0]||{}).id||'';this.showForm=true;this.error='';this.success=''},
     async save(){
-      if(this.busy||!this.form.confirmed)return
+      if(this.busy||!this.form.confirmed||!this.historyValid)return
       this.busy=true;this.error='';this.success=''
-      try{const p=this.form;await axios.post('/api/recurring-costs',{vehicleId:p.vehicleId,title:p.title,category:p.category,amountCents:this.cents(p.amount),startDate:p.startDate,intervalMonths:Number(p.intervalMonths),installments:Number(p.installments||0),finalCents:!Number(p.installments)||p.final===''?null:this.cents(p.final),notes:p.notes});this.showForm=false;await this.load();this.success='Kostenplan angelegt. Fällige Raten werden automatisch verbucht.'}
+      try{const p=this.form;await axios.post('/api/recurring-costs',{vehicleId:p.vehicleId,title:p.title,category:p.category,amountCents:this.cents(p.amount),startDate:p.startDate,intervalMonths:Number(p.intervalMonths),installments:Number(p.installments||0),finalCents:!Number(p.installments)||p.final===''?null:this.cents(p.final),notes:p.notes,alreadyRecorded:this.acknowledgedCount});this.showForm=false;await this.load();this.success='Kostenplan angelegt. Fehlende fällige Raten werden automatisch verbucht.'}
       catch(e){this.error=(e.response&&e.response.data&&e.response.data.error)||'Speichern fehlgeschlagen.'}finally{this.busy=false}
     },
     async run(){if(this.busy)return;this.busy=true;this.error='';this.success='';try{const r=await axios.post('/api/recurring-costs/run');await this.load();this.success=r.data.booked+' fällige Ausgaben erfasst.'}catch(e){this.error=(e.response&&e.response.data&&e.response.data.error)||'Verbuchung fehlgeschlagen.';await this.load()}finally{this.busy=false}},
@@ -55,7 +82,7 @@ export default {
     </div>
     <b-notification v-if="error" type="is-danger" @close="error = ''">{{ error }}</b-notification>
     <b-notification v-if="success" type="is-success" @close="success = ''">{{ success }}</b-notification>
-    <p class="box">Automatische Sollbuchungen sind keine Zahlungsnachweise. Es werden keine Überweisungen ausgelöst. Bei einer laufenden Finanzierung nur noch nicht erfasste Raten ab der nächsten Fälligkeit planen.</p>
+    <p class="box">Automatische Sollbuchungen sind keine Zahlungsnachweise. Es werden keine Überweisungen ausgelöst. Bei einer bestehenden Finanzierung kannst du den ursprünglichen Start und die gesamte Ratenanzahl angeben. Bereits erfasste Raten nicht erneut verbuchen.</p>
     <div v-if="showForm" class="box plan-form">
       <h2 class="title is-5">Kostenplan anlegen</h2>
       <form @submit.prevent="save">
@@ -64,15 +91,31 @@ export default {
           <div class="column is-half"><b-field label="Kategorie"><b-select v-model="form.category" expanded><option v-for="category in categories" :key="category">{{ category }}</option></b-select></b-field></div>
           <div class="column is-half"><b-field label="Bezeichnung *"><b-input v-model="form.title" required maxlength="120" placeholder="z. B. Autofinanzierung" /></b-field></div>
           <div class="column is-half"><b-field label="Reguläre Rate / Betrag *" message="Währung aus deinen Einstellungen."><b-input v-model="form.amount" type="number" min="0.01" max="1000000" step="0.01" required /></b-field></div>
-          <div class="column is-half"><b-field label="Erste noch nicht erfasste Fälligkeit *"><input v-model="form.startDate" class="input" type="date" :min="today()" required /></b-field></div>
+          <div class="column is-half"><b-field label="Erste Rate / Vertragsbeginn *" message="Auch ein bereits vergangenes Datum ist möglich. Datum der ersten tatsächlichen Fälligkeit."><input v-model="form.startDate" class="input" type="date" min="1900-01-01" required /></b-field></div>
           <div class="column is-half"><b-field label="Intervall"><b-select v-model.number="form.intervalMonths" :disabled="form.category === 'Finanzierung'" expanded><option :value="1">Monatlich</option><option :value="3">Vierteljährlich</option><option :value="6">Halbjährlich</option><option :value="12">Jährlich</option></b-select></b-field></div>
-          <div class="column is-half"><b-field label="Noch zu erfassende Raten" :message="form.category === 'Finanzierung' ? 'Anzahl inklusive letzter Rate.' : '0 = unbegrenzt'"><b-input v-model="form.installments" type="number" :min="form.category === 'Finanzierung' ? 1 : 0" max="600" step="1" required /></b-field></div>
+          <div class="column is-half"><b-field label="Gesamte Anzahl der Raten" :message="form.category === 'Finanzierung' ? 'Anzahl inklusive letzter Rate.' : '0 = unbegrenzt'"><b-input v-model="form.installments" type="number" :min="form.category === 'Finanzierung' ? 1 : 0" max="600" step="1" required /></b-field></div>
           <div v-if="Number(form.installments) > 0" class="column is-half"><b-field label="Abweichende letzte Rate / Schlussrate" message="Gesamtbetrag der letzten Rate, nicht zusätzlich zur normalen Rate. Leer = normale Rate."><b-input v-model="form.final" type="number" min="0.01" max="1000000" step="0.01" /></b-field></div>
           <div class="column is-full"><b-field label="Notizen"><b-input v-model="form.notes" maxlength="2000" type="textarea" /></b-field></div>
         </div>
         <p v-if="previewTotal !== null" class="plan-preview">Geplante Gesamtsumme: <strong>{{ (previewTotal / 100).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</strong> in deiner Währung</p>
+        <div v-if="pastStart" class="plan-preview">
+          <h3 class="title is-6">Vergangene Raten</h3>
+          <p>Seit der ersten Fälligkeit sind bis einschließlich heute {{ dueCount }} Raten laut Plan fällig geworden.</p>
+          <b-field label="Wie sollen bisherige Raten behandelt werden?">
+            <b-select v-model="form.historyMode" required expanded>
+              <option value="" disabled>Bitte auswählen</option>
+              <option value="backfill">Alle bisherigen Raten als Ausgaben nachtragen</option>
+              <option value="recorded">Bereits erfasste Raten berücksichtigen (keine Doppelbuchung)</option>
+            </b-select>
+          </b-field>
+          <b-field v-if="form.historyMode === 'recorded'" label="Anzahl bereits erfasster Raten" message="Die ersten N aufeinanderfolgenden Raten sind bereits in Hammond als Ausgaben erfasst. Nur fehlende spätere Raten werden nachgetragen.">
+            <b-input v-model.number="form.alreadyRecorded" type="number" min="0" :max="dueCount" step="1" required />
+          </b-field>
+          <p v-if="historyValid">Neu zu erfassende bisherige Raten: <strong>{{ dueCount - acknowledgedCount }}</strong></p>
+          <p class="help">Die Berechnung folgt dem Ratenplan, nicht dem Bankkonto. Bitte vorhandene Ausgaben vorher abgleichen.</p>
+        </div>
         <b-field><b-checkbox v-model="form.confirmed">Ich möchte die fälligen Raten automatisch als Ausgaben erfassen lassen und habe bereits erfasste Raten berücksichtigt.</b-checkbox></b-field>
-        <div class="buttons"><b-button type="is-primary" native-type="submit" :loading="busy" :disabled="busy || !form.confirmed">Kostenplan speichern</b-button><b-button :disabled="busy" @click="showForm = false">Abbrechen</b-button></div>
+        <div class="buttons"><b-button type="is-primary" native-type="submit" :loading="busy" :disabled="busy || !form.confirmed || !historyValid">Kostenplan speichern</b-button><b-button :disabled="busy" @click="showForm = false">Abbrechen</b-button></div>
       </form>
     </div>
     <b-field label="Fahrzeug filtern"><b-select v-model="filter" expanded><option value="">Alle Fahrzeuge</option><option v-for="v in vehicles" :key="v.id" :value="v.id">{{ vehicleName(v.id) }}</option></b-select></b-field>
@@ -87,7 +130,8 @@ export default {
         <article class="box plan-card">
           <p class="hm-eyebrow">{{ p.category }} · {{ status(p) }}</p><h2 class="title is-5">{{ p.title }}</h2><p class="plan-vehicle">{{ vehicleName(p.vehicleId) }}</p>
           <div class="plan-highlight"><p class="heading">Reguläre Rate</p><strong>{{ money(p.amountCents,p.currency) }}</strong><p>Alle {{ p.intervalMonths }} Monat(e)</p></div>
-          <div class="plan-grid"><div><p class="heading">Nächste Fälligkeit</p><strong>{{ date(p.nextDate) }}</strong><p v-if="p.nextDate">{{ money(p.nextCents,p.currency) }}</p></div><div><p class="heading">Erfasst (Soll)</p><strong>{{ money(p.bookedCents,p.currency) }}</strong><p>{{ p.generated }} Buchungen</p></div></div>
+          <div class="plan-grid"><div><p class="heading">Nächste Fälligkeit</p><strong>{{ date(p.nextDate) }}</strong><p v-if="p.nextDate">{{ money(p.nextCents,p.currency) }}</p></div><div><p class="heading">Berücksichtigt (Soll)</p><strong>{{ money(p.bookedCents,p.currency) }}</strong><p>{{ p.generated }} berücksichtigte Raten</p></div></div>
+          <p>Erste Fälligkeit: {{ date(p.startDate) }}<span v-if="p.lastDate"> · Letzte Fälligkeit: {{ date(p.lastDate) }}</span></p>
           <template v-if="p.installments">
             <p class="heading">Ratenfortschritt: {{ p.generated }} / {{ p.installments }} erfasst</p><progress class="progress is-warning" :value="p.generated" :max="p.installments">{{ p.generated }}</progress>
             <p>{{ p.remainingInstallments }} noch nicht erfasste Raten · <strong>{{ money(p.remainingCents,p.currency) }}</strong></p><p v-if="p.finalCents !== null && p.finalCents !== undefined">Letzte Rate: {{ money(p.finalCents,p.currency) }}</p><p class="help">Geplante Ratensumme, kein Kreditrestsaldo. Gestoppte Pläne werden nicht weiter gebucht.</p>

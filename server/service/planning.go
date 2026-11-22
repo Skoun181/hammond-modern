@@ -44,6 +44,16 @@ func CostDue(plan db.RecurringCost,index int)(time.Time,error){
  if index<0||index>12000||plan.IntervalMonths<1||plan.IntervalMonths>12{return time.Time{},errors.New("invalid schedule")}
  return PlanningMonth(start,index*plan.IntervalMonths),nil
 }
+// Count scheduled installments due through the local calendar date.
+func CostDueCount(plan db.RecurringCost,now time.Time)(int,error){
+ limit:=12000
+ if plan.Installments>0&&plan.Installments<limit{limit=plan.Installments}
+ for i:=0;i<limit;i++{
+  d,err:=CostDue(plan,i);if err!=nil{return 0,err}
+  if d.Format("2006-01-02")>now.Format("2006-01-02"){return i,nil}
+ }
+ return limit,nil
+}
 func CostAmount(plan db.RecurringCost,index int)int64{
  if plan.Installments>0&&index==plan.Installments-1&&plan.FinalCents!=nil{return *plan.FinalCents}
  return plan.AmountCents
