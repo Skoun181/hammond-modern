@@ -1,8 +1,10 @@
 # Backup, Wiederherstellung und Serverumzug – Schritt für Schritt
 
-> **Stable v1.1.9:** ZIP-Export und Import wurden praktisch getestet. Vor einem produktiven Umzug externe Sicherung anlegen. Ältere Versionen zuerst unter Beibehaltung der bisherigen Datenpfade aktualisieren.
+> **Stable v1.1.10:** ZIP-Export und Import wurden praktisch getestet. Vor einem produktiven Umzug externe Sicherung anlegen. Ältere Versionen zuerst unter Beibehaltung der bisherigen Datenpfade aktualisieren.
 
 **Ab v1.1.7:** Reifen einschließlich Fahrzeugzuordnungen werden zusätzlich gesichert. Ältere ZIP-Backups ohne Reifentabelle werden akzeptiert, wenn alle übrigen Tabellen und Spalten exakt passen. Ein Restore ersetzt auch bestehende Reifen – ein altes Backup ohne Reifentabelle ergibt eine leere Reifenliste. Ein neuer Reifen-ZIP kann nicht in eine unveränderte 1.1.6-Instanz importiert werden. Vor Umstieg und Rückkehr immer externe Sicherung.
+
+**Ab v1.1.10:** Anzahlungen, Darlehensbetrag, Vertragszinsen und optionale Zinsberechnungswerte werden zusätzlich im ZIP gesichert. Ältere kompatible ZIPs ohne diese Tabellen können importiert werden, enthalten aber diese Details nicht. Beim Nachtragen einer bereits gebuchten Anzahlung die Option „Anzahlung bereits als Ausgabe erfasst“ verwenden, um Doppelbuchungen zu vermeiden.
 
 **Ab v1.1.9:** Wartungsregeln und Kostenpläne einschließlich Buchungsfortschritt sind im ZIP enthalten. Ältere kompatible ZIPs ohne diese Tabellen ersetzen bestehende Planungsdaten durch leere Tabellen. Der Server kann nach einem Restore ausstehende Raten automatisch nachholen. ntfy-URL und Token bleiben in der Container-Konfiguration. Vor dem Restore externe Sicherung erstellen und bei einer Testinstanz keine produktiven Push-Zugangsdaten hinterlegen.
 
@@ -17,8 +19,8 @@
 | Ausgaben und Werkstattkosten | Ja |
 | Wartungen, Fahrer, Zuordnungen und Freigaben | Ja |
 | Reifen und Fahrzeugzuordnungen | Ja (ab v1.1.7) |
-| Optionale Zinsberechnungswerte aus Bank-Tilgungsplan | Ja (ab 1.1.10-dev) |
-| Finanzierungsdetails inkl. Anzahlung und Vertragszinsen | Ja (ab 1.1.10-dev); ältere ZIPs enthalten diese Tabelle nicht |
+| Optionale Zinsberechnungswerte aus Bank-Tilgungsplan | Ja (ab v1.1.10) |
+| Finanzierungsdetails inkl. Anzahlung und Vertragszinsen | Ja (ab v1.1.10); ältere ZIPs enthalten diese Tabelle nicht |
 | Wartungsregeln und wiederkehrende Kosten inkl. Buchungsfortschritt | Ja (ab v1.1.9); ältere ZIPs enthalten diese neuen Tabellen nicht |
 | Aktive Montageintervalle und bisherige Reifenlaufleistung | Ja (ab v1.1.8); ältere ZIPs ohne Intervalle benötigen erneuten Startstand |
 | Rechnungen und zulässige Uploads aus `/assets` | Ja |
@@ -59,7 +61,7 @@ ursprünglichen Datenverzeichnisse.
 Für eine neue Installation des festen Releases:
 
 ```bash
-git clone --branch v1.1.9 https://github.com/Skoun181/hammond-modern.git
+git clone --branch v1.1.10 https://github.com/Skoun181/hammond-modern.git
 cd hammond-modern
 mkdir -p data
 (umask 077; printf 'JWT_SECRET=%s\n' "$(openssl rand -hex 32)" > .env)
@@ -109,7 +111,7 @@ Niemals Secrets öffentlich teilen.
 ## C. Neue Docker-Installation vorbereiten
 
 1. Docker und Docker Compose auf dem Zielserver installieren.
-2. Hammond Modern **v1.1.9** bzw. dieselbe kompatible Version bereitstellen (Abschnitt A oder Docker-Hub-Installation in der README). Ältere Container ohne Backup-Funktion können das ZIP nicht importieren.
+2. Hammond Modern **v1.1.10** bzw. dieselbe kompatible Version bereitstellen (Abschnitt A oder Docker-Hub-Installation in der README). Ältere Container ohne Backup-Funktion können das ZIP nicht importieren.
 3. Eigene `.env` mit **neuem** zufälligem `JWT_SECRET` erstellen. Andere API-Keys
    nur bei Bedarf erneut eintragen.
 4. Lokaler Build: `docker compose up -d --build`. Docker Hub: `docker compose pull && docker compose up -d`.

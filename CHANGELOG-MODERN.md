@@ -1,6 +1,6 @@
 # Hammond Modern – Änderungsverlauf
 
-## 1.1.10-dev – Noch nicht veröffentlicht
+## v1.1.10 – Erweiterte Finanzierung (22. November 2026)
 
 - Verständlichere Fixkostenübersicht: ausstehende Zahlungen inklusive Zinsen und Schlussrate sowie separat geschätzte aktuelle Kreditrestschuld.
 

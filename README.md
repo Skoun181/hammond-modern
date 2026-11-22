@@ -4,20 +4,20 @@
 
 Hammond Modern ist ein unabhängiger Community-Fork von [akhilrex/hammond](https://github.com/akhilrex/hammond). Das Projekt ist **nicht offiziell mit dem Originalautor verbunden**.
 
-**Stable-Version: v1.1.9** · Weiterentwicklung im Develop-Branch · [Releases](https://github.com/Skoun181/hammond-modern/releases) · [Änderungsverlauf](CHANGELOG-MODERN.md)
+**Stable-Version: v1.1.10** · Weiterentwicklung im Develop-Branch · [Releases](https://github.com/Skoun181/hammond-modern/releases) · [Änderungsverlauf](CHANGELOG-MODERN.md)
 
 > **Teststand:** Die alltäglichen Funktionen und die Migrationsvorschau wurden auf einer privaten Debian-13-LXC-Installation getestet. Das Docker-Hub-Image wurde außerdem erfolgreich auf einer Synology über Dockhand und macvlan gestartet (Anwenderbestätigung). Der portable ZIP-Export und -Import wurden praktisch getestet (Anwenderbestätigung). Ein vollständiger Original-Hammond-Import und umfassender Sicherheits- und Produktionstest sind weiterhin nicht bestätigt.
 
-## Neu in Develop (1.1.10-dev)
+## Neu in v1.1.10 – Erweiterte Finanzierung
 
 - Finanzierungsübersicht: ausstehende Zahlungen inklusive zukünftiger Zinsen und Schlussrate getrennt von der geschätzten aktuellen Kreditrestschuld. Übersicht pro Währung über aktive Pläne; fehlende Berechnungsdaten werden ausdrücklich angezeigt.
 
 - Finanzierung: optionale Anzahlung mit Zahlungsdatum bis heute, automatisch einmalig als Fahrzeugausgabe oder als bereits erfasst markieren. Bestehende Pläne über „Finanzierungsdetails ergänzen / bearbeiten“ erweitern; kein erneutes Anlegen der Raten erforderlich. Gespeicherte Anzahlungen sind festgeschrieben, die Vertragszinsen bleiben editierbar.
 - Optional Nettodarlehensbetrag, Sollzins und effektiver Jahreszins laut Vertrag erfassen. Gesamte geplante Zahlungen inklusive Anzahlung sowie Differenz aus Ratensumme und Nettodarlehen; geschätzte Restschuld aus Sollzins und berücksichtigten Raten (vereinfachtes Monatsmodell, keine Gebühren oder Sondertilgungen). Effektivzins wird dokumentiert, nicht als Sollzins verwendet. Vertragliche Raten und Schlussrate bleiben maßgeblich.
 - Optional abweichenden monatlichen Berechnungszins und Zinsanteil der ersten Rate aus dem Bank-Tilgungsplan hinterlegen. Zinsrundung je Rate auf Cent; die Vertragszinsen und automatischen Ausgaben bleiben unverändert. Ohne Zusatzwerte wird Sollzins / 12 genutzt.
-- Zusätzliche Finanzierungsdetails im portablen ZIP; ältere kompatible Backups bleiben importierbar. Separate Testinstanz und externe Datensicherung verwenden.
+- Zusätzliche Finanzierungsdetails im portablen ZIP; ältere kompatible Backups bleiben importierbar. Vor dem Update eine externe Datensicherung erstellen. Für ein Downgrade die vor dem Update gesicherte kompatible Datenbank verwenden.
 
-## Neu in v1.1.9 – Wartungserinnerungen, Fixkosten und Finanzierung
+## Änderungen aus v1.1.9 – Wartungserinnerungen, Fixkosten und Finanzierung
 
 - Wartungserinnerungen im Dashboard und Wartungscenter: nach Kalendertagen oder km-Stand aus Tankungen und Ausgaben, konfigurierbare Vorwarnung (Standard 30 Tage/1.000 km). Beim Abschluss mit tatsächlichem Datum und km-Stand erzeugen Wiederholungsregeln den Folgetermin und behalten die Historie. Optionaler ntfy-Push (pro Wartung aktivieren); E-Mail/andere Dienste sind noch nicht enthalten.
 - Fixkosten & Finanzierung: monatliche, vierteljährliche, halbjährliche oder jährliche Sollbuchungen für Versicherung, Steuer, Leasing, Finanzierung usw. Bei Finanzierung monatliche Ratenanzahl einschließlich optional abweichender letzter Rate. Historischer Beginn möglich: gesamte Ratenanzahl angeben; fehlende historische Raten nachtragen oder die ersten bereits erfassten Raten ausdrücklich berücksichtigen. Keine automatische Erkennung bereits vorhandener Ausgaben; es werden keine Zahlungen ausgelöst.
@@ -115,7 +115,8 @@ Eine automatische Wartungsbenachrichtigung ist derzeit nicht enthalten.
 | --- | --- |
 | [`stable/hammond-modern`](https://github.com/Skoun181/hammond-modern/tree/stable/hammond-modern) | Standardbranch für aktuelle Stable-Installationen |
 | [`develop/hammond-modern-next`](https://github.com/Skoun181/hammond-modern/tree/develop/hammond-modern-next) | Weiterentwicklung; Änderungen zunächst hier testen |
-| [`v1.1.9`](https://github.com/Skoun181/hammond-modern/releases/tag/v1.1.9) | Stable-Release mit Wartungserinnerungen, Fixkosten und Finanzierung |
+| [`v1.1.10`](https://github.com/Skoun181/hammond-modern/releases/tag/v1.1.10) | Stable-Release mit erweiterter Finanzierung und transparenter Restschuldübersicht |
+| [`v1.1.9`](https://github.com/Skoun181/hammond-modern/releases/tag/v1.1.9) | Frühere Version mit Wartungserinnerungen, Fixkosten und Finanzierung |
 | [`v1.1.8`](https://github.com/Skoun181/hammond-modern/releases/tag/v1.1.8) | Frühere Version mit automatischer Reifenlaufleistung, Saisonwechsel und E5/E10 |
 | [`v1.1.7`](https://github.com/Skoun181/hammond-modern/releases/tag/v1.1.7) | Frühere Version mit Reifenverwaltung und neuen Fahrzeugkacheln |
 | [`v1.1.6`](https://github.com/Skoun181/hammond-modern/releases/tag/v1.1.6) | Frühere Version mit ZIP-Backup und Restore |
@@ -145,7 +146,7 @@ Datei `compose.yaml` erstellen:
 ```yaml
 services:
   hammond-modern:
-    image: skoun181/hammond-modern:1.1.9
+    image: skoun181/hammond-modern:1.1.10
     container_name: hammond-modern
     restart: unless-stopped
     ports:
@@ -177,7 +178,7 @@ cd hammond-modern
 # Nur bei einer Neuinstallation ausführen:
 (umask 077; printf 'JWT_SECRET=%s\n' "$(openssl rand -hex 32)" > .env)
 printf 'TZ=Europe/Berlin\n' >> .env
-docker pull skoun181/hammond-modern:1.1.9
+docker pull skoun181/hammond-modern:1.1.10
 docker run -d \
   --name hammond-modern \
   --restart unless-stopped \
@@ -185,7 +186,7 @@ docker run -d \
   -p 3006:3000 \
   -v "$PWD/data/config:/config" \
   -v "$PWD/data/assets:/assets" \
-  skoun181/hammond-modern:1.1.9
+  skoun181/hammond-modern:1.1.10
 ```
 
 Browser: `http://SERVER-IP:3006`. Docker Pull allein startet keinen Container.
@@ -196,7 +197,7 @@ Browser: `http://SERVER-IP:3006`. Docker Pull allein startet keinen Container.
 git clone --branch stable/hammond-modern https://github.com/Skoun181/hammond-modern.git
 cd hammond-modern
 # Optional: festen Release-Stand verwenden
-git checkout v1.1.9
+git checkout v1.1.10
 mkdir -p data/config data/assets
 # Nur bei einer Neuinstallation ausführen:
 (umask 077; printf 'JWT_SECRET=%s\n' "$(openssl rand -hex 32)" > .env)
@@ -281,7 +282,7 @@ Vor Updates den Container stoppen und die persistenten Verzeichnisse sowie .env 
 - Docker Run: neues Image pullen, alten Container stoppen und entfernen, vollständigen Run-Befehl mit neuem Tag und unveränderten Bind Mounts erneut ausführen.
 - Git-Build: `git fetch origin --tags`, gewünschten Release-Tag auschecken oder `git switch stable/hammond-modern` und `git pull --ff-only origin stable/hammond-modern`; dann `docker compose -f compose.test.yml up -d --build`.
 
-Der feste Tag `1.1.9` ist für reproduzierbare Installationen empfohlen. `latest` aktualisiert laufende Container nicht automatisch. Stable und Develop nicht gegen dieselben Datenverzeichnisse betreiben.
+Der feste Tag `1.1.10` ist für reproduzierbare Installationen empfohlen. `latest` aktualisiert laufende Container nicht automatisch. Stable und Develop nicht gegen dieselben Datenverzeichnisse betreiben.
 
 ## Backup, Wiederherstellung und Serverumzug
 
@@ -310,7 +311,7 @@ Anwendungsdaten wiederherstellen.
 ### Frische Installation mit benannten Volumes (optional)
 
 ```bash
-git clone --branch v1.1.9 https://github.com/Skoun181/hammond-modern.git
+git clone --branch v1.1.10 https://github.com/Skoun181/hammond-modern.git
 cd hammond-modern
 (umask 077; printf 'JWT_SECRET=%s\n' "$(openssl rand -hex 32)" > .env)
 docker compose up -d --build
@@ -320,12 +321,12 @@ Die neue `docker-compose.yml` verwendet benannte Volumes
 `hammond_config` und `hammond_assets`. Der öffentliche Port ist über
 `HAMMOND_PORT` in der `.env` einstellbar (Standard `3006`, Containerport `3000`).
 
-**Bestehende Installationen:** Bisherige Compose-Datei, Projektnamen, Mounts und JWT_SECRET beim Update beibehalten. Nicht einfach auf neue leere Volumes wechseln. Alte v1.1.5-Instanz zuerst auf v1.1.9 aktualisieren und dann exportieren.
+**Bestehende Installationen:** Bisherige Compose-Datei, Projektnamen, Mounts und JWT_SECRET beim Update beibehalten. Nicht einfach auf neue leere Volumes wechseln. Alte v1.1.5-Instanz zuerst auf v1.1.10 aktualisieren und dann exportieren.
 
 ### Umzug in fünf Schritten
 
 1. Als Admin auf dem alten Server **Backup & Umzug → Backup herunterladen (.zip)** wählen und extern sichern.
-2. Auf dem neuen Server v1.1.9 installieren und einen Admin mit derselben E-Mail-Adresse wie im Backup anlegen. Neues Passwort und JWT_SECRET sind möglich.
+2. Auf dem neuen Server v1.1.10 installieren und einen Admin mit derselben E-Mail-Adresse wie im Backup anlegen. Neues Passwort und JWT_SECRET sind möglich.
 3. ZIP auswählen und **Backup prüfen**. Maximal 512 MiB ZIP und 1 GiB entpackte Daten.
 4. Warnung bestätigen, Checkbox setzen und `ERSETZEN` eingeben. **Daten endgültig wiederherstellen** startet den Import mit Sicherheitsbackup.
 5. Mit Ziel-Admin-Passwort neu anmelden, weitere Benutzerpasswörter setzen und Fahrzeuge, Tankungen, Wartungen und Rechnungen prüfen. Alten Server erst danach abschalten.
