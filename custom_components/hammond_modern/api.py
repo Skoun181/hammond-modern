@@ -26,7 +26,12 @@ class CannotConnect(Exception):
 
 def normalize_url(value: str) -> str:
     """Validate the operator-provided server URL, preserving proxy prefixes."""
-    parts = urlsplit(value.strip())
+    try:
+        parts = urlsplit(value.strip())
+        # Accessing the port validates malformed port specifications too.
+        _ = parts.port
+    except (TypeError, ValueError) as exc:
+        raise InvalidAddress from exc
     if (
         parts.scheme not in ("http", "https")
         or not parts.hostname

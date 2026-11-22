@@ -4,8 +4,8 @@ from __future__ import annotations
 import voluptuous as vol
 
 from homeassistant import config_entries
+from homeassistant.config_entries import ConfigFlowResult
 from homeassistant.const import CONF_URL
-from homeassistant.data_entry_flow import FlowResult
 
 from .api import CannotConnect, InvalidAddress, InvalidToken, async_fetch_maintenance, normalize_url
 from .const import CONF_ACCOUNT_ID, CONF_API_KEY, DOMAIN
@@ -16,7 +16,7 @@ class HammondModernConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
 
-    async def async_step_user(self, user_input=None) -> FlowResult:
+    async def async_step_user(self, user_input=None) -> ConfigFlowResult:
         errors = {}
         if user_input is not None:
             try:
@@ -55,11 +55,11 @@ class HammondModernConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
-    async def async_step_reauth(self, entry_data: dict) -> FlowResult:
+    async def async_step_reauth(self, entry_data: dict) -> ConfigFlowResult:
         """Reauthenticate after the user rotates/revokes the Hammond key."""
         return await self.async_step_reauth_confirm()
 
-    async def async_step_reauth_confirm(self, user_input=None) -> FlowResult:
+    async def async_step_reauth_confirm(self, user_input=None) -> ConfigFlowResult:
         errors = {}
         entry = self._get_reauth_entry()
         if user_input is not None:
