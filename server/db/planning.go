@@ -28,3 +28,13 @@ type RecurringCost struct {
 	Stopped bool `json:"stopped"`
 	Notes string `json:"notes"`
 }
+
+type FinancingTerms struct {
+ PlanID string `gorm:"primaryKey" json:"planId"`
+ DownPaymentCents int64 `json:"downPaymentCents"`
+ DownPaymentDate string `json:"downPaymentDate"`
+ AlreadyRecorded bool `json:"alreadyRecorded"`
+ PrincipalCents *int64 `json:"principalCents"`
+ NominalBps *int `json:"nominalBps"`
+ EffectiveBps *int `json:"effectiveBps"`
+}

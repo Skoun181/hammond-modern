@@ -8,6 +8,12 @@ Hammond Modern ist ein unabhängiger Community-Fork von [akhilrex/hammond](https
 
 > **Teststand:** Die alltäglichen Funktionen und die Migrationsvorschau wurden auf einer privaten Debian-13-LXC-Installation getestet. Das Docker-Hub-Image wurde außerdem erfolgreich auf einer Synology über Dockhand und macvlan gestartet (Anwenderbestätigung). Der portable ZIP-Export und -Import wurden praktisch getestet (Anwenderbestätigung). Ein vollständiger Original-Hammond-Import und umfassender Sicherheits- und Produktionstest sind weiterhin nicht bestätigt.
 
+## Neu in Develop (1.1.10-dev)
+
+- Finanzierung: optionale Anzahlung mit Zahlungsdatum bis heute, automatisch einmalig als Fahrzeugausgabe oder als bereits erfasst markieren. Bestehende Pläne über „Finanzierungsdetails ergänzen / bearbeiten“ erweitern; kein erneutes Anlegen der Raten erforderlich. Gespeicherte Anzahlungen sind festgeschrieben, die Vertragszinsen bleiben editierbar.
+- Optional Nettodarlehensbetrag, Sollzins und effektiver Jahreszins laut Vertrag erfassen. Gesamte geplante Zahlungen inklusive Anzahlung sowie Differenz aus Ratensumme und Nettodarlehen; geschätzte Restschuld aus Sollzins und berücksichtigten Raten (vereinfachtes Monatsmodell, keine Gebühren oder Sondertilgungen). Effektivzins wird dokumentiert, nicht als Sollzins verwendet. Vertragliche Raten und Schlussrate bleiben maßgeblich.
+- Zusätzliche Finanzierungsdetails im portablen ZIP; ältere kompatible Backups bleiben importierbar. Separate Testinstanz und externe Datensicherung verwenden.
+
 ## Neu in v1.1.9 – Wartungserinnerungen, Fixkosten und Finanzierung
 
 - Wartungserinnerungen im Dashboard und Wartungscenter: nach Kalendertagen oder km-Stand aus Tankungen und Ausgaben, konfigurierbare Vorwarnung (Standard 30 Tage/1.000 km). Beim Abschluss mit tatsächlichem Datum und km-Stand erzeugen Wiederholungsregeln den Folgetermin und behalten die Historie. Optionaler ntfy-Push (pro Wartung aktivieren); E-Mail/andere Dienste sind noch nicht enthalten.

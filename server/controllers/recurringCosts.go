@@ -2,6 +2,8 @@ package controllers
 
 import (
  "net/http"
+ "errors"
+ "gorm.io/gorm"
  "strings"
  "time"
  "github.com/akhilrex/hammond/db"
@@ -19,18 +21,26 @@ type costInput struct{
  FinalCents *int64 `json:"finalCents"`
  Notes string `json:"notes"`
  AlreadyRecorded *int `json:"alreadyRecorded"`
+ Financing *db.FinancingTerms `json:"financing"`
 }
 type costView struct{
  db.RecurringCost
  NextDate string `json:"nextDate"`
  LastDate string `json:"lastDate"`
+ Financing *db.FinancingTerms `json:"financing"`
+ TotalCents *int64 `json:"totalCents"`
+ FinancingCostCents *int64 `json:"financingCostCents"`
+ EstimatedBalanceCents *int64 `json:"estimatedBalanceCents"`
+ ConsideredCents int64 `json:"consideredCents"`
  NextCents int64 `json:"nextCents"`
  RemainingInstallments int `json:"remainingInstallments"`
  RemainingCents *int64 `json:"remainingCents"`
 }
-func costOutput(plan db.RecurringCost)costView{
+func costOutput(plan db.RecurringCost,terms *db.FinancingTerms)costView{
  n,total:=service.CostRemaining(plan)
- v:=costView{RecurringCost:plan,RemainingInstallments:n,RemainingCents:total}
+ v:=costView{RecurringCost:plan,RemainingInstallments:n,RemainingCents:total,Financing:terms,ConsideredCents:plan.BookedCents}
+ if terms!=nil{v.ConsideredCents+=terms.DownPaymentCents}
+ v.TotalCents,v.FinancingCostCents,v.EstimatedBalanceCents=service.FinancingSummary(plan,terms)
  if plan.Installments>0{if d,e:=service.CostDue(plan,plan.Installments-1);e==nil{v.LastDate=d.Format("2006-01-02")}}
  if !plan.Stopped&&(plan.Installments==0||n>0){if d,e:=service.CostDue(plan,plan.Generated);e==nil{v.NextDate=d.Format("2006-01-02");v.NextCents=service.CostAmount(plan,plan.Generated)}}
  return v
@@ -43,6 +53,7 @@ func validCost(in *costInput,now time.Time)bool{
  if in.AmountCents<=0||in.AmountCents>100000000||in.Installments<0||in.Installments>600||!(in.IntervalMonths==1||in.IntervalMonths==3||in.IntervalMonths==6||in.IntervalMonths==12){return false}
  if in.Category=="Finanzierung"&&(in.Installments<1||in.IntervalMonths!=1){return false}
  if in.FinalCents!=nil&&(in.Installments<1||*in.FinalCents<1||*in.FinalCents>100000000){return false}
+ if in.Financing!=nil&&(in.Category!="Finanzierung"||!service.ValidFinancingTerms(*in.Financing,now)){return false}
  if in.StartDate<now.Format("2006-01-02")&&in.AlreadyRecorded==nil{return false}
  if in.AlreadyRecorded!=nil{
   plan:=db.RecurringCost{StartDate:in.StartDate,IntervalMonths:in.IntervalMonths,Installments:in.Installments}
@@ -61,7 +72,11 @@ func RegisterRecurringCostController(router *gin.RouterGroup){
  group.GET("",func(c *gin.Context){
   var plans []db.RecurringCost
   if err:=db.DB.Where("owner_user_id = ? AND deleted_at IS NULL",c.GetString("userId")).Order("created_at DESC").Find(&plans).Error;err!=nil{c.JSON(500,gin.H{"error":"Kostenpläne konnten nicht geladen werden"});return}
-  views:=make([]costView,0,len(plans));for _,p:=range plans{views=append(views,costOutput(p))};c.JSON(200,views)
+  var terms []db.FinancingTerms
+  if err:=db.DB.Where("plan_id IN (?)",db.DB.Model(&db.RecurringCost{}).Select("id").Where("owner_user_id = ? AND deleted_at IS NULL",c.GetString("userId"))).Find(&terms).Error;err!=nil{c.JSON(500,gin.H{"error":"Finanzierungsdetails konnten nicht geladen werden"});return}
+  byPlan:=map[string]*db.FinancingTerms{}
+  for i:=range terms{byPlan[terms[i].PlanID]=&terms[i]}
+  views:=make([]costView,0,len(plans));for _,p:=range plans{views=append(views,costOutput(p,byPlan[p.ID]))};c.JSON(200,views)
  })
  group.POST("",func(c *gin.Context){
   c.Request.Body=http.MaxBytesReader(c.Writer,c.Request.Body,16384)
@@ -79,8 +94,33 @@ func RegisterRecurringCostController(router *gin.RouterGroup){
    plan.Generated=*in.AlreadyRecorded
    for i:=0;i<plan.Generated;i++{plan.BookedCents+=service.CostAmount(plan,i)}
   }
-  if err=db.DB.Create(&plan).Error;err!=nil{c.JSON(500,gin.H{"error":"Kostenplan konnte nicht gespeichert werden"});return}
-  c.JSON(201,costOutput(plan))
+  err=db.DB.Transaction(func(tx *gorm.DB)error{
+   if e:=tx.Create(&plan).Error;e!=nil{return e}
+   if in.Financing!=nil{return service.SaveFinancingTerms(tx,plan,user,*in.Financing,time.Now())}
+   return nil
+  })
+  if err!=nil{c.JSON(500,gin.H{"error":"Kostenplan konnte nicht gespeichert werden"});return}
+  if in.Financing!=nil{in.Financing.PlanID=plan.ID}
+  c.JSON(201,costOutput(plan,in.Financing))
+ })
+ group.PUT("/:id/financing",func(c *gin.Context){
+  c.Request.Body=http.MaxBytesReader(c.Writer,c.Request.Body,16384)
+  var in db.FinancingTerms
+  if c.ShouldBindJSON(&in)!=nil||!service.ValidFinancingTerms(in,time.Now()){c.JSON(422,gin.H{"error":"Bitte gültige Vertragsdaten, Anzahlung und Zahlungsdatum bis heute angeben"});return}
+  user:=c.MustGet("userModel").(db.User)
+  var plan db.RecurringCost
+  err:=db.DB.Transaction(func(tx *gorm.DB)error{
+   if e:=tx.Where("id = ? AND owner_user_id = ? AND deleted_at IS NULL",c.Param("id"),user.ID).First(&plan).Error;e!=nil{return e}
+   allowed,e:=service.PlanningAccess(tx,user.ID,plan.VehicleID)
+   if e!=nil{return e};if !allowed{return errTireVehicle}
+   return service.SaveFinancingTerms(tx,plan,user,in,time.Now())
+  })
+  if errors.Is(err,gorm.ErrRecordNotFound){c.Status(404);return}
+  if errors.Is(err,errTireVehicle){c.Status(403);return}
+  if errors.Is(err,service.ErrFinancingTerms){c.JSON(422,gin.H{"error":err.Error()});return}
+  if err!=nil{c.JSON(500,gin.H{"error":"Finanzierungsdetails konnten nicht gespeichert werden"});return}
+  in.PlanID=plan.ID
+  c.JSON(200,costOutput(plan,&in))
  })
  group.POST("/run",func(c *gin.Context){
   n,err:=service.BookRecurringCosts(c.GetString("userId"),time.Now())

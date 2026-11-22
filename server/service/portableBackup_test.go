@@ -115,6 +115,17 @@ func TestPortableBackupRoundTripAndPasswordRedaction(t *testing.T) {
 	if err=g.Create(&mount).Error;err!=nil{t.Fatal(err)}
 	if legacy, previewErr := InspectPortableZIP(legacyZIP,user); previewErr != nil || legacy.Manifest.Counts["tires"] != 0 { t.Fatalf("legacy preview: %v",previewErr) }
 
+	if err=g.AutoMigrate(&db.RecurringCost{});err!=nil{t.Fatal(err)}
+	plan:=db.RecurringCost{OwnerUserID:user.ID,VehicleID:"test-vehicle",Title:"Finanzierung",Category:"Finanzierung",AmountCents:30000,Currency:"EUR",StartDate:"2026-01-01",IntervalMonths:1,Installments:48,Generated:3,BookedCents:90000}
+	if err=g.Create(&plan).Error;err!=nil{t.Fatal(err)}
+	oldFinanceZIP,_,err:=CreatePortableZIP()
+	if err!=nil{t.Fatal(err)}
+	defer os.Remove(oldFinanceZIP)
+	if err=g.AutoMigrate(&db.FinancingTerms{});err!=nil{t.Fatal(err)}
+	principal:=int64(1200000);nominal:=450;effective:=480
+	terms:=db.FinancingTerms{PlanID:plan.ID,DownPaymentCents:200000,DownPaymentDate:"2025-12-15",AlreadyRecorded:true,PrincipalCents:&principal,NominalBps:&nominal,EffectiveBps:&effective}
+	if err=g.Create(&terms).Error;err!=nil{t.Fatal(err)}
+	if _,err=InspectPortableZIP(oldFinanceZIP,user);err!=nil{t.Fatalf("pre-finance preview: %v",err)}
 	zipFile, summary, err := CreatePortableZIP()
 	if err != nil {
 		t.Fatalf("export failed: %v", err)
@@ -174,6 +185,9 @@ func TestPortableBackupRoundTripAndPasswordRedaction(t *testing.T) {
 		t.Fatal("admin not found in backup")
 	}
 
+	if _,err=RestorePortableZIP(oldFinanceZIP,user);err!=nil{t.Fatalf("pre-finance restore: %v",err)}
+	var financeCount int64
+	if err=g.Model(&db.FinancingTerms{}).Count(&financeCount).Error;err!=nil||financeCount!=0{t.Fatal("older backup must clear financing details")}
 	// Verify v1.1.7 archive clears mounting states and retains tire records.
 	if _,err=RestorePortableZIP(preMileageZIP,user);err!=nil{t.Fatalf("v1.1.7 restore: %v",err)}
 	var mountCount int64
@@ -201,6 +215,8 @@ func TestPortableBackupRoundTripAndPasswordRedaction(t *testing.T) {
 	if err = g.Where("id=?",tire.ID).First(&restoredTire).Error;err!=nil || restoredTire.DOT!="2325" || restoredTire.OwnerUserID!=user.ID || restoredTire.TreadDepth==nil || *restoredTire.TreadDepth!=6.5 { t.Fatalf("tire not restored: %#v %v",restoredTire,err) }
 	var restoredMount db.TireMileageState
 	if err=g.Where("tire_id = ?",tire.ID).First(&restoredMount).Error;err!=nil||restoredMount.MountOdo!=1000||restoredMount.MountedOn!="2026-03-01"{t.Fatalf("mounting interval not restored: %#v %v",restoredMount,err)}
+	var restoredTerms db.FinancingTerms
+	if err=g.Where("plan_id = ?",plan.ID).First(&restoredTerms).Error;err!=nil||restoredTerms.DownPaymentCents!=200000||restoredTerms.NominalBps==nil||*restoredTerms.NominalBps!=450||!restoredTerms.AlreadyRecorded{t.Fatalf("financing terms not restored: %#v %v",restoredTerms,err)}
 	if result.SafetyBackup == "" {
 		t.Fatal("missing safety snapshot")
 	}

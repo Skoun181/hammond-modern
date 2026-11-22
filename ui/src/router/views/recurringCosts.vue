@@ -4,10 +4,11 @@ import axios from 'axios'
 import {formatMoney} from '@utils/format-modern'
 const categories=['Finanzierung','Leasing','Versicherung','Kfz-Steuer','Stellplatz','Abonnement','Sonstiges']
 const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
-const blank=()=>({vehicleId:'',title:'',category:'Finanzierung',amount:'',startDate:today(),intervalMonths:1,installments:48,final:'',notes:'',confirmed:false,historyMode:'',alreadyRecorded:0})
+const emptyTerms = () => ({ down: '', downDate: today(), already: false, principal: '', nominal: '', effective: '' })
+const blank=()=>({vehicleId:'',title:'',category:'Finanzierung',amount:'',startDate:today(),intervalMonths:1,installments:48,final:'',notes:'',confirmed:false,historyMode:'',alreadyRecorded:0,terms:emptyTerms()})
 export default {
   page:{title:'Fixkosten & Finanzierung'},components:{Layout},
-  data(){return {plans:[],vehicles:[],form:blank(),categories,showForm:false,loading:true,busy:false,error:'',success:'',filter:''}},
+  data(){return {plans:[],vehicles:[],form:blank(),categories,showForm:false,loading:true,busy:false,error:'',success:'',filter:'',editingFinance:null,editTerms:emptyTerms()}},
   computed:{
     visible(){return this.plans.filter(p=>!this.filter||p.vehicleId===this.filter)},
     active(){return this.visible.filter(p=>!p.stopped&&!!p.nextDate)},
@@ -46,7 +47,7 @@ export default {
     previewTotal() {
       const n = Number(this.form.installments)
       const a = this.cents(this.form.amount)
-      return n > 0 && a > 0 ? (n - 1) * a + (this.form.final === '' ? a : this.cents(this.form.final)) : null
+      return n > 0 && a > 0 ? (n - 1) * a + (this.form.final === '' ? a : this.cents(this.form.final)) + (this.form.category === 'Finanzierung' ? this.cents(this.form.terms.down || 0) : 0) : null
     },
   },
   watch:{
@@ -56,15 +57,34 @@ export default {
     'form.category'(v){if(v==='Finanzierung'){this.form.intervalMonths=1;if(!Number(this.form.installments))this.form.installments=48}else{this.form.installments=0;this.form.final=''}}},
   mounted(){this.load()},
   methods:{
+    financePayload(t) {
+      return { downPaymentCents: this.cents(t.down || 0), downPaymentDate: Number(t.down) > 0 ? t.downDate : '', alreadyRecorded: Number(t.down) > 0 && t.already, principalCents: t.principal === '' ? null : this.cents(t.principal), nominalBps: t.nominal === '' ? null : this.cents(t.nominal), effectiveBps: t.effective === '' ? null : this.cents(t.effective) }
+    },
+    startFinance(p) {
+      const t = p.financing || {}
+      this.showForm = false
+      this.editingFinance = p
+      this.editTerms = { down: t.downPaymentCents ? t.downPaymentCents / 100 : '', downDate: t.downPaymentDate || today(), already: !!t.alreadyRecorded, principal: t.principalCents == null ? '' : t.principalCents / 100, nominal: t.nominalBps == null ? '' : t.nominalBps / 100, effective: t.effectiveBps == null ? '' : t.effectiveBps / 100 }
+      this.$nextTick(() => { const el = this.$el.querySelector('#finance-edit'); if (el) el.scrollIntoView({ block: 'start' }) })
+    },
+    async saveFinance() {
+      if (this.busy || !this.editingFinance) return
+      this.busy = true; this.error = ''; this.success = ''
+      try {
+        await axios.put('/api/recurring-costs/' + this.editingFinance.id + '/financing', this.financePayload(this.editTerms))
+        this.editingFinance = null; await this.load(); this.success = 'Finanzierungsdetails gespeichert.'
+      } catch (e) { this.error = (e.response && e.response.data && e.response.data.error) || 'Speichern fehlgeschlagen.' }
+      finally { this.busy = false }
+    },
     today,money(cents,currency){return formatMoney(cents/100,currency)},cents(v){return Math.round(Number(v)*100)},
     vehicleName(id){const v=this.vehicles.find(x=>x.id===id);return v?[v.nickname,v.registration].filter(Boolean).join(' · '):'Fahrzeug nicht verfügbar'},
     date(v){return v?v.split('-').reverse().join('.'):'–'},
     async load(){this.loading=true;try{const [r,v]=await Promise.all([axios.get('/api/recurring-costs'),this.$store.dispatch('vehicles/fetchVehicles')]);this.plans=r.data||[];this.vehicles=v||[]}catch(e){this.error='Kostenpläne konnten nicht geladen werden.'}finally{this.loading=false}},
-    add(){this.form=blank();this.form.vehicleId=this.filter||(this.vehicles[0]||{}).id||'';this.showForm=true;this.error='';this.success=''},
+    add(){this.editingFinance=null;this.form=blank();this.form.vehicleId=this.filter||(this.vehicles[0]||{}).id||'';this.showForm=true;this.error='';this.success=''},
     async save(){
       if(this.busy||!this.form.confirmed||!this.historyValid)return
       this.busy=true;this.error='';this.success=''
-      try{const p=this.form;await axios.post('/api/recurring-costs',{vehicleId:p.vehicleId,title:p.title,category:p.category,amountCents:this.cents(p.amount),startDate:p.startDate,intervalMonths:Number(p.intervalMonths),installments:Number(p.installments||0),finalCents:!Number(p.installments)||p.final===''?null:this.cents(p.final),notes:p.notes,alreadyRecorded:this.acknowledgedCount});this.showForm=false;await this.load();this.success='Kostenplan angelegt. Fehlende fällige Raten werden automatisch verbucht.'}
+      try{const p=this.form;await axios.post('/api/recurring-costs',{vehicleId:p.vehicleId,title:p.title,category:p.category,amountCents:this.cents(p.amount),startDate:p.startDate,intervalMonths:Number(p.intervalMonths),installments:Number(p.installments||0),finalCents:!Number(p.installments)||p.final===''?null:this.cents(p.final),notes:p.notes,alreadyRecorded:this.acknowledgedCount,financing:p.category==='Finanzierung'?this.financePayload(p.terms):null});this.showForm=false;await this.load();this.success='Kostenplan angelegt. Fehlende fällige Raten werden automatisch verbucht.'}
       catch(e){this.error=(e.response&&e.response.data&&e.response.data.error)||'Speichern fehlgeschlagen.'}finally{this.busy=false}
     },
     async run(){if(this.busy)return;this.busy=true;this.error='';this.success='';try{const r=await axios.post('/api/recurring-costs/run');await this.load();this.success=r.data.booked+' fällige Ausgaben erfasst.'}catch(e){this.error=(e.response&&e.response.data&&e.response.data.error)||'Verbuchung fehlgeschlagen.';await this.load()}finally{this.busy=false}},
@@ -83,6 +103,20 @@ export default {
     <b-notification v-if="error" type="is-danger" @close="error = ''">{{ error }}</b-notification>
     <b-notification v-if="success" type="is-success" @close="success = ''">{{ success }}</b-notification>
     <p class="box">Automatische Sollbuchungen sind keine Zahlungsnachweise. Es werden keine Überweisungen ausgelöst. Bei einer bestehenden Finanzierung kannst du den ursprünglichen Start und die gesamte Ratenanzahl angeben. Bereits erfasste Raten nicht erneut verbuchen.</p>
+    <div v-if="editingFinance" id="finance-edit" class="box plan-form">
+      <h2 class="title is-5">Finanzierungsdetails · {{ editingFinance.title }}</h2>
+      <form @submit.prevent="saveFinance">
+        <div class="columns is-multiline">
+          <div class="column is-half"><b-field label="Anzahlung (optional)" message="Einmalig, zusätzlich zu den Raten."><b-input v-model="editTerms.down" type="number" min="0" max="1000000" step="0.01" :disabled="!!(editingFinance.financing && editingFinance.financing.downPaymentCents)" /></b-field></div>
+          <div class="column is-half"><b-field label="Datum der Anzahlung"><input v-model="editTerms.downDate" class="input" type="date" min="1900-01-01" :max="today()" :required="Number(editTerms.down) > 0" :disabled="!!(editingFinance.financing && editingFinance.financing.downPaymentCents)" /></b-field></div>
+          <div v-if="Number(editTerms.down) > 0" class="column is-full"><b-checkbox v-model="editTerms.already" :disabled="!!(editingFinance.financing && editingFinance.financing.downPaymentCents)">Anzahlung bereits als Ausgabe erfasst (nicht erneut buchen)</b-checkbox></div>
+          <div class="column is-half"><b-field label="Nettodarlehensbetrag" message="Kreditbetrag laut Vertrag, ohne Anzahlung."><b-input v-model="editTerms.principal" type="number" min="0.01" max="1000000" step="0.01" /></b-field></div>
+          <div class="column is-half"><b-field label="Sollzins p. a. (%)"><b-input v-model="editTerms.nominal" type="number" min="0" max="100" step="0.01" /></b-field></div>
+          <div class="column is-half"><b-field label="Effektiver Jahreszins (%)"><b-input v-model="editTerms.effective" type="number" min="0" max="100" step="0.01" /></b-field></div>
+        </div><p class="help">Vertragsraten bleiben unverändert. Ohne Häkchen wird die Anzahlung einmalig zum angegebenen Datum als Ausgabe gebucht. Nach dem Speichern bleiben Betrag und Datum der Anzahlung festgeschrieben.</p>
+        <div class="buttons"><b-button type="is-primary" native-type="submit" :loading="busy" :disabled="busy">Details speichern</b-button><b-button :disabled="busy" @click="editingFinance = null">Abbrechen</b-button></div>
+      </form>
+    </div>
     <div v-if="showForm" class="box plan-form">
       <h2 class="title is-5">Kostenplan anlegen</h2>
       <form @submit.prevent="save">
@@ -97,6 +131,14 @@ export default {
           <div v-if="Number(form.installments) > 0" class="column is-half"><b-field label="Abweichende letzte Rate / Schlussrate" message="Gesamtbetrag der letzten Rate, nicht zusätzlich zur normalen Rate. Leer = normale Rate."><b-input v-model="form.final" type="number" min="0.01" max="1000000" step="0.01" /></b-field></div>
           <div class="column is-full"><b-field label="Notizen"><b-input v-model="form.notes" maxlength="2000" type="textarea" /></b-field></div>
         </div>
+        <div v-if="form.category === 'Finanzierung'" class="plan-preview"><h3 class="title is-6">Anzahlung und Vertragszinsen</h3><div class="columns is-multiline">
+          <div class="column is-half"><b-field label="Anzahlung (optional)" message="Einmalig, zusätzlich zu den Raten."><b-input v-model="form.terms.down" type="number" min="0" max="1000000" step="0.01" /></b-field></div>
+          <div class="column is-half"><b-field label="Datum der Anzahlung"><input v-model="form.terms.downDate" class="input" type="date" min="1900-01-01" :max="today()" :required="Number(form.terms.down) > 0" /></b-field></div>
+          <div v-if="Number(form.terms.down) > 0" class="column is-full"><b-checkbox v-model="form.terms.already">Anzahlung bereits als Ausgabe erfasst (nicht erneut buchen)</b-checkbox></div>
+          <div class="column is-half"><b-field label="Nettodarlehensbetrag" message="Kreditbetrag laut Vertrag, ohne Anzahlung."><b-input v-model="form.terms.principal" type="number" min="0.01" max="1000000" step="0.01" /></b-field></div>
+          <div class="column is-half"><b-field label="Sollzins p. a. (%)"><b-input v-model="form.terms.nominal" type="number" min="0" max="100" step="0.01" /></b-field></div>
+          <div class="column is-half"><b-field label="Effektiver Jahreszins (%)"><b-input v-model="form.terms.effective" type="number" min="0" max="100" step="0.01" /></b-field></div>
+        </div><p class="help">Vertragsraten bleiben unverändert. Ohne Häkchen wird die Anzahlung einmalig zum angegebenen Datum als Ausgabe gebucht. Nach dem Speichern bleiben Betrag und Datum der Anzahlung festgeschrieben.</p></div>
         <p v-if="previewTotal !== null" class="plan-preview">Geplante Gesamtsumme: <strong>{{ (previewTotal / 100).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</strong> in deiner Währung</p>
         <div v-if="pastStart" class="plan-preview">
           <h3 class="title is-6">Vergangene Raten</h3>
@@ -130,12 +172,25 @@ export default {
         <article class="box plan-card">
           <p class="hm-eyebrow">{{ p.category }} · {{ status(p) }}</p><h2 class="title is-5">{{ p.title }}</h2><p class="plan-vehicle">{{ vehicleName(p.vehicleId) }}</p>
           <div class="plan-highlight"><p class="heading">Reguläre Rate</p><strong>{{ money(p.amountCents,p.currency) }}</strong><p>Alle {{ p.intervalMonths }} Monat(e)</p></div>
-          <div class="plan-grid"><div><p class="heading">Nächste Fälligkeit</p><strong>{{ date(p.nextDate) }}</strong><p v-if="p.nextDate">{{ money(p.nextCents,p.currency) }}</p></div><div><p class="heading">Berücksichtigt (Soll)</p><strong>{{ money(p.bookedCents,p.currency) }}</strong><p>{{ p.generated }} berücksichtigte Raten</p></div></div>
+          <div class="plan-grid"><div><p class="heading">Nächste Fälligkeit</p><strong>{{ date(p.nextDate) }}</strong><p v-if="p.nextDate">{{ money(p.nextCents,p.currency) }}</p></div><div><p class="heading">Berücksichtigt (Soll)</p><strong>{{ money(p.consideredCents,p.currency) }}</strong><p>{{ p.generated }} berücksichtigte Raten</p></div></div>
           <p>Erste Fälligkeit: {{ date(p.startDate) }}<span v-if="p.lastDate"> · Letzte Fälligkeit: {{ date(p.lastDate) }}</span></p>
           <template v-if="p.installments">
             <p class="heading">Ratenfortschritt: {{ p.generated }} / {{ p.installments }} erfasst</p><progress class="progress is-warning" :value="p.generated" :max="p.installments">{{ p.generated }}</progress>
             <p>{{ p.remainingInstallments }} noch nicht erfasste Raten · <strong>{{ money(p.remainingCents,p.currency) }}</strong></p><p v-if="p.finalCents !== null && p.finalCents !== undefined">Letzte Rate: {{ money(p.finalCents,p.currency) }}</p><p class="help">Geplante Ratensumme, kein Kreditrestsaldo. Gestoppte Pläne werden nicht weiter gebucht.</p>
           </template>
+          <section v-if="p.category === 'Finanzierung'" class="plan-preview">
+            <p class="heading">Gesamte geplante Zahlungen inkl. Anzahlung</p><strong>{{ money(p.totalCents,p.currency) }}</strong>
+            <template v-if="p.financing">
+              <p v-if="p.financing.downPaymentCents">Anzahlung: {{ money(p.financing.downPaymentCents,p.currency) }} · {{ date(p.financing.downPaymentDate) }}</p>
+              <p v-if="p.financing.principalCents">Nettodarlehen: {{ money(p.financing.principalCents,p.currency) }}</p>
+              <p v-if="p.financing.nominalBps !== null">Sollzins: {{ (p.financing.nominalBps / 100).toLocaleString('de-DE') }} % p. a.</p>
+              <p v-if="p.financing.effectiveBps !== null">Effektiver Jahreszins: {{ (p.financing.effectiveBps / 100).toLocaleString('de-DE') }} %</p>
+              <p v-if="p.financingCostCents !== null">Raten minus Nettodarlehen: {{ money(p.financingCostCents,p.currency) }}</p>
+              <p v-if="p.estimatedBalanceCents !== null">Geschätzte Restschuld: {{ money(p.estimatedBalanceCents,p.currency) }}</p>
+              <p class="help">Restschuld unter Annahme monatlicher Sollzinsen und planmäßiger Zahlungen, ohne Gebühren, Sondertilgungen oder abweichende Zinstage. Kein Bankrestsaldo.</p>
+            </template>
+            <b-button size="is-small" :disabled="busy" @click="startFinance(p)">Finanzierungsdetails ergänzen / bearbeiten</b-button>
+          </section>
           <p v-if="p.notes" class="plan-notes">{{ p.notes }}</p>
           <div class="buttons plan-actions"><b-button tag="router-link" :to="{ name: 'vehicle-detail', params: { vehicleId: p.vehicleId } }">Fahrzeugdetails</b-button><b-button v-if="!p.stopped && p.nextDate" :disabled="busy" type="is-danger" outlined @click="stop(p)">Plan stoppen</b-button></div>
         </article>

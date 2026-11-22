@@ -27,7 +27,7 @@ import (
 
 const (
 	PortableBackupVersion       = 1
-	PortableAppVersion          = "1.1.9"
+	PortableAppVersion          = "1.1.10-dev"
 	PortableMaxZIP        int64 = 512 << 20
 	PortableMaxData       int64 = 1024 << 20
 	PortableMaxFiles            = 10000
@@ -48,7 +48,7 @@ var allowedTables = map[string]bool{
 	"users": true, "vehicles": true, "user_vehicles": true,
 	"fillups": true, "expenses": true, "attachments": true,
 	"vehicle_attachments": true, "drivers": true, "maintenance_tasks": true,
-	"tires": true, "tire_mileage_states": true, "maintenance_rules": true, "recurring_costs": true, "settings": true, "quick_entries": true, "job_locks": true, "migrations": true,
+	"tires": true, "tire_mileage_states": true, "maintenance_rules": true, "recurring_costs": true, "financing_terms": true, "settings": true, "quick_entries": true, "job_locks": true, "migrations": true,
 	"vehicle_alerts": true, "alert_occurances": true, "notifications": true,
 }
 
@@ -587,7 +587,7 @@ func portableCheckRestore(stage string, m PortableManifest, files map[string]boo
 		omit:=map[string]bool{}
 		for _,table:=range liveTables{
 			if _,present:=m.Counts[table];!present{
-				if table!="tires"&&table!="tire_mileage_states"&&table!="maintenance_rules"&&table!="recurring_costs"{return result,errors.New("Backup und Zielinstallation haben unterschiedliche Datenbankschemas")}
+				if table!="tires"&&table!="tire_mileage_states"&&table!="maintenance_rules"&&table!="recurring_costs"&&table!="financing_terms"{return result,errors.New("Backup und Zielinstallation haben unterschiedliche Datenbankschemas")}
 				omit[table]=true
 			}
 		}
@@ -620,6 +620,11 @@ func portableCheckRestore(stage string, m PortableManifest, files map[string]boo
 		var invalid int
 		if err=incoming.QueryRow("SELECT COUNT(*) FROM recurring_costs WHERE amount_cents IS NULL OR amount_cents NOT BETWEEN 1 AND 100000000 OR interval_months IS NULL OR interval_months NOT IN (1,3,6,12) OR installments IS NULL OR installments NOT BETWEEN 0 AND 600 OR generated IS NULL OR generated NOT BETWEEN 0 AND 12000 OR (installments > 0 AND generated > installments) OR booked_cents IS NULL OR booked_cents < 0 OR start_date IS NULL OR date(start_date) IS NULL OR start_date <> date(start_date) OR (final_cents IS NOT NULL AND (installments = 0 OR final_cents NOT BETWEEN 1 AND 100000000))").Scan(&invalid);err!=nil{return result,err}
 		if invalid!=0{return result,errors.New("Ungültige Kostenpläne im Backup")}
+	}
+	if _,present:=m.Counts["financing_terms"];present{
+		var invalid int
+		if err=incoming.QueryRow("SELECT COUNT(*) FROM financing_terms f LEFT JOIN recurring_costs p ON p.id=f.plan_id WHERE p.id IS NULL OR p.category <> 'Finanzierung' OR f.down_payment_cents IS NULL OR f.down_payment_cents NOT BETWEEN 0 AND 100000000 OR f.already_recorded IS NULL OR f.already_recorded NOT IN (0,1) OR (f.down_payment_cents > 0 AND (f.down_payment_date IS NULL OR date(f.down_payment_date) IS NULL OR f.down_payment_date <> date(f.down_payment_date) OR f.down_payment_date < '1900-01-01')) OR (f.down_payment_cents = 0 AND (COALESCE(f.down_payment_date,'') <> '' OR f.already_recorded <> 0)) OR (f.principal_cents IS NOT NULL AND f.principal_cents NOT BETWEEN 1 AND 100000000) OR (f.nominal_bps IS NOT NULL AND f.nominal_bps NOT BETWEEN 0 AND 10000) OR (f.effective_bps IS NOT NULL AND f.effective_bps NOT BETWEEN 0 AND 10000)").Scan(&invalid);err!=nil{return result,err}
+		if invalid!=0{return result,errors.New("Ungültige Finanzierungsdetails im Backup")}
 	}
 	if err = portableCheckReferences(incoming, files); err != nil {
 		return result, err
@@ -856,7 +861,7 @@ func RestorePortableZIP(path string, admin db.User) (PortableSummary, error) {
 		}
 	}
 	for _, table := range tables {
-		if table == "tires" || table == "tire_mileage_states" || table == "maintenance_rules" || table == "recurring_costs" { if _, present := m.Counts[table]; !present { continue } }
+		if table == "tires" || table == "tire_mileage_states" || table == "maintenance_rules" || table == "recurring_costs" || table == "financing_terms" { if _, present := m.Counts[table]; !present { continue } }
 		if _, err = tx.Exec(`INSERT INTO main."` + table + `" SELECT * FROM incoming."` + table + `"`); err != nil {
 			return result, err
 		}

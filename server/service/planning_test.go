@@ -14,7 +14,7 @@ func TestRecurringFinancingBookings(t *testing.T){
  if err!=nil{t.Fatal(err)}
  db.DB=g
  t.Cleanup(func(){db.DB=old;sql,_:=g.DB();sql.Close()})
- if err=g.AutoMigrate(&db.User{},&db.Vehicle{},&db.UserVehicle{},&db.Expense{},&db.Fillup{},&db.RecurringCost{});err!=nil{t.Fatal(err)}
+ if err=g.AutoMigrate(&db.User{},&db.Vehicle{},&db.UserVehicle{},&db.Expense{},&db.Fillup{},&db.RecurringCost{},&db.FinancingTerms{});err!=nil{t.Fatal(err)}
  user:=db.User{Email:"plan@example.test",Currency:"EUR",DistanceUnit:db.KILOMETERS}
  v:=db.Vehicle{Nickname:"Auto"}
  for _,x:=range []interface{}{&user,&v}{if err=g.Create(x).Error;err!=nil{t.Fatal(err)}}
@@ -46,5 +46,20 @@ func TestRecurringFinancingBookings(t *testing.T){
  if err=g.First(&historical,"id = ?",historical.ID).Error;err!=nil{t.Fatal(err)}
  if historical.Generated!=18||historical.BookedCents!=540000{t.Fatalf("history progress %#v",historical)}
  next,e:=CostDue(historical,historical.Generated);if e!=nil||next.Format("2006-01-02")!="2026-12-01"{t.Fatalf("next %v %v",next,e)}
+
+ principal:=int64(1800000);nominal:=400;effective:=450
+ terms:=db.FinancingTerms{DownPaymentCents:200000,DownPaymentDate:"2025-05-15",PrincipalCents:&principal,NominalBps:&nominal,EffectiveBps:&effective}
+ save:=func()error{return g.Transaction(func(tx *gorm.DB)error{return SaveFinancingTerms(tx,historical,user,terms,historyNow)})}
+ if err=save();err!=nil{t.Fatal(err)}
+ if err=save();err!=nil{t.Fatal(err)}
+ nominal=500;if err=save();err!=nil{t.Fatal(err)}
+ var payments []db.Expense
+ if err=g.Where("source = ?","FinancingDownPayment").Find(&payments).Error;err!=nil||len(payments)!=1||payments[0].Amount!=2000{t.Fatalf("down payment duplicated: %#v %v",payments,err)}
+ if err=g.First(&historical,"id = ?",historical.ID).Error;err!=nil||historical.Generated!=18||historical.BookedCents!=540000{t.Fatal("installment progress changed")}
+ total,cost,balance:=FinancingSummary(historical,&terms)
+ if total==nil||*total!=2000000||cost==nil||*cost!=0||balance==nil||*balance<=0{t.Fatalf("summary %v %v %v",total,cost,balance)}
+ terms.DownPaymentCents=300000
+ if err=save();err==nil{t.Fatal("changing recorded down payment accepted")}
+ terms.DownPaymentDate="2027-01-01";if ValidFinancingTerms(terms,historyNow){t.Fatal("future payment accepted")}
 
 }
