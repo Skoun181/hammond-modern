@@ -1,0 +1,71 @@
+# Hammond Modern – Home Assistant REST package (Develop)
+# Einmalig in configuration.yaml aktivieren:
+# homeassistant:
+#   packages: !include_dir_named packages
+#
+# Diese Datei als /homeassistant/packages/hammond_modern.yaml ablegen.
+# In /homeassistant/secrets.yaml:
+# hammond_modern_authorization: "Bearer hmha_DEIN_SCHLUESSEL"
+#
+# Der Schlüssel wird in Hammond Modern unter Home Assistant erstellt.
+rest:
+  - resource: "http://192.168.0.68:3007/api/integrations/homeassistant/maintenance"
+    method: GET
+    scan_interval: 300
+    timeout: 20
+    headers:
+      Authorization: !secret hammond_modern_authorization
+      Accept: "application/json"
+    sensor:
+      - name: "Hammond Modern Wartungen"
+        unique_id: hammond_modern_maintenance_rest
+        icon: mdi:car-wrench
+        value_template: "{{ value_json.summary.total | int(0) }}"
+        unit_of_measurement: "Wartungen"
+        json_attributes:
+          - summary
+          - tasks
+
+template:
+  - sensor:
+      - name: "Hammond Modern Überfällig"
+        unique_id: hammond_modern_maintenance_overdue
+        icon: mdi:alert-circle
+        unit_of_measurement: "Wartungen"
+        availability: "{{ has_value('sensor.hammond_modern_wartungen') }}"
+        state: "{{ state_attr('sensor.hammond_modern_wartungen', 'summary').get('overdue', 0) | int(0) if state_attr('sensor.hammond_modern_wartungen', 'summary') is mapping else 0 }}"
+      - name: "Hammond Modern Heute fällig"
+        unique_id: hammond_modern_maintenance_due
+        icon: mdi:calendar-alert
+        unit_of_measurement: "Wartungen"
+        availability: "{{ has_value('sensor.hammond_modern_wartungen') }}"
+        state: "{{ state_attr('sensor.hammond_modern_wartungen', 'summary').get('due', 0) | int(0) if state_attr('sensor.hammond_modern_wartungen', 'summary') is mapping else 0 }}"
+      - name: "Hammond Modern Bald fällig"
+        unique_id: hammond_modern_maintenance_soon
+        icon: mdi:calendar-clock
+        unit_of_measurement: "Wartungen"
+        availability: "{{ has_value('sensor.hammond_modern_wartungen') }}"
+        state: "{{ state_attr('sensor.hammond_modern_wartungen', 'summary').get('soon', 0) | int(0) if state_attr('sensor.hammond_modern_wartungen', 'summary') is mapping else 0 }}"
+      - name: "Hammond Modern Geplant"
+        unique_id: hammond_modern_maintenance_planned
+        icon: mdi:calendar-check
+        unit_of_measurement: "Wartungen"
+        availability: "{{ has_value('sensor.hammond_modern_wartungen') }}"
+        state: "{{ state_attr('sensor.hammond_modern_wartungen', 'summary').get('planned', 0) | int(0) if state_attr('sensor.hammond_modern_wartungen', 'summary') is mapping else 0 }}"
+      - name: "Hammond Modern Nächste Wartung"
+        unique_id: hammond_modern_next_maintenance
+        icon: mdi:wrench-clock
+        availability: "{{ has_value('sensor.hammond_modern_wartungen') }}"
+        state: >-
+          {% set tasks = state_attr('sensor.hammond_modern_wartungen', 'tasks') %}
+          {{ tasks[0].title if tasks is sequence and tasks is not string and tasks | length > 0 else 'Keine offene Wartung' }}
+        attributes:
+          fahrzeug: >-
+            {% set tasks = state_attr('sensor.hammond_modern_wartungen', 'tasks') %}
+            {{ tasks[0].vehicle_name if tasks is sequence and tasks is not string and tasks | length > 0 else none }}
+          faellig_am: >-
+            {% set tasks = state_attr('sensor.hammond_modern_wartungen', 'tasks') %}
+            {{ tasks[0].due_date if tasks is sequence and tasks is not string and tasks | length > 0 else none }}
+          status: >-
+            {% set tasks = state_attr('sensor.hammond_modern_wartungen', 'tasks') %}
+            {{ tasks[0].severity if tasks is sequence and tasks is not string and tasks | length > 0 else none }}
