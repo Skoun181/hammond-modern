@@ -46,20 +46,10 @@ export default [
     name: 'initialize',
     component: () => lazyLoadView(import('@views/initialize.vue')),
     meta: {
-      beforeResolve(routeTo, routeFrom, next) {
-        // If the user is already logged in
-
-        if (store.getters['auth/isInitialized']) {
-          next({ name: 'login' })
-        }
-
-        if (store.getters['auth/loggedIn']) {
-          // Redirect to the home page instead
-          next({ name: 'home' })
-        } else {
-          // Continue to the login page
-          next()
-        }
+      async beforeResolve(routeTo, routeFrom, next) {
+        const system = await store.dispatch('auth/systemInitialized')
+        if (!system || system.initialized) return next({ name: 'login' })
+        return next()
       },
     },
   },
@@ -68,22 +58,14 @@ export default [
     name: 'login',
     component: () => lazyLoadView(import('@views/login.vue')),
     meta: {
-      beforeResolve(routeTo, routeFrom, next) {
-        // If the user is already logged in
-
-        if (!store.getters['auth/isInitialized']) {
-          // Redirect to the home page instead
-          console.log('App is not initialized')
-          next({ name: 'initialize' })
-        }
-
+      async beforeResolve(routeTo, routeFrom, next) {
+        const system = await store.dispatch('auth/systemInitialized')
+        if (system && !system.initialized) return next({ name: 'initialize' })
         if (store.getters['auth/loggedIn']) {
-          // Redirect to the home page instead
-          next({ name: 'home' })
-        } else {
-          // Continue to the login page
-          next()
+          const user = await store.dispatch('auth/validate')
+          if (user) return next({ name: 'home' })
         }
+        return next()
       },
     },
   },
