@@ -1,8 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"log"
+	"net/http"
 	"os"
 
 	"github.com/akhilrex/hammond/controllers"
@@ -23,17 +23,29 @@ func main() {
 	var err error
 	db.DB, err = db.Init()
 	if err != nil {
-		fmt.Println("status: ", err)
-	} else {
-		db.Migrate()
+		log.Fatal(err)
 	}
-	r := gin.Default()
+	db.Migrate()
+	if len(os.Args) == 2 && os.Args[1] == "--import-clarkson" {
+		if err := db.MigrateClarkson(os.Getenv("CLARKSON_DSN"), os.Getenv("CLARKSON_ADMIN_EMAIL"), os.Getenv("CLARKSON_ADMIN_PASSWORD")); err != nil {
+			log.Fatal(err)
+		}
+		log.Println("Clarkson-Import abgeschlossen. Weitere Benutzer benötigen ein individuelles Passwort.")
+		return
+	}
+	if err := service.OpenSessions(os.Getenv("CONFIG")); err != nil {
+		log.Fatal(err)
+	}
+	r := gin.New()
+	r.Use(gin.LoggerWithFormatter(func(params gin.LogFormatterParams) string {
+		return params.Method + " " + params.Request.URL.Path + " " + http.StatusText(params.StatusCode) + "\n"
+	}))
 
 	// Serialize a full-instance restore against normal application requests.
 	r.Use(controllers.PortableDataGuard())
 
 	r.Use(setupSettings())
-	r.Use(gin.Recovery())
+	r.Use(gin.CustomRecovery(func(c *gin.Context, _ interface{}) { c.AbortWithStatus(http.StatusInternalServerError) }))
 	r.Use(location.Default())
 	r.Use(static.Serve("/", static.LocalFile("./dist", true)))
 	r.NoRoute(func(c *gin.Context) {
@@ -41,10 +53,6 @@ func main() {
 		c.File("dist/index.html")
 	})
 	router := r.Group("/api")
-
-	dataPath := os.Getenv("DATA")
-
-	router.Static("/assets/", dataPath)
 
 	controllers.RegisterAnonController(router)
 	controllers.RegisterAnonMasterConroller(router)

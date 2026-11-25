@@ -2,7 +2,6 @@
 import Layout from '@layouts/main.vue'
 import { authMethods } from '@state/helpers'
 import appConfig from '@src/app.config'
-import store from '@state/store'
 
 export default {
   page: {
@@ -47,13 +46,12 @@ export default {
       })
         .then((token) => {
           this.tryingToLogIn = false
-          store.dispatch('users/me').then((data) => {
-            this.$router.push(this.$route.query.redirectFrom || { name: 'home' })
-          })
+          return this.$store.dispatch('users/forceMe').then(() =>
+            this.$router.push(this.$route.query.redirectFrom || { name: 'home' }))
           // Redirect to the originally requested page, or to the home page
         })
         .catch((error) => {
-          if (error.response.data?.errors?.login) {
+          if (error.response?.data?.errors?.login) {
             this.errorMessage = error.response.data.errors.login
           }
           this.tryingToLogIn = false

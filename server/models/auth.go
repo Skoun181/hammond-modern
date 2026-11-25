@@ -5,8 +5,8 @@ import "github.com/akhilrex/hammond/db"
 type LoginResponse struct {
 	Name         string `json:"name"`
 	Email        string `json:"email"`
-	Token        string `json:"token"`
-	RefreshToken string `json:"refreshToken"`
+	Token        string `json:"token,omitempty"`
+	RefreshToken string `json:"refreshToken,omitempty"`
 	Role         string `json:"role"`
 }
 

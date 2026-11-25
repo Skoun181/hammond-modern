@@ -1,7 +1,7 @@
 <script>
 import Layout from '@layouts/main.vue'
 export default {
-  page: { title: 'Backup & Umzug' },
+  page: { title: 'Backup & Umzug', meta: [{ name: 'description', content: 'Fahrzeugdaten sichern und importieren' }] },
   components: { Layout },
   computed: {
     isAdmin() { return this.$store.state.auth.currentUser && this.$store.state.auth.currentUser.role === 'ADMIN' },

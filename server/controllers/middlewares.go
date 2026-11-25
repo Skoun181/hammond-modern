@@ -2,70 +2,82 @@ package controllers
 
 import (
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 
-	"github.com/akhilrex/hammond/db"
-	"github.com/dgrijalva/jwt-go"
-	"github.com/dgrijalva/jwt-go/request"
+	"github.com/akhilrex/hammond/service"
 	"github.com/gin-gonic/gin"
 )
 
-// Strips 'BEARER ' prefix from token string
-func stripBearerPrefixFromTokenString(tok string) (string, error) {
-	// Should be a bearer token
-	if len(tok) > 6 && strings.ToUpper(tok[0:6]) == "BEARER " {
-		return tok[7:], nil
+const accessCookie = "hammond_access"
+const refreshCookie = "hammond_refresh"
+
+func bearer(c *gin.Context) string {
+	header := strings.Fields(c.GetHeader("Authorization"))
+	if len(header) == 2 && strings.EqualFold(header[0], "Bearer") {
+		return header[1]
 	}
-	return tok, nil
-}
-
-// Extract  token from Authorization header
-// Uses PostExtractionFilter to strip "TOKEN " prefix from header
-var AuthorizationHeaderExtractor = &request.PostExtractionFilter{
-	Extractor: request.HeaderExtractor{"Authorization"},
-	Filter:    stripBearerPrefixFromTokenString,
-}
-
-// Extractor for OAuth2 access tokens.  Looks in 'Authorization'
-// header then 'access_token' argument for a token.
-var MyAuth2Extractor = &request.MultiExtractor{
-	AuthorizationHeaderExtractor,
-	request.ArgumentExtractor{"access_token"},
-}
-
-// A helper to write user_id and user_model to the context
-func UpdateContextUserModel(c *gin.Context, my_user_id string) {
-	var myUserModel db.User
-	if my_user_id != "" {
-
-		db.DB.First(&myUserModel, map[string]string{
-			"ID": my_user_id,
-		})
+	if len(header) == 1 {
+		return header[0]
 	}
-	c.Set("userId", my_user_id)
-	c.Set("userModel", myUserModel)
+	return ""
 }
 
-// You can custom middlewares yourself as the doc: https://github.com/gin-gonic/gin#custom-middleware
-//  r.Use(AuthMiddleware(true))
+func secureSession(c *gin.Context) bool {
+	return c.Request.TLS != nil || os.Getenv("SESSION_COOKIE_SECURE") == "1"
+}
+
+func sessionOrigin(c *gin.Context) bool {
+	origin := c.GetHeader("Origin")
+	if origin == "" {
+		site := c.GetHeader("Sec-Fetch-Site")
+		return site == "" || site == "same-origin"
+	}
+	parsed, err := url.Parse(origin)
+	scheme := "http"
+	if secureSession(c) {
+		scheme = "https"
+	}
+	return err == nil && parsed.Scheme == scheme && strings.EqualFold(parsed.Host, c.Request.Host) &&
+		parsed.User == nil && parsed.Path == "" && parsed.RawQuery == "" && parsed.Fragment == ""
+}
+
+func sessionCookies(c *gin.Context, tokens service.SessionTokens, active bool) {
+	accessAge, refreshAge := -1, -1
+	if active {
+		accessAge = int(service.AccessLifetime.Seconds())
+		refreshAge = int(service.RefreshLifetime.Seconds())
+	}
+	c.SetSameSite(http.SameSiteStrictMode)
+	c.SetCookie(accessCookie, tokens.Access, accessAge, "/api", "", secureSession(c), true)
+	c.SetCookie(refreshCookie, tokens.Refresh, refreshAge, "/api", "", secureSession(c), true)
+}
+
 func AuthMiddleware(auto401 bool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		UpdateContextUserModel(c, "")
-		token, err := request.ParseFromRequest(c.Request, MyAuth2Extractor, func(token *jwt.Token) (interface{}, error) {
-			b := ([]byte(os.Getenv("JWT_SECRET")))
-			return b, nil
-		})
+		token := bearer(c)
+		if token == "" {
+			token, _ = c.Cookie(accessCookie)
+			switch c.Request.Method {
+			case http.MethodGet, http.MethodHead, http.MethodOptions:
+			default:
+				if !sessionOrigin(c) {
+					c.AbortWithStatus(http.StatusForbidden)
+					return
+				}
+			}
+		}
+		user, err := service.AccessSession(token)
 		if err != nil {
 			if auto401 {
-				c.AbortWithError(http.StatusUnauthorized, err)
+				c.AbortWithStatus(http.StatusUnauthorized)
 			}
 			return
 		}
-		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-			my_user_id := claims["id"].(string)
-			//fmt.Println(my_user_id,claims["id"])
-			UpdateContextUserModel(c, my_user_id)
-		}
+		c.Set("userId", user.ID)
+		c.Set("userModel", *user)
+		c.Header("Cache-Control", "no-store")
+		c.Next()
 	}
 }

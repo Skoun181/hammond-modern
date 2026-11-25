@@ -3,6 +3,7 @@ package controllers
 import (
 	"errors"
 	"net/http"
+	"os"
 
 	"github.com/akhilrex/hammond/common"
 	"github.com/akhilrex/hammond/db"
@@ -14,33 +15,33 @@ import (
 func RegisterVehicleController(router *gin.RouterGroup) {
 	router.POST("/vehicles", createVehicle)
 	router.GET("/vehicles", getAllVehicles)
-	router.GET("/vehicles/:id", getVehicleById)
-	router.PUT("/vehicles/:id", updateVehicle)
-	router.DELETE("/vehicles/:id", deleteVehicle)
-	router.GET("/vehicles/:id/stats", getVehicleStats)
-	router.GET("/vehicles/:id/users", getVehicleUsers)
-	router.POST("/vehicles/:id/users/:subId", shareVehicle)
-	router.DELETE("/vehicles/:id/users/:subId", unshareVehicle)
-	router.POST("/vehicles/:id/users/:subId/transfer", transferVehicle)
+	router.GET("/vehicles/:id", vehicleAccess(false), getVehicleById)
+	router.PUT("/vehicles/:id", vehicleAccess(true), updateVehicle)
+	router.DELETE("/vehicles/:id", vehicleAccess(true), deleteVehicle)
+	router.GET("/vehicles/:id/stats", vehicleAccess(false), getVehicleStats)
+	router.GET("/vehicles/:id/users", vehicleAccess(false), getVehicleUsers)
+	router.POST("/vehicles/:id/users/:subId", vehicleAccess(true), shareVehicle)
+	router.DELETE("/vehicles/:id/users/:subId", vehicleAccess(true), unshareVehicle)
+	router.POST("/vehicles/:id/users/:subId/transfer", vehicleAccess(true), transferVehicle)
 
 	router.GET("/me/vehicles", getMyVehicles)
 	router.GET("/me/stats", getMystats)
 
-	router.GET("/vehicles/:id/fillups", getFillupsByVehicleId)
-	router.GET("/vehicles/:id/fuelSubTypes", getFuelSubTypesByVehicleId)
-	router.POST("/vehicles/:id/fillups", createFillup)
-	router.GET("/vehicles/:id/fillups/:subId", getFillupById)
-	router.PUT("/vehicles/:id/fillups/:subId", updateFillup)
-	router.DELETE("/vehicles/:id/fillups/:subId", deleteFillup)
+	router.GET("/vehicles/:id/fillups", vehicleAccess(false), getFillupsByVehicleId)
+	router.GET("/vehicles/:id/fuelSubTypes", vehicleAccess(false), getFuelSubTypesByVehicleId)
+	router.POST("/vehicles/:id/fillups", vehicleAccess(false), createFillup)
+	router.GET("/vehicles/:id/fillups/:subId", vehicleAccess(false), getFillupById)
+	router.PUT("/vehicles/:id/fillups/:subId", vehicleAccess(false), updateFillup)
+	router.DELETE("/vehicles/:id/fillups/:subId", vehicleAccess(false), deleteFillup)
 
-	router.GET("/vehicles/:id/expenses", getExpensesByVehicleId)
-	router.POST("/vehicles/:id/expenses", createExpense)
-	router.GET("/vehicles/:id/expenses/:subId", getExpenseById)
-	router.PUT("/vehicles/:id/expenses/:subId", updateExpense)
-	router.DELETE("/vehicles/:id/expenses/:subId", deleteExpense)
+	router.GET("/vehicles/:id/expenses", vehicleAccess(false), getExpensesByVehicleId)
+	router.POST("/vehicles/:id/expenses", vehicleAccess(false), createExpense)
+	router.GET("/vehicles/:id/expenses/:subId", vehicleAccess(false), getExpenseById)
+	router.PUT("/vehicles/:id/expenses/:subId", vehicleAccess(false), updateExpense)
+	router.DELETE("/vehicles/:id/expenses/:subId", vehicleAccess(false), deleteExpense)
 
-	router.POST("/vehicles/:id/attachments", createVehicleAttachment)
-	router.GET("/vehicles/:id/attachments", getVehicleAttachments)
+	router.POST("/vehicles/:id/attachments", vehicleAccess(false), createVehicleAttachment)
+	router.GET("/vehicles/:id/attachments", vehicleAccess(false), getVehicleAttachments)
 }
 
 func createVehicle(c *gin.Context) {
@@ -89,7 +90,7 @@ func updateVehicle(c *gin.Context) {
 	}
 }
 func getAllVehicles(c *gin.Context) {
-	vehicles, err := service.GetAllVehicles()
+	vehicles, err := service.GetUserVehicles(c.GetString("userId"))
 	if err != nil {
 		c.JSON(http.StatusUnprocessableEntity, common.NewError("getVehicleById", err))
 		return
@@ -173,6 +174,7 @@ func createFillup(c *gin.Context) {
 				return
 			}
 		}
+		request.VehicleID, request.UserID = searchByIdQuery.Id, c.GetString("userId")
 		fillup, err := service.CreateFillup(request)
 		if err != nil {
 			c.JSON(http.StatusUnprocessableEntity, common.NewError("createFillup", err))
@@ -197,6 +199,7 @@ func createExpense(c *gin.Context) {
 			c.JSON(422, gin.H{"error": "Rechnung gehört nicht zum angemeldeten Benutzer"})
 			return
 		}
+		request.VehicleID, request.UserID = searchByIdQuery.Id, c.GetString("userId")
 		expense, err := service.CreateExpense(request)
 		if err != nil {
 			c.JSON(http.StatusUnprocessableEntity, common.NewError("createExpense", err))
@@ -209,6 +212,9 @@ func createExpense(c *gin.Context) {
 }
 
 func updateExpense(c *gin.Context) {
+	if !belongsToVehicle(c, &db.Expense{}) {
+		return
+	}
 	var searchByIdQuery models.SubItemQuery
 	var updateExpenseModel models.UpdateExpenseRequest
 	if err := c.ShouldBindUri(&searchByIdQuery); err == nil {
@@ -217,6 +223,7 @@ func updateExpense(c *gin.Context) {
 				c.JSON(422, gin.H{"error": "Rechnung gehört nicht zum angemeldeten Benutzer"})
 				return
 			}
+			updateExpenseModel.VehicleID = searchByIdQuery.Id
 			err := service.UpdateExpense(searchByIdQuery.SubId, updateExpenseModel)
 			if err != nil {
 				c.JSON(http.StatusUnprocessableEntity, common.NewError("getExpenseById", err))
@@ -231,10 +238,14 @@ func updateExpense(c *gin.Context) {
 	}
 }
 func updateFillup(c *gin.Context) {
+	if !belongsToVehicle(c, &db.Fillup{}) {
+		return
+	}
 	var searchByIdQuery models.SubItemQuery
 	var updateFillupModel models.UpdateFillupRequest
 	if err := c.ShouldBindUri(&searchByIdQuery); err == nil {
 		if err := c.ShouldBind(&updateFillupModel); err == nil {
+			updateFillupModel.VehicleID = searchByIdQuery.Id
 			err := service.UpdateFillup(searchByIdQuery.SubId, updateFillupModel)
 			if err != nil {
 				c.JSON(http.StatusUnprocessableEntity, common.NewError("getFillupById", err))
@@ -250,6 +261,9 @@ func updateFillup(c *gin.Context) {
 }
 
 func deleteExpense(c *gin.Context) {
+	if !belongsToVehicle(c, &db.Expense{}) {
+		return
+	}
 	var searchByIdQuery models.SubItemQuery
 
 	if err := c.ShouldBindUri(&searchByIdQuery); err == nil {
@@ -266,6 +280,9 @@ func deleteExpense(c *gin.Context) {
 	}
 }
 func deleteFillup(c *gin.Context) {
+	if !belongsToVehicle(c, &db.Fillup{}) {
+		return
+	}
 	var searchByIdQuery models.SubItemQuery
 
 	if err := c.ShouldBindUri(&searchByIdQuery); err == nil {
@@ -283,6 +300,9 @@ func deleteFillup(c *gin.Context) {
 }
 
 func getExpenseById(c *gin.Context) {
+	if !belongsToVehicle(c, &db.Expense{}) {
+		return
+	}
 	var searchByIdQuery models.SubItemQuery
 
 	if err := c.ShouldBindUri(&searchByIdQuery); err == nil {
@@ -299,6 +319,9 @@ func getExpenseById(c *gin.Context) {
 	}
 }
 func getFillupById(c *gin.Context) {
+	if !belongsToVehicle(c, &db.Fillup{}) {
+		return
+	}
 	var searchByIdQuery models.SubItemQuery
 
 	if err := c.ShouldBindUri(&searchByIdQuery); err == nil {
@@ -316,6 +339,7 @@ func getFillupById(c *gin.Context) {
 }
 
 func createVehicleAttachment(c *gin.Context) {
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxAttachment+1024*1024)
 	var searchByIdQuery models.SearchByIdQuery
 	var dataModel models.CreateVehicleAttachmentModel
 	if err := c.ShouldBindUri(&searchByIdQuery); err == nil {
@@ -325,13 +349,26 @@ func createVehicleAttachment(c *gin.Context) {
 				c.JSON(http.StatusUnprocessableEntity, common.NewError("createVehicleAttachment", err))
 				return
 			}
-			attachment, err := saveUploadedFile(c, "file")
+			file, err := c.FormFile("file")
+			if err != nil {
+				c.Status(http.StatusBadRequest)
+				return
+			}
+			kind, err := attachmentType(file)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				return
+			}
+			attachment, err := storeAttachment(c, file, kind)
 			if err != nil {
 				c.JSON(http.StatusUnprocessableEntity, common.NewError("createVehicleAttachment", err))
 				return
 			}
 			err = service.CreateVehicleAttachment(vehicle.ID, attachment.ID, dataModel.Title)
 			if err != nil {
+				if db.DB.Unscoped().Delete(attachment).Error == nil {
+					_ = os.Remove(attachment.Path)
+				}
 				c.JSON(http.StatusUnprocessableEntity, common.NewError("createVehicleAttachment", err))
 				return
 			}

@@ -2,7 +2,6 @@ import fs from 'fs'
 import path from 'path'
 import Vue from 'vue'
 import Vuex from 'vuex'
-import axios from 'axios'
 
 // ===
 // Utility functions
@@ -15,14 +14,6 @@ const _ = require('lodash')
 _.mixin({
   pascalCase: _.flow(_.camelCase, _.upperFirst),
 })
-
-// ===
-// Configure Axios
-// ===
-
-// Force Axios to use the XHR adapter so that it behaves
-// more like it would in a browser environment.
-axios.defaults.adapter = require('axios/lib/adapters/xhr')
 
 // ===
 // Configure Vue
@@ -199,11 +190,5 @@ global.createModuleStore = (vuexModule, options = {}) => {
     // https://vuex.vuejs.org/guide/strict.html
     strict: true,
   })
-  axios.defaults.headers.common.Authorization = options.currentUser
-    ? options.currentUser.token
-    : ''
-  if (vuexModule.actions.init) {
-    store.dispatch('init')
-  }
   return store
 }

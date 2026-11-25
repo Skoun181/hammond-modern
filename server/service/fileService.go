@@ -1,10 +1,7 @@
 package service
 
 import (
-	"archive/tar"
-	"compress/gzip"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"path"
@@ -69,41 +66,12 @@ func GetAttachmentById(id string) (*db.Attachment, error) {
 	return db.GetAttachmentById(id)
 }
 
-func GetAllBackupFiles() ([]string, error) {
-	var files []string
-	folder := createConfigFolderIfNotExists("backups")
-	err := filepath.Walk(folder, func(path string, info os.FileInfo, err error) error {
-		if !info.IsDir() {
-			files = append(files, path)
-		}
-		return nil
-	})
-	sort.Sort(sort.Reverse(sort.StringSlice(files)))
-	return files, err
-}
-
 func GetFileSize(path string) (int64, error) {
 	info, err := os.Stat(path)
 	if err != nil {
 		return 0, err
 	}
 	return info.Size(), nil
-}
-
-func deleteOldBackup() {
-	files, err := GetAllBackupFiles()
-	if err != nil {
-		return
-	}
-	if len(files) <= 5 {
-		return
-	}
-
-	toDelete := files[5:]
-	for _, file := range toDelete {
-		fmt.Println(file)
-		DeleteFile(file)
-	}
 }
 
 func GetFilePath(originalName string) string {
@@ -118,66 +86,36 @@ func getFileName(orig string) string {
 }
 
 func CreateBackup() (string, error) {
-
-	backupFileName := "hammond_backup_" + time.Now().Format("2006.01.02_150405") + ".tar.gz"
-	folder := createConfigFolderIfNotExists("backups")
-	configPath := os.Getenv("CONFIG")
-	tarballFilePath := path.Join(folder, backupFileName)
-	file, err := os.Create(tarballFilePath)
+	PortableDataLock.Lock()
+	defer PortableDataLock.Unlock()
+	archive, _, err := CreatePortableZIP()
 	if err != nil {
-		return "", fmt.Errorf("could not create tarball file '%s', got error '%s'", tarballFilePath, err.Error())
+		return "", err
 	}
-	defer file.Close()
-
-	dbPath := path.Join(configPath, "hammond.db")
-	_, err = os.Stat(dbPath)
+	defer os.Remove(archive)
+	folder := filepath.Join(os.Getenv("CONFIG"), "backups")
+	if err := os.MkdirAll(folder, 0700); err != nil {
+		return "", err
+	}
+	name := "hammond-portable-" + time.Now().UTC().Format("20060102-150405.000000000") + ".zip"
+	if err := os.Rename(archive, filepath.Join(folder, name)); err != nil {
+		return "", err
+	}
+	files, err := filepath.Glob(filepath.Join(folder, "hammond-portable-*.zip"))
 	if err != nil {
-		return "", fmt.Errorf("could not find db file '%s', got error '%s'", dbPath, err.Error())
+		return name, err
 	}
-	gzipWriter := gzip.NewWriter(file)
-	defer gzipWriter.Close()
-
-	tarWriter := tar.NewWriter(gzipWriter)
-	defer tarWriter.Close()
-
-	err = addFileToTarWriter(dbPath, tarWriter)
-	if err == nil {
-		deleteOldBackup()
+	sort.Strings(files)
+	if len(files) > 5 {
+		for _, path := range files[:len(files)-5] {
+			if err := os.Remove(path); err != nil {
+				return name, err
+			}
+		}
 	}
-	return backupFileName, err
+	return name, nil
 }
 
-func addFileToTarWriter(filePath string, tarWriter *tar.Writer) error {
-	file, err := os.Open(filePath)
-	if err != nil {
-		return fmt.Errorf("could not open file '%s', got error '%s'", filePath, err.Error())
-	}
-	defer file.Close()
-
-	stat, err := file.Stat()
-	if err != nil {
-		return fmt.Errorf("could not get stat for file '%s', got error '%s'", filePath, err.Error())
-	}
-
-	header := &tar.Header{
-		Name:    filePath,
-		Size:    stat.Size(),
-		Mode:    int64(stat.Mode()),
-		ModTime: stat.ModTime(),
-	}
-
-	err = tarWriter.WriteHeader(header)
-	if err != nil {
-		return fmt.Errorf("could not write header for file '%s', got error '%s'", filePath, err.Error())
-	}
-
-	_, err = io.Copy(tarWriter, file)
-	if err != nil {
-		return fmt.Errorf("could not copy the file '%s' data to the tarball, got error '%s'", filePath, err.Error())
-	}
-
-	return nil
-}
 func httpClient() *http.Client {
 	client := http.Client{
 		CheckRedirect: func(r *http.Request, via []*http.Request) error {

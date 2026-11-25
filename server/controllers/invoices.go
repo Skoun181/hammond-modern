@@ -4,10 +4,8 @@ import (
 	"github.com/akhilrex/hammond/db"
 	"github.com/akhilrex/hammond/service"
 	"github.com/gin-gonic/gin"
-	"io"
 	"net/http"
 	"os"
-	"strings"
 )
 
 func RegisterInvoiceController(router *gin.RouterGroup) {
@@ -63,19 +61,7 @@ func RegisterInvoiceController(router *gin.RouterGroup) {
 			c.Status(404)
 			return
 		}
-		// Content-Disposition prevents inline execution for a file that passes the upload checks.
-		safe := strings.NewReplacer("\r", "", "\n", "", "\"", "").Replace(obj.OriginalName)
-		c.Header("Content-Disposition", "attachment; filename=\""+safe+"\"")
-		c.Header("X-Content-Type-Options", "nosniff")
-		c.Header("Content-Type", "application/octet-stream")
-		file, err := os.Open(obj.Path)
-		if err != nil {
-			c.Status(404)
-			return
-		}
-		defer file.Close()
-		c.Status(200)
-		io.Copy(c.Writer, file)
+		sendAttachment(c, &obj)
 	})
 }
 

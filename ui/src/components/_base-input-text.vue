@@ -39,7 +39,7 @@ export default {
       $attrs
       // https://vuejs.org/v2/guide/components-props.html#Disabling-Attribute-Inheritance
     "
-    @input="$emit('update', $event.target.value)"
+    @input="$emit('update', $event)"
     v-on="
       $listeners
       // https://vuejs.org/v2/guide/components-custom-events.html#Binding-Native-Events-to-Components

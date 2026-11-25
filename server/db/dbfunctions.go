@@ -10,13 +10,9 @@ import (
 )
 
 func CanInitializeSystem() (bool, error) {
-	users, _ := GetAllUsers()
-	if len(*users) != 0 {
-		// db.MigrateClarkson("root:password@tcp(192.168.0.117:3306)/clarkson?charset=utf8mb4&parseTime=True&loc=Local")
-		return false,
-			fmt.Errorf("there are already users in the database. Migration can only be done on an empty database")
-	}
-	return true, nil
+	var count int64
+	err := DB.Unscoped().Model(&User{}).Count(&count).Error
+	return err == nil && count == 0, err
 }
 
 func CreateUser(user *User) error {
@@ -98,14 +94,25 @@ func ShareVehicle(vehicleId, userId string) error {
 	return nil
 }
 func TransferVehicle(vehicleId, ownerId, newUserID string) error {
-
-	tx := DB.Model(&UserVehicle{}).Where("vehicle_id = ? AND user_id = ?", vehicleId, ownerId).Update("is_owner", false)
-	if tx.Error != nil {
-		return tx.Error
-	}
-	tx = DB.Model(&UserVehicle{}).Where("vehicle_id = ? AND user_id = ?", vehicleId, newUserID).Update("is_owner", true)
-
-	return tx.Error
+	return DB.Transaction(func(tx *gorm.DB) error {
+		var target UserVehicle
+		if err := tx.Where("vehicle_id = ? AND user_id = ?", vehicleId, newUserID).First(&target).Error; err != nil {
+			return err
+		}
+		if newUserID == ownerId {
+			return nil
+		}
+		previous := tx.Model(&UserVehicle{}).
+			Where("vehicle_id = ? AND user_id = ? AND is_owner = ?", vehicleId, ownerId, true).
+			Update("is_owner", false)
+		if previous.Error != nil {
+			return previous.Error
+		}
+		if previous.RowsAffected != 1 {
+			return gorm.ErrRecordNotFound
+		}
+		return tx.Model(&target).Update("is_owner", true).Error
+	})
 }
 
 func UnshareVehicle(vehicleId, userId string) error {

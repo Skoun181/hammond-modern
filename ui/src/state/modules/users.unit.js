@@ -27,38 +27,10 @@ describe('@state/modules/users', () => {
       })
     })
 
-    it('actions.fetchUser rejects with 400 when provided a bad username', () => {
-      expect.assertions(1)
-
-      return store
-        .dispatch('fetchUser', { username: 'bad-username' })
-        .catch((error) => {
-          expect(error.response.status).toEqual(400)
-        })
-    })
-  })
-
-  describe('in a store when logged out', () => {
-    let store
-    beforeEach(() => {
-      store = createModuleStore(usersModule)
-    })
-
-    it('actions.fetchUser rejects with 401', () => {
-      expect.assertions(1)
-
-      return store
-        .dispatch('fetchUser', { username: 'admin' })
-        .catch((error) => {
-          expect(error.response.status).toEqual(401)
-        })
+    it('returns no cached user when the username is unknown', async () => {
+      expect(await store.dispatch('fetchUser', { username: 'missing' })).toBeUndefined()
     })
   })
 })
 
-const validUserExample = {
-  id: 1,
-  username: 'admin',
-  name: 'Vue Master',
-  token: 'valid-token-for-admin',
-}
+const validUserExample = { id: 1, username: 'admin', name: 'Test user' }

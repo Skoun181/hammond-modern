@@ -9,15 +9,15 @@ Diese Anleitung gilt für separate Entwicklungs-Testcontainer. Für den produkti
 ```bash
 docker compose -f compose.test.yml down
 mkdir -p ../hammond-backup
-cp -a data/config ../hammond-backup/config-$(date +%Y%m%d-%H%M%S)
-cp -a data/assets ../hammond-backup/assets-$(date +%Y%m%d-%H%M%S)
+cp -a develop-data/config ../hammond-backup/config-$(date +%Y%m%d-%H%M%S)
+cp -a develop-data/assets ../hammond-backup/assets-$(date +%Y%m%d-%H%M%S)
 ```
 
 2. Neues Projekt in einem **separaten Ordner** entpacken. Die bisherigen `data/`-Ordner nicht löschen. Vorhandene `.env` sicher übertragen, **nicht** in Git hochladen.
 
 3. Im neuen Ordner `compose.test.yml` nutzen, `.env` mit `JWT_SECRET` erstellen (falls noch nicht vorhanden). Für die Tankstellensuche optional `TANKERKOENIG_API_KEY=...` eintragen. Die Variable ist serverseitig.
 
-4. Bestehende Sicherungen vorsichtig in `data/config/` und `data/assets/` **nur in einer Testkopie** verwenden. DB-Migrationen passieren automatisch beim Start.
+4. Bestehende Sicherungen vorsichtig in `develop-data/config/` und `develop-data/assets/` **nur in einer Testkopie** verwenden. DB-Migrationen passieren automatisch beim Start.
 
 5. Build und Logs:
 
@@ -38,3 +38,10 @@ Danach `http://LXC-IP:3006` öffnen. Unbedingt Fahrer, Tankung mit Fahrer, Rechn
 - Tankerkönig braucht einen eigenen API-Key; Abfragen nur nach explizitem Klick, maximal ca. einmal/minut für neue PLZ und 15 Minuten Cache. Bei nicht unterstützter Nutzung keinen Key eintragen.
 - Übersetzung der bestehenden Oberfläche ist nur teilweise fertig. Ältere Beschriftungen können noch Englisch enthalten.
 - Fahrer-/Werkstattdaten und hochgeladene Rechnungen benötigen geschützten Zugriff (VPN/HTTPS). Alt-Code hat ältere Abhängigkeiten und muss vor produktiver Bereitstellung sicherheitsgeprüft werden.
+
+
+### Vor dem Update sichern
+
+Nutze für Develop einen eigenen Compose-Stack und eigene Pfade für `/config` und `/assets`. Bei einem bereits vorhandenen Test-Stack dessen laufende Mounts vor dem Update kontrollieren und separat sichern. Bei Bedarf `HAMMOND_DEVELOP_CONFIG_DIR` und `HAMMOND_DEVELOP_ASSETS_DIR` auf die vorhandenen Develop-Pfade setzen. Zum Test mit Stable-Daten nur ein portables Backup in die Develop-Instanz importieren. Das Update kann eine erneute Anmeldung erfordern. Die Sitzungsdatenbank im Config-Volume ist separat von der Fahrzeugdatenbank. Für HTTPS hinter einem Proxy `SESSION_COOKIE_SECURE=1` setzen und den externen Host durchreichen.
+
+Der frühere Clarkson-Webimport ist jetzt ein lokaler Containerbefehl. Auf einem leeren, gesicherten Develop-Stack die Variablen `CLARKSON_DSN`, `CLARKSON_ADMIN_EMAIL` und `CLARKSON_ADMIN_PASSWORD` lokal bereitstellen und den Container mit `--import-clarkson` starten. Weitere importierte Konten benötigen ein eigenes Passwort über die lokale Administration.

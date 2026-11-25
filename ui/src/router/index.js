@@ -54,7 +54,7 @@ router.beforeEach((routeTo, routeFrom, next) => {
       // otherwise redirect to login.
 
       if (!validUser) {
-        redirectToLogin()
+        return redirectToLogin()
       }
       const rolesRequired = routeTo.matched.some((route) => route.meta.roles)
 

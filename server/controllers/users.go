@@ -43,6 +43,9 @@ func disableUser(c *gin.Context) {
 	var searchByIdQuery models.SearchByIdQuery
 	if err := c.ShouldBindUri(&searchByIdQuery); err == nil {
 		err := service.SetDisabledStatusForUser(searchByIdQuery.Id, true)
+		if err == nil {
+			err = service.RevokeUserSessions(searchByIdQuery.Id)
+		}
 		if err != nil {
 			c.JSON(http.StatusBadRequest, err)
 			return

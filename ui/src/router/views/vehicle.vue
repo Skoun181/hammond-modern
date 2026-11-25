@@ -1,4 +1,5 @@
 <script>
+import { authenticatedFetch } from '@state/modules/auth'
 import Layout from '@layouts/main.vue'
 import { parseAndFormatDate } from '@utils/format-date'
 import { mapState } from 'vuex'
@@ -205,6 +206,20 @@ export default {
           .finally(() => {})
       }
     },
+    async downloadAttachment(file) {
+      try {
+        const response = await authenticatedFetch(`/api/attachments/${file.id}/file`)
+        if (!response.ok) throw new Error('Download fehlgeschlagen')
+        const url = URL.createObjectURL(await response.blob())
+        const link = document.createElement('a')
+        link.href = url
+        link.download = file.originalName
+        link.click()
+        setTimeout(() => URL.revokeObjectURL(url), 10000)
+      } catch (error) {
+        this.$buefy.toast.open({ message: error.message, type: 'is-danger' })
+      }
+    },
     addAttachment() {
       if (this.file == null) {
         return
@@ -215,14 +230,12 @@ export default {
       formData.append('file', this.file, this.file.name)
       formData.append('title', this.title)
       // const config = { headers: { 'Content-Type': 'multipart/form-data; boundary=' + formData._boundary } }
-      fetch(`/api/vehicles/${this.vehicle.id}/attachments`, {
+      authenticatedFetch(`/api/vehicles/${this.vehicle.id}/attachments`, {
         method: 'POST',
         body: formData,
-        headers: {
-          Authorization: this.currentUser.token,
-        },
       })
-        .then((data) => {
+        .then((response) => {
+          if (!response.ok) throw new Error('Upload fehlgeschlagen')
           this.$buefy.toast.open({
             message: 'File uploaded Successfully',
             type: 'is-success',
@@ -542,7 +555,7 @@ export default {
           {{ `${props.row.originalName}` }}
         </b-table-column>
         <b-table-column v-slot="props" field="id" label="Download" :td-attrs="columnTdAttrs">
-          <b-button tag="a" :href="`/api/attachments/${props.row.id}/file?access_token=${currentUser.token}`" :download="props.row.originalName">
+          <b-button @click="downloadAttachment(props.row)">
             <b-icon type="is-primary" icon="download"></b-icon>
           </b-button>
         </b-table-column>

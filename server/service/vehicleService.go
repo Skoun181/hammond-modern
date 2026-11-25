@@ -202,9 +202,9 @@ func UpdateFillup(fillupId string, model models.UpdateFillupRequest) error {
 		Comments:        model.Comments,
 		FillingStation:  model.FillingStation,
 		DriverID:        model.DriverID,
-		UserID:          model.UserID,
-		FuelSubType:     model.FuelSubType,
-		Date:            model.Date,
+
+		FuelSubType: model.FuelSubType,
+		Date:        model.Date,
 	}).Error
 }
 
@@ -222,8 +222,8 @@ func UpdateExpense(fillupId string, model models.UpdateExpenseRequest) error {
 		WorkPerformed:       model.WorkPerformed,
 		InvoiceAttachmentID: model.InvoiceAttachmentID,
 		Comments:            model.Comments,
-		UserID:              model.UserID,
-		Date:                model.Date,
+
+		Date: model.Date,
 	}).Error
 }
 

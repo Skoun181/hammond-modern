@@ -2,39 +2,35 @@ package controllers
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/akhilrex/hammond/common"
 	"github.com/akhilrex/hammond/db"
 	"github.com/akhilrex/hammond/models"
 	"github.com/akhilrex/hammond/service"
-	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 func RegisterAnonController(router *gin.RouterGroup) {
 	router.POST("/login", userLogin)
 	router.POST("/auth/initialize", initializeSystem)
-
-}
-func RegisterAuthController(router *gin.RouterGroup) {
-
 	router.POST("/refresh", refresh)
+	router.POST("/logout", logout)
+}
+
+func RegisterAuthController(router *gin.RouterGroup) {
 	router.GET("/me", me)
 	router.POST("/register", ShouldBeAdmin(), userRegister)
 	router.POST("/changePassword", changePassword)
-
 }
 
 func ShouldBeAdmin() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		model := c.MustGet("userModel").(db.User)
-		// ADMIN is enum zero: a missing/deleted user must NEVER be treated
-		// as an administrator. Abort, otherwise Gin executes later handlers.
-		if model.ID == "" || model.Role != db.ADMIN || model.IsDisabled {
+		model, _ := c.Get("userModel")
+		user, _ := model.(db.User)
+		if user.ID == "" || user.Role != db.ADMIN || user.IsDisabled {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "Administratorrechte erforderlich"})
 			return
 		}
@@ -43,125 +39,168 @@ func ShouldBeAdmin() gin.HandlerFunc {
 }
 
 func me(c *gin.Context) {
-	user, err := service.GetUserById(c.MustGet("userId").(string))
+	user, err := service.GetUserById(c.GetString("userId"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{})
+		c.Status(http.StatusUnauthorized)
+		return
 	}
 	c.JSON(http.StatusOK, user)
 }
 
 func userRegister(c *gin.Context) {
-	var registerRequest models.RegisterRequest
-	if err := c.ShouldBind(&registerRequest); err != nil {
+	var request models.RegisterRequest
+	if err := c.ShouldBind(&request); err != nil {
 		c.JSON(http.StatusUnprocessableEntity, common.NewValidatorError(err))
 		return
 	}
-
-	if err := service.CreateUser(&registerRequest, *registerRequest.Role); err != nil {
+	if request.Role == nil || (*request.Role != db.ADMIN && *request.Role != db.USER) {
+		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": "Ungültige Benutzerrolle"})
+		return
+	}
+	if err := service.CreateUser(&request, *request.Role); err != nil {
 		c.JSON(http.StatusUnprocessableEntity, common.NewError("database", err))
 		return
 	}
-
 	c.JSON(http.StatusCreated, gin.H{"success": true})
 }
+
+var errInitialized = errors.New("system already initialized")
+
 func initializeSystem(c *gin.Context) {
-
-	canInitialize, err := service.CanInitializeSystem()
-	if !canInitialize {
-		c.JSON(http.StatusUnprocessableEntity, err)
+	if !sessionOrigin(c) {
+		c.Status(http.StatusForbidden)
+		return
 	}
-
-	var registerRequest models.RegisterRequest
-	if err := c.ShouldBind(&registerRequest); err != nil {
+	available, err := db.CanInitializeSystem()
+	if err != nil {
+		c.Status(http.StatusServiceUnavailable)
+		return
+	}
+	if !available {
+		c.Status(http.StatusConflict)
+		return
+	}
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 8192)
+	var request models.RegisterRequest
+	if err := c.ShouldBind(&request); err != nil {
 		c.JSON(http.StatusUnprocessableEntity, common.NewValidatorError(err))
 		return
 	}
-	service.UpdateSettings(registerRequest.Currency, *registerRequest.DistanceUnit)
-
-	if err := service.CreateUser(&registerRequest, db.ADMIN); err != nil {
-		c.JSON(http.StatusUnprocessableEntity, common.NewError("initializeSystem", err))
+	if request.DistanceUnit == nil || (*request.DistanceUnit != db.KILOMETERS && *request.DistanceUnit != db.MILES) {
+		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": "Ungültige Distanzeinheit"})
 		return
 	}
-
-	service.UpdateSettings(registerRequest.Currency, *registerRequest.DistanceUnit)
-
+	user := db.User{Email: strings.ToLower(request.Email), Name: request.Name, Role: db.ADMIN,
+		Currency: request.Currency, DistanceUnit: *request.DistanceUnit, DateFormat: "MM/dd/yyyy"}
+	if err := user.SetPassword(request.Password); err != nil {
+		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
+		return
+	}
+	err = db.DB.Transaction(func(tx *gorm.DB) error {
+		var count int64
+		if err := tx.Unscoped().Model(&db.User{}).Count(&count).Error; err != nil {
+			return err
+		}
+		if count != 0 {
+			return errInitialized
+		}
+		if err := tx.Create(&user).Error; err != nil {
+			return err
+		}
+		var settings db.Setting
+		if err := tx.First(&settings).Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+		settings.Currency, settings.DistanceUnit = request.Currency, *request.DistanceUnit
+		return tx.Save(&settings).Error
+	})
+	if err != nil {
+		if errors.Is(err, errInitialized) {
+			c.Status(http.StatusConflict)
+		} else {
+			c.Status(http.StatusServiceUnavailable)
+		}
+		return
+	}
 	c.JSON(http.StatusCreated, gin.H{"success": true})
 }
 
+func sendLogin(c *gin.Context, user *db.User, tokens service.SessionTokens) {
+	sessionCookies(c, tokens, true)
+	c.Header("Cache-Control", "no-store")
+	response := models.LoginResponse{Name: user.Name, Email: user.Email, Role: user.RoleDetail().Long}
+	if c.GetHeader("Origin") == "" && c.GetHeader("Sec-Fetch-Site") == "" {
+		response.Token, response.RefreshToken = tokens.Access, tokens.Refresh
+	}
+	c.JSON(http.StatusOK, response)
+}
+
 func userLogin(c *gin.Context) {
+	if !sessionOrigin(c) {
+		c.Status(http.StatusForbidden)
+		return
+	}
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 8192)
 	var loginRequest models.LoginRequest
 	if err := c.ShouldBind(&loginRequest); err != nil {
 		c.JSON(http.StatusUnprocessableEntity, common.NewValidatorError(err))
 		return
 	}
 	user, err := db.FindOneUser(&db.User{Email: strings.ToLower(loginRequest.Email)})
-
+	if err != nil || user.IsDisabled || user.CheckPassword(loginRequest.Password) != nil {
+		c.JSON(http.StatusForbidden, common.NewError("login", errors.New("invalid login")))
+		return
+	}
+	tokens, err := service.NewSession(&user)
 	if err != nil {
-		c.JSON(http.StatusForbidden, common.NewError("login", errors.New("not Registered email or invalid password")))
+		c.Status(http.StatusServiceUnavailable)
 		return
 	}
-
-	if user.CheckPassword(loginRequest.Password) != nil {
-		c.JSON(http.StatusForbidden, common.NewError("login", errors.New("not Registered email or invalid password")))
-		return
-	}
-
-	if user.IsDisabled {
-		c.JSON(http.StatusForbidden, common.NewError("login", errors.New("your user has been disabled by the admin. Please contact them to get it re-enabled")))
-		return
-	}
-	UpdateContextUserModel(c, user.ID)
-	token, refreshToken := common.GenToken(user.ID, user.Role)
-	response := models.LoginResponse{
-		Name:         user.Name,
-		Email:        user.Email,
-		Token:        token,
-		RefreshToken: refreshToken,
-		Role:         user.RoleDetail().Long,
-	}
-	c.JSON(http.StatusOK, response)
+	sendLogin(c, &user, tokens)
 }
 
 func refresh(c *gin.Context) {
-	type tokenReqBody struct {
-		RefreshToken string `json:"refreshToken"`
+	if !sessionOrigin(c) {
+		c.Status(http.StatusForbidden)
+		return
 	}
-	tokenReq := tokenReqBody{}
-	c.Bind(&tokenReq)
-
-	token, _ := jwt.Parse(tokenReq.RefreshToken, func(token *jwt.Token) (interface{}, error) {
-		// Don't forget to validate the alg is what you expect:
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+	token, _ := c.Cookie(refreshCookie)
+	if token == "" {
+		c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 8192)
+		var request struct {
+			Token string `json:"refreshToken"`
 		}
-
-		// hmacSampleSecret is a []byte containing your secret, e.g. []byte("my_secret_key")
-		return []byte(os.Getenv("JWT_SECRET")), nil
-	})
-	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		// Get the user record from database or
-		// run through your business logic to verify if the user can log in
-		user, err := service.GetUserById(claims["id"].(string))
-		if err == nil {
-
-			token, refreshToken := common.GenToken(user.ID, user.Role)
-
-			response := models.LoginResponse{
-				Name:         user.Name,
-				Email:        user.Email,
-				Token:        token,
-				RefreshToken: refreshToken,
-				Role:         user.RoleDetail().Long,
-			}
-			c.JSON(http.StatusOK, response)
-		} else {
-
-			c.JSON(http.StatusUnauthorized, gin.H{})
+		if err := c.ShouldBindJSON(&request); err != nil {
+			c.Status(http.StatusUnauthorized)
+			return
 		}
-	} else {
-
-		c.JSON(http.StatusUnauthorized, gin.H{})
+		token = request.Token
 	}
+	user, tokens, err := service.RotateSession(token)
+	if err != nil {
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+	sendLogin(c, user, tokens)
+}
+
+func logout(c *gin.Context) {
+	if !sessionOrigin(c) {
+		c.Status(http.StatusForbidden)
+		return
+	}
+	access := bearer(c)
+	if access == "" {
+		access, _ = c.Cookie(accessCookie)
+	}
+	refreshToken, _ := c.Cookie(refreshCookie)
+	if err := service.RevokeSession(access, refreshToken); err != nil {
+		c.Status(http.StatusServiceUnavailable)
+		return
+	}
+	sessionCookies(c, service.SessionTokens{}, false)
+	c.Header("Cache-Control", "no-store")
+	c.Status(http.StatusNoContent)
 }
 
 func changePassword(c *gin.Context) {
@@ -171,18 +210,15 @@ func changePassword(c *gin.Context) {
 		return
 	}
 	user, err := service.GetUserById(c.GetString("userId"))
-
-	if err != nil {
-		c.JSON(http.StatusForbidden, common.NewError("changePassword", errors.New("not Registered email or invalid password")))
-		return
-	}
-
-	if user.CheckPassword(request.OldPassword) != nil {
+	if err != nil || user.CheckPassword(request.OldPassword) != nil {
 		c.JSON(http.StatusForbidden, common.NewError("changePassword", errors.New("incorrect old password")))
 		return
 	}
-
-	user.SetPassword(request.NewPassword)
-	success, _ := service.UpdatePassword(user.ID, request.NewPassword)
+	success, err := service.UpdatePassword(user.ID, request.NewPassword)
+	if err != nil {
+		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
+		return
+	}
+	sessionCookies(c, service.SessionTokens{}, false)
 	c.JSON(http.StatusOK, success)
 }

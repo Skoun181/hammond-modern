@@ -1,6 +1,6 @@
 <script>
+import { authenticatedFetch } from '@state/modules/auth'
 import Layout from '@layouts/main.vue'
-import store from '@state/store'
 
 export default {
   page: { title: 'Hammond-Daten übernehmen' },
@@ -36,10 +36,8 @@ export default {
     async sendUpload(endpoint, execute) {
       // The browser must generate the multipart boundary itself. Global Axios
       // defaults may force application/json and make Gin c.FormFile fail.
-      const token = store.state.auth.currentUser && store.state.auth.currentUser.token
-      const response = await fetch(endpoint, {
+      const response = await authenticatedFetch(endpoint, {
         method: 'POST',
-        headers: token ? { Authorization: token } : {},
         body: this.formData(execute),
         credentials: 'same-origin',
       })

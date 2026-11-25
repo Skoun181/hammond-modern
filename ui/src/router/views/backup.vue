@@ -1,4 +1,5 @@
 <script>
+import { authenticatedFetch } from '@state/modules/auth'
 import Layout from '@layouts/main.vue'
 import store from '@state/store'
 
@@ -21,12 +22,6 @@ export default {
     },
   },
   methods: {
-    token() {
-      return store.state.auth.currentUser && store.state.auth.currentUser.token
-    },
-    headers() {
-      return this.token() ? { Authorization: this.token() } : {}
-    },
     setFile(event) {
       const files = event.target.files
       this.file = files && files.length ? files[0] : null
@@ -46,8 +41,7 @@ export default {
       this.error = ''
       this.success = ''
       try {
-        const response = await fetch('/api/backup/export', {
-          headers: this.headers(), credentials: 'same-origin',
+        const response = await authenticatedFetch('/api/backup/export', {
           cache: 'no-store',
         })
         if (!response.ok) throw await this.readError(response)
@@ -78,8 +72,8 @@ export default {
       const form = new FormData()
       form.append('file', this.file, this.file.name)
       if (confirm) form.append('confirm', 'ERSETZEN')
-      const response = await fetch(path, {
-        method: 'POST', headers: this.headers(), body: form,
+      const response = await authenticatedFetch(path, {
+        method: 'POST', body: form,
         credentials: 'same-origin', cache: 'no-store',
       })
       if (!response.ok) throw await this.readError(response)

@@ -10,7 +10,7 @@ import (
 )
 
 func RegisterReportsController(router *gin.RouterGroup) {
-	router.GET("/vehicles/:id/mileage", getMileageForVehicle)
+	router.GET("/vehicles/:id/mileage", vehicleAccess(false), getMileageForVehicle)
 }
 
 func getMileageForVehicle(c *gin.Context) {

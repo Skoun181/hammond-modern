@@ -4,11 +4,7 @@ package common
 import (
 	"fmt"
 	"math/rand"
-	"os"
-	"time"
 
-	"github.com/akhilrex/hammond/db"
-	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
@@ -25,30 +21,9 @@ func RandString(n int) string {
 	return string(b)
 }
 
-// A Util function to generate jwt_token which can be used in the request header
-func GenToken(id string, role db.Role) (string, string) {
-	jwt_token := jwt.New(jwt.GetSigningMethod("HS256"))
-	// Set some claims
-	jwt_token.Claims = jwt.MapClaims{
-		"id":   id,
-		"role": role,
-		"exp":  time.Now().Add(time.Hour * 24 * 3).Unix(),
-	}
-	// Sign and get the complete encoded token as a string
-	token, _ := jwt_token.SignedString([]byte(os.Getenv("JWT_SECRET")))
-
-	refreshToken := jwt.New(jwt.SigningMethodHS256)
-	rtClaims := refreshToken.Claims.(jwt.MapClaims)
-	rtClaims["id"] = id
-	rtClaims["exp"] = time.Now().Add(time.Hour * 24 * 20).Unix()
-
-	rt, _ := refreshToken.SignedString([]byte(os.Getenv("JWT_SECRET")))
-
-	return token, rt
-}
-
 // My own Error type that will help return my customized Error info
-//  {"database": {"hello":"no such table", error: "not_exists"}}
+//
+//	{"database": {"hello":"no such table", error: "not_exists"}}
 type CommonError struct {
 	Errors map[string]interface{} `json:"errors"`
 }
@@ -58,7 +33,11 @@ type CommonError struct {
 func NewValidatorError(err error) CommonError {
 	res := CommonError{}
 	res.Errors = make(map[string]interface{})
-	errs := err.(validator.ValidationErrors)
+	errs, ok := err.(validator.ValidationErrors)
+	if !ok {
+		res.Errors["request"] = "Ungültige Anfrage"
+		return res
+	}
 	for _, v := range errs {
 		// can translate each error one at a time.
 		//fmt.Println("gg",v.NameNamespace)

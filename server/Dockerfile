@@ -1,4 +1,4 @@
-ARG GO_VERSION=1.15.2
+ARG GO_VERSION=1.26
 
 FROM golang:${GO_VERSION}-alpine AS builder
 
@@ -16,7 +16,7 @@ RUN go build -o ./app ./main.go
 
 FROM alpine:latest
 
-LABEL org.opencontainers.image.source="https://github.com/akhilrex/hammond"
+LABEL org.opencontainers.image.source="https://github.com/Skoun181/hammond-modern"
 
 ENV CONFIG=/config
 ENV DATA=/assets

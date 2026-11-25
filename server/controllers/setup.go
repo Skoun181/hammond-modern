@@ -1,70 +1,27 @@
 package controllers
 
 import (
-	"fmt"
 	"net/http"
 
-	"github.com/akhilrex/hammond/common"
 	"github.com/akhilrex/hammond/db"
-	"github.com/akhilrex/hammond/models"
-	"github.com/akhilrex/hammond/service"
 	"github.com/gin-gonic/gin"
 )
 
 func RegisterSetupController(router *gin.RouterGroup) {
-	router.POST("/clarkson/check", canMigrate)
-	router.POST("/clarkson/migrate", migrate)
 	router.GET("/system/status", appInitialized)
+	// Preserve an actionable response for older clients accessing a retired route.
+	retired := func(c *gin.Context) {
+		c.JSON(http.StatusGone, gin.H{"error": "Use the local --import-clarkson command"})
+	}
+	router.POST("/clarkson/check", retired)
+	router.POST("/clarkson/migrate", retired)
 }
 
 func appInitialized(c *gin.Context) {
-	canInitialize, err := service.CanInitializeSystem()
-	message := ""
+	canInitialize, err := db.CanInitializeSystem()
 	if err != nil {
-		message = err.Error()
+		c.Status(http.StatusServiceUnavailable)
+		return
 	}
-	c.JSON(http.StatusOK, gin.H{"initialized": !canInitialize, "message": message})
-}
-
-func canMigrate(c *gin.Context) {
-	var request models.ClarksonMigrationModel
-	if err := c.ShouldBind(&request); err == nil {
-		canMigrate, data, errr := db.CanMigrate(request.Url)
-		errorMessage := ""
-		if errr != nil {
-			errorMessage = errr.Error()
-		}
-
-		c.JSON(http.StatusOK, gin.H{
-			"canMigrate": canMigrate,
-			"data":       data,
-			"message":    errorMessage,
-		})
-	} else {
-		c.JSON(http.StatusUnprocessableEntity, common.NewValidatorError(err))
-	}
-}
-
-func migrate(c *gin.Context) {
-	var request models.ClarksonMigrationModel
-	if err := c.ShouldBind(&request); err == nil {
-		canMigrate, _, _ := db.CanMigrate(request.Url)
-
-		if !canMigrate {
-			c.JSON(http.StatusBadRequest, fmt.Errorf("cannot migrate database. please check connection string"))
-			return
-		}
-
-		success, err := db.MigrateClarkson(request.Url)
-		if !success {
-			c.JSON(http.StatusBadRequest, err)
-			return
-		}
-
-		c.JSON(http.StatusOK, gin.H{
-			"success": success,
-		})
-	} else {
-		c.JSON(http.StatusUnprocessableEntity, common.NewValidatorError(err))
-	}
+	c.JSON(http.StatusOK, gin.H{"initialized": !canInitialize})
 }

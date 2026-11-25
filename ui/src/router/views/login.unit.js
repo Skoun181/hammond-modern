@@ -41,24 +41,27 @@ describe('@views/login', () => {
     })
   })
 
-  it('displays an error after failed login', () => {
+  it('displays an error after failed login', async () => {
     const { vm } = mountLogin()
 
     const routerPush = jest.fn()
     vm.$router = { push: routerPush }
 
     expect.assertions(2)
-    return vm.tryToLogIn().then(() => {
-      expect(vm.authError).toBeTruthy()
-      expect(vm.$el.textContent).toContain('error')
-    })
+    await vm.tryToLogIn()
+    await vm.$nextTick()
+    expect(vm.authError).toBeTruthy()
+    expect(vm.$el.textContent).toContain('error')
   })
 })
 
 function mountLogin() {
   return shallowMountView(Login, {
+    stubs: { 'b-field': true, 'b-input': true, 'b-button': true },
     ...createComponentMocks({
+      stubs: { 'b-field': true, 'b-input': true, 'b-button': true },
       store: {
+        users: { actions: { forceMe: () => Promise.resolve({}) } },
         auth: {
           actions: {
             logIn(_, { username, password }) {

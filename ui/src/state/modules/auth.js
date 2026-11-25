@@ -1,96 +1,115 @@
 import axios from 'axios'
 
+const userKey = 'auth.currentUser'
+
+function readState(key) {
+  try { return JSON.parse(window.localStorage.getItem(key)) }
+  catch (_) { return null }
+}
+
+function remember(key, value) {
+  try { window.localStorage.setItem(key, JSON.stringify(value)) }
+  catch (_) { /* Storage is optional. */ }
+}
+
+function userDetails(user) {
+  if (!user) return null
+  const { name, email, role, roleDetail } = user
+  return { name, email, role: roleDetail ? roleDetail.long : role }
+}
+
+const rememberedUser = userDetails(readState(userKey))
+remember(userKey, rememberedUser)
+let refreshing
+const unauthedClient = axios.create()
+
+function refreshSession() {
+  if (!refreshing) {
+    refreshing = unauthedClient.post('/api/refresh', {}).then(response => response.data)
+      .finally(() => { refreshing = undefined })
+  }
+  return refreshing
+}
+
+axios.interceptors.response.use(response => response, async error => {
+  const config = error.config
+  if (!config || !error.response || error.response.status !== 401 ||
+      !config.url || !config.url.startsWith('/api/') || config.url === '/api/me' || config.sessionRetried)
+    throw error
+  await refreshSession()
+  return axios({ ...config, sessionRetried: true })
+})
+
+export async function authenticatedFetch(path, options) {
+  let response = await fetch(path, { ...options, credentials: 'same-origin' })
+  if (response.status === 401) {
+    await refreshSession()
+    response = await fetch(path, { ...options, credentials: 'same-origin' })
+  }
+  return response
+}
+
 export const state = {
-  currentUser: getSavedState('auth.currentUser'),
-  initialized: getSavedState('system.initialized'),
+  currentUser: rememberedUser,
+  initialized: readState('system.initialized'),
 }
 
 export const mutations = {
-  SET_CURRENT_USER(state, newValue) {
-    state.currentUser = newValue
-    saveState('auth.currentUser', newValue)
-    setDefaultAuthHeaders(state)
+  SET_CURRENT_USER(state, value) {
+    state.currentUser = userDetails(value)
+    remember(userKey, state.currentUser)
   },
-  SET_INITIALIZATION_STATUS(state, newValue) {
-    state.initialized = newValue
-    saveState('system.initialized', newValue)
+  SET_INITIALIZATION_STATUS(state, value) {
+    state.initialized = value
+    remember('system.initialized', value)
   },
 }
 
 export const getters = {
-  // Whether the user is currently logged in.
-  loggedIn(state) {
-    return !!state.currentUser
-  },
-  isInitialized(state) {
-    return state.initialized == null || state.initialized.initialized
-  },
+  loggedIn: state => !!state.currentUser,
+  isInitialized: state => state.initialized == null || state.initialized.initialized,
 }
 
 export const actions = {
-  // This is automatically run in `src/state/store.js` when the app
-  // starts, along with any other actions named `init` in other modules.
-  init({ state, dispatch }) {
-    dispatch('systemInitialized')
-    setDefaultAuthHeaders(state)
-    dispatch('validate')
+  init({ dispatch }) {
+    return Promise.all([dispatch('systemInitialized'), dispatch('validate')])
   },
 
-  logIn({ commit, dispatch, getters }, { username, password } = {}) {
-    if (getters.loggedIn) return dispatch('validate')
-
-    return axios.post('/api/login', { email: username, password }).then((response) => {
-      const user = response.data
-      commit('SET_CURRENT_USER', user)
-      dispatch('vehicles/fetchMasters', null, { root: true })
-      dispatch('vehicles/fetchVehicles', null, { root: true })
-      return user
-    })
+  async logIn({ commit }, { username, password }) {
+    const response = await axios.post('/api/login', { email: username, password })
+    const user = userDetails(response.data)
+    commit('SET_CURRENT_USER', user)
+    return user
   },
 
-  // Logs out the current user.
-  logOut({ commit }) {
+  async logOut({ commit }) {
+    await axios.post('/api/logout', {})
     commit('SET_CURRENT_USER', null)
   },
 
-  // Validates the current user's token and refreshes it
-  // with new data from the API.
-  validate({ commit, state }) {
-    if (!state.currentUser) return Promise.resolve(null)
-
-    return axios
-      .post('/api/refresh', { refreshToken: state.currentUser.refreshToken })
-      .then((response) => {
-        const user = response.data
-        commit('SET_CURRENT_USER', user)
-        return user
-      })
-      .catch((ex) => {
-        commit('SET_CURRENT_USER', null)
-      })
+  async validate({ commit, state }) {
+    if (!state.currentUser) return null
+    try {
+      let user
+      try { user = (await axios.get('/api/me')).data }
+      catch (error) {
+        if (!error.response || error.response.status !== 401) throw error
+        user = await refreshSession()
+      }
+      const details = userDetails(user)
+      commit('SET_CURRENT_USER', details)
+      return details
+    } catch (_) {
+      commit('SET_CURRENT_USER', null)
+      return null
+    }
   },
 
-  systemInitialized({ commit, state }) {
-    return axios.get('/api/system/status').then((response) => {
-      const data = response.data
+  async systemInitialized({ commit }) {
+    try {
+      const { data } = await axios.get('/api/system/status')
       commit('SET_INITIALIZATION_STATUS', data)
       return data
-    })
+    } catch (_) { return null }
   },
-}
-
-// ===
-// Private helpers
-// ===
-
-function getSavedState(key) {
-  return JSON.parse(window.localStorage.getItem(key))
-}
-
-function saveState(key, state) {
-  window.localStorage.setItem(key, JSON.stringify(state))
-}
-
-function setDefaultAuthHeaders(state) {
-  axios.defaults.headers.common.Authorization = state.currentUser ? state.currentUser.token : ''
 }
