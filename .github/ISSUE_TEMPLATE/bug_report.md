@@ -1,34 +1,33 @@
 ---
-name: Bug report
-about: Create a report to help us improve
-title: ''
-labels: ''
+name: "🐛 Bug Report / Fehlerbericht"
+about: "Report a reproducible problem / Melde einen reproduzierbaren Fehler"
+title: "[Bug] "
+labels: bug
 assignees: ''
-
 ---
 
-*Before creating a bug report please make sure you are using the latest docker image / code base.*
+<!-- Deutsch oder Englisch ist willkommen / German or English is welcome.
+Search existing issues first / Bitte zuerst vorhandene Issues durchsuchen.
+Check whether the latest supported version is affected, if practical / Wenn möglich, mit der aktuellen unterstützten Version prüfen. -->
 
-**Please complete the following information**
- - Installation Type: [Docker/Native]
- - Have you tried using the latest docker image / code base [yes/no]
+## Fehlerbeschreibung / Bug description
+Was funktioniert nicht? / What is not working?
 
-**Describe the bug**
-A clear and concise description of what the bug is.
+## Version und Umgebung / Version and environment
+- App-Version / App version:
+- Installation (Docker, native, other / andere):
+- Betriebssystem, Browser und ggf. Image-Tag / OS, browser and image tag if applicable:
+- Mit aktueller Version getestet? / Tested with latest version? (yes/no / ja/nein):
 
-**To Reproduce**
-Steps to reproduce the behavior:
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+## Schritte zur Reproduktion / Steps to reproduce
+1.
+2.
+3.
 
-**Expected behavior**
-A clear and concise description of what you expected to happen.
+## Erwartetes Verhalten / Expected behavior
 
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
+## Tatsächliches Verhalten / Actual behavior
 
-
-**Additional context**
-Add any other context about the problem here.
+## Screenshots, Logs und weitere Hinweise / Screenshots, logs and additional context
+<!-- Remove secrets and private data / Zugangsdaten und private Daten entfernen.
+Bitte keine Fahrzeugkennzeichen, VINs, Standortdaten oder Home-Assistant-Zugangsdaten veröffentlichen. / Do not publish license plates, VINs, location data or Home Assistant credentials. -->
