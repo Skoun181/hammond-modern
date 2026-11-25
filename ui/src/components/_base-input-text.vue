@@ -4,13 +4,9 @@ export default {
   // passed to the <input>, even if it's not the root element.
   // https://vuejs.org/v2/guide/components-props.html#Disabling-Attribute-Inheritance
   inheritAttrs: false,
-  // Change the v-model event name to `update` to avoid changing
-  // the behavior of the native `input` event.
-  // https://vuejs.org/v2/guide/components-custom-events.html#Customizing-Component-v-model
-  model: {
-    event: 'update',
-  },
+  emits: ['update:modelValue'],
   props: {
+    modelValue: { type: [String, Number], default: '' },
     type: {
       type: String,
       default: 'text',
@@ -33,16 +29,10 @@ export default {
 
 <template>
   <b-input
+    v-bind="$attrs"
     :type="type"
-    :class="$style.input"
-    v-bind="
-      $attrs
-      // https://vuejs.org/v2/guide/components-props.html#Disabling-Attribute-Inheritance
-    "
-    @input="$emit('update', $event)"
-    v-on="
-      $listeners
-      // https://vuejs.org/v2/guide/components-custom-events.html#Binding-Native-Events-to-Components
-    "
+    :class="$style?.input"
+    :model-value="modelValue"
+    @update:model-value="$emit('update:modelValue', $event)"
   />
 </template>

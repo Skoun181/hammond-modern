@@ -3,7 +3,7 @@ import BaseIcon from './_base-icon.vue'
 describe('@components/_base-icon', () => {
   it('renders a font-awesome icon', () => {
     const { element } = mount(BaseIcon, {
-      propsData: {
+      props: {
         name: 'sync',
       },
     })
@@ -19,7 +19,7 @@ describe('@components/_base-icon', () => {
           iconCustomSomeIcon: 'generated-class-name',
         },
       }),
-      propsData: {
+      props: {
         source: 'custom',
         name: 'some-icon',
       },

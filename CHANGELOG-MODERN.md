@@ -1,5 +1,11 @@
 # Hammond Modern – Änderungsverlauf
 
+## v1.2.0 – Vue 3 und Vite (25. November 2026)
+
+- Vue 3, Buefy 3, Vue Router 4, Vuex 4 und Chart.js 4. Vite übernimmt Entwicklung und Build, Vitest die Frontend-Tests.
+- Stable übernimmt die serverseitige Zugriffskontrolle für Fahrzeuge und Anhänge, eine abgeschlossene Ersteinrichtung und widerrufbare Sitzungen.
+- Automatische portable Sicherungen enthalten Fahrzeugdaten und Anhänge. Bestehende Datenverzeichnisse werden beim normalen Update weiterverwendet.
+
 ## v1.1.11 – Home Assistant (22. November 2026)
 
 - Eigene, schreibgeschützte Wartungs-REST-API für Home Assistant mit persönlichem, rotierbarem und widerrufbarem API-Schlüssel. Der Schlüssel wird nur als Hash gespeichert und ist nicht der JWT_SECRET.

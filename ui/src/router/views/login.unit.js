@@ -5,49 +5,29 @@ describe('@views/login', () => {
     expect(Login).toBeAViewComponent()
   })
 
-  it('redirects to home after successful login', () => {
-    const { vm } = mountLogin()
-
+  it('redirects to home after successful login', async () => {
+    const routerPush = vi.fn()
+    const { vm } = mountLogin(routerPush)
     vm.username = 'correctUsername'
     vm.password = 'correctPassword'
-
-    const routerPush = jest.fn()
-    vm.$router = { push: routerPush }
-    vm.$route = { query: {} }
-
-    expect.assertions(2)
-    return vm.tryToLogIn().then(() => {
-      expect(vm.authError).toEqual(null)
-      expect(routerPush).toHaveBeenCalledWith({ name: 'home' })
-    })
+    await vm.tryToLogIn()
+    expect(vm.authError).toBeNull()
+    expect(routerPush).toHaveBeenCalledWith({ name: 'home' })
   })
 
-  it('redirects to redirectFrom query, if it exists, after successful login', () => {
-    const { vm } = mountLogin()
-
+  it('returns to the requested route after successful login', async () => {
+    const routerPush = vi.fn()
+    const redirectFrom = '/profile?someQuery'
+    const { vm } = mountLogin(routerPush, { redirectFrom })
     vm.username = 'correctUsername'
     vm.password = 'correctPassword'
-
-    const routerPush = jest.fn()
-    vm.$router = { push: routerPush }
-
-    const redirectFrom = '/profile?someQuery'
-    vm.$route = { query: { redirectFrom } }
-
-    expect.assertions(2)
-    return vm.tryToLogIn().then(() => {
-      expect(vm.authError).toEqual(null)
-      expect(routerPush).toHaveBeenCalledWith(redirectFrom)
-    })
+    await vm.tryToLogIn()
+    expect(vm.authError).toBeNull()
+    expect(routerPush).toHaveBeenCalledWith(redirectFrom)
   })
 
   it('displays an error after failed login', async () => {
-    const { vm } = mountLogin()
-
-    const routerPush = jest.fn()
-    vm.$router = { push: routerPush }
-
-    expect.assertions(2)
+    const { vm } = mountLogin(vi.fn())
     await vm.tryToLogIn()
     await vm.$nextTick()
     expect(vm.authError).toBeTruthy()
@@ -55,10 +35,10 @@ describe('@views/login', () => {
   })
 })
 
-function mountLogin() {
+function mountLogin(routerPush, query = {}) {
   return shallowMountView(Login, {
-    stubs: { 'b-field': true, 'b-input': true, 'b-button': true },
     ...createComponentMocks({
+      mocks: { $router: { push: routerPush }, $route: { query } },
       stubs: { 'b-field': true, 'b-input': true, 'b-button': true },
       store: {
         users: { actions: { forceMe: () => Promise.resolve({}) } },

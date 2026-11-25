@@ -1,32 +1,17 @@
-import Vue from 'vue'
-import VueRouter from 'vue-router'
-// https://github.com/declandewet/vue-meta
-import VueMeta from 'vue-meta'
+import { createRouter, createWebHistory } from 'vue-router'
 // Adds a loading bar at the top during page loads.
 import NProgress from 'nprogress/nprogress'
 import store from '@state/store'
 import routes from './routes'
 
-Vue.use(VueRouter)
-Vue.use(VueMeta, {
-  // The component option name that vue-meta looks for meta info on.
-  keyName: 'page',
-})
-
-const router = new VueRouter({
+const router = createRouter({
+  history: createWebHistory(),
   routes,
-  // Use the HTML5 history API (i.e. normal-looking routes)
-  // instead of routes with hashes (e.g. example.com/#/about).
-  // This may require some server configuration in production:
-  // https://router.vuejs.org/en/essentials/history-mode.html#example-server-configurations
-  mode: 'history',
-  // Simulate native-like scroll behavior when navigating to a new
-  // route and using back/forward buttons.
   scrollBehavior(to, from, savedPosition) {
     if (savedPosition) {
       return savedPosition
     } else {
-      return { x: 0, y: 0 }
+      return { left: 0, top: 0 }
     }
   },
 })
@@ -78,7 +63,7 @@ router.beforeEach((routeTo, routeFrom, next) => {
   }
   function redirectToHome() {
     // Pass the original route to the login component
-    next({ name: 'home', query: { redirectFrom: routeTo.fullPath } })
+    next({ name: 'home' })
   }
 })
 
@@ -127,7 +112,8 @@ router.beforeResolve(async (routeTo, routeFrom, next) => {
 })
 
 // When each route is finished evaluating...
-router.afterEach((routeTo, routeFrom) => {
+router.onError(() => NProgress.done())
+router.afterEach(() => {
   // Complete the animation of the route progress bar.
   NProgress.done()
 })

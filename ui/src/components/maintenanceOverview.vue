@@ -25,7 +25,7 @@ export default {
     soon() { return this.tasks.filter(t => t.severity === 'soon').length },
   },
   mounted() { this.load(); this.refreshTimer = setInterval(() => { if (!this.loading) this.load() }, 60000) },
-  beforeDestroy() { clearInterval(this.refreshTimer) },
+  beforeUnmount() { clearInterval(this.refreshTimer) },
   methods: {
     async load() {
       this.loading = true

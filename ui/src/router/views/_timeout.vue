@@ -39,7 +39,7 @@ export default {
   <LoadingView v-else />
 </template>
 
-<style lang="scss" module>
+<style module>
 .title {
   text-align: center;
 }

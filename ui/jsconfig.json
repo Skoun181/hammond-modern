@@ -1,0 +1,67 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "paths": {
+      "@": [
+        "./"
+      ],
+      "@/*": [
+        "./*"
+      ],
+      "@src": [
+        "./src"
+      ],
+      "@src/*": [
+        "./src/*"
+      ],
+      "@router": [
+        "./src/router"
+      ],
+      "@router/*": [
+        "./src/router/*"
+      ],
+      "@views": [
+        "./src/router/views"
+      ],
+      "@views/*": [
+        "./src/router/views/*"
+      ],
+      "@layouts": [
+        "./src/router/layouts"
+      ],
+      "@layouts/*": [
+        "./src/router/layouts/*"
+      ],
+      "@components": [
+        "./src/components"
+      ],
+      "@components/*": [
+        "./src/components/*"
+      ],
+      "@assets": [
+        "./src/assets"
+      ],
+      "@assets/*": [
+        "./src/assets/*"
+      ],
+      "@utils": [
+        "./src/utils"
+      ],
+      "@utils/*": [
+        "./src/utils/*"
+      ],
+      "@state": [
+        "./src/state"
+      ],
+      "@state/*": [
+        "./src/state/*"
+      ]
+    }
+  },
+  "include": [
+    "src/**/*",
+    "tests/**/*"
+  ]
+}

@@ -1,7 +1,7 @@
 // See these docs for details on Jest's matcher utils:
 // https://facebook.github.io/jest/docs/en/expect.html#thisutils
 
-const _ = require('lodash')
+import { isPlainObject } from 'lodash'
 const customMatchers = {}
 
 customMatchers.toBeAComponent = function(options) {
@@ -24,7 +24,7 @@ customMatchers.toBeAComponent = function(options) {
   }
 
   function isAComponent() {
-    return _.isPlainObject(options) && typeof options.render === 'function'
+    return isPlainObject(options) && typeof options.render === 'function'
   }
 }
 
@@ -92,14 +92,14 @@ customMatchers.toBeAVuexModule = function(options) {
 
   function isAVuexModule() {
     return (
-      _.isPlainObject(options) &&
-      _.isPlainObject(options.state) &&
-      _.isPlainObject(options.getters) &&
-      _.isPlainObject(options.mutations) &&
-      _.isPlainObject(options.actions)
+      options != null &&
+      isPlainObject(options.state) &&
+      isPlainObject(options.getters) &&
+      isPlainObject(options.mutations) &&
+      isPlainObject(options.actions)
     )
   }
 }
 
 // https://facebook.github.io/jest/docs/en/expect.html#expectextendmatchers
-global.expect.extend(customMatchers)
+expect.extend(customMatchers)

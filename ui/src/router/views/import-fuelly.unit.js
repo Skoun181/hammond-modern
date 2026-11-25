@@ -1,4 +1,4 @@
-import ImportFuelly from './import-fuelly'
+import ImportFuelly from './import-fuelly.vue'
 
 describe('@views/import-fuelly', () => {
   it('is a valid view', () => {

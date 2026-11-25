@@ -1,3 +1,4 @@
+import axios from 'axios'
 import * as usersModule from './users'
 
 describe('@state/modules/users', () => {
@@ -16,9 +17,8 @@ describe('@state/modules/users', () => {
     it('actions.fetchUser returns the current user without fetching it again', () => {
       expect.assertions(2)
 
-      const axios = require('axios')
       const originalAxiosGet = axios.get
-      axios.get = jest.fn()
+      axios.get = vi.fn()
 
       return store.dispatch('fetchUser', { username: 'admin' }).then((user) => {
         expect(user).toEqual(validUserExample)

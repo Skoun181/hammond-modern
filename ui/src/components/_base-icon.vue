@@ -1,13 +1,11 @@
 <script>
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library as fontAwesomeIconLibrary } from '@fortawesome/fontawesome-svg-core'
+import { faSync, faUser } from '@fortawesome/free-solid-svg-icons'
 import camelCase from 'lodash/camelCase'
 
 // https://fontawesome.com/icons
-fontAwesomeIconLibrary.add(
-  require('@fortawesome/free-solid-svg-icons/faSync').definition,
-  require('@fortawesome/free-solid-svg-icons/faUser').definition
-)
+fontAwesomeIconLibrary.add(faSync, faUser)
 
 export default {
   components: {

@@ -10,10 +10,10 @@ describe('@state/modules/auth', () => {
     store = createModuleStore(auth)
   })
 
-  afterEach(() => jest.restoreAllMocks())
+  afterEach(() => vi.restoreAllMocks())
 
   it('uses the cookie-based login API and stores only account details', async () => {
-    const post = jest.spyOn(axios, 'post').mockResolvedValue({
+    const post = vi.spyOn(axios, 'post').mockResolvedValue({
       data: { ...user, token: 'must-not-be-stored', refreshToken: 'must-not-be-stored' },
     })
     expect(await store.dispatch('logIn', { username: user.email, password: 'a password' })).toEqual(user)
@@ -23,7 +23,7 @@ describe('@state/modules/auth', () => {
 
   it('validates via the current-account route', async () => {
     store.commit('SET_CURRENT_USER', user)
-    const get = jest.spyOn(axios, 'get').mockResolvedValue({
+    const get = vi.spyOn(axios, 'get').mockResolvedValue({
       data: { ...user, role: 1, roleDetail: { long: 'USER' } },
     })
     expect(await store.dispatch('validate')).toEqual(user)
@@ -32,7 +32,7 @@ describe('@state/modules/auth', () => {
 
   it('revokes the cookie session on logout', async () => {
     store.commit('SET_CURRENT_USER', user)
-    const post = jest.spyOn(axios, 'post').mockResolvedValue({})
+    const post = vi.spyOn(axios, 'post').mockResolvedValue({})
     await store.dispatch('logOut')
     expect(post).toHaveBeenCalledWith('/api/logout', {})
     expect(store.state.currentUser).toBeNull()

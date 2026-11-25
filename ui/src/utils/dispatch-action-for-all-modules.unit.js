@@ -1,138 +1,19 @@
+import { createStore } from 'vuex'
+import dispatchActionForAllModules from './dispatch-action-for-all-modules'
+
 describe('@utils/dispatch-action-for-all-modules', () => {
-  beforeEach(() => {
-    jest.resetModules()
-  })
-
-  it('dispatches actions from NOT namespaced modules', () => {
-    jest.doMock('@state/modules', () => ({
-      moduleA: {
-        actions: {
-          someAction: jest.fn(),
-          otherAction: jest.fn(),
-        },
-      },
-      moduleB: {
-        actions: {
-          someAction: jest.fn(),
-          otherAction: jest.fn(),
-        },
-      },
-    }))
-
-    require('./dispatch-action-for-all-modules').default('someAction')
-
-    const { moduleA, moduleB } = require('@state/modules')
-    expect(moduleA.actions.someAction).toHaveBeenCalledTimes(1)
-    expect(moduleB.actions.someAction).toHaveBeenCalledTimes(1)
-    expect(moduleA.actions.otherAction).not.toHaveBeenCalled()
-    expect(moduleB.actions.otherAction).not.toHaveBeenCalled()
-  })
-
-  it('dispatches actions from namespaced modules', () => {
-    jest.doMock('@state/modules', () => ({
-      moduleA: {
-        namespaced: true,
-        actions: {
-          someAction: jest.fn(),
-          otherAction: jest.fn(),
-        },
-      },
-      moduleB: {
-        namespaced: true,
-        actions: {
-          someAction: jest.fn(),
-          otherAction: jest.fn(),
-        },
-      },
-    }))
-
-    require('./dispatch-action-for-all-modules').default('someAction')
-
-    const { moduleA, moduleB } = require('@state/modules')
-    expect(moduleA.actions.someAction).toHaveBeenCalledTimes(1)
-    expect(moduleB.actions.someAction).toHaveBeenCalledTimes(1)
-    expect(moduleA.actions.otherAction).not.toHaveBeenCalled()
-    expect(moduleB.actions.otherAction).not.toHaveBeenCalled()
-  })
-
-  it('dispatches actions from deeply nested NOT namespaced modules', () => {
-    jest.doMock('@state/modules', () => ({
-      moduleA: {
-        actions: {
-          someAction: jest.fn(),
-          otherAction: jest.fn(),
-        },
-        modules: {
-          moduleB: {
-            actions: {
-              someAction: jest.fn(),
-              otherAction: jest.fn(),
-            },
-            modules: {
-              moduleC: {
-                actions: {
-                  someAction: jest.fn(),
-                  otherAction: jest.fn(),
-                },
-              },
-            },
-          },
-        },
-      },
-    }))
-
-    require('./dispatch-action-for-all-modules').default('someAction')
-
-    const { moduleA } = require('@state/modules')
-    const { moduleB } = moduleA.modules
-    const { moduleC } = moduleB.modules
-    expect(moduleA.actions.someAction).toHaveBeenCalledTimes(1)
-    expect(moduleB.actions.someAction).toHaveBeenCalledTimes(1)
-    expect(moduleC.actions.someAction).toHaveBeenCalledTimes(1)
-    expect(moduleA.actions.otherAction).not.toHaveBeenCalled()
-    expect(moduleB.actions.otherAction).not.toHaveBeenCalled()
-    expect(moduleC.actions.otherAction).not.toHaveBeenCalled()
-  })
-
-  it('dispatches actions from deeply nested namespaced modules', () => {
-    jest.doMock('@state/modules', () => ({
-      moduleA: {
-        namespaced: true,
-        actions: {
-          someAction: jest.fn(),
-          otherAction: jest.fn(),
-        },
-        modules: {
-          moduleB: {
-            namespaced: true,
-            actions: {
-              someAction: jest.fn(),
-              otherAction: jest.fn(),
-            },
-            modules: {
-              moduleC: {
-                namespaced: true,
-                actions: {
-                  someAction: jest.fn(),
-                  otherAction: jest.fn(),
-                },
-              },
-            },
-          },
-        },
-      },
-    }))
-
-    require('./dispatch-action-for-all-modules').default('someAction')
-
-    const { moduleA } = require('@state/modules')
-    const { moduleB } = moduleA.modules
-    const { moduleC } = moduleB.modules
-    expect(moduleA.actions.someAction).toHaveBeenCalledTimes(1)
-    expect(moduleB.actions.someAction).toHaveBeenCalledTimes(1)
-    expect(moduleC.actions.someAction).toHaveBeenCalledTimes(1)
-    expect(moduleA.actions.otherAction).not.toHaveBeenCalled()
-    expect(moduleB.actions.otherAction).not.toHaveBeenCalled()
-    expect(moduleC.actions.otherAction).not.toHaveBeenCalled()
-  })
+  for (const namespaced of [false, true]) {
+    for (const nested of [false, true]) {
+      it(`dispatches ${namespaced ? 'namespaced' : 'shared'} actions from ${nested ? 'nested' : 'top-level'} modules`, () => {
+        const one = { namespaced, actions: { start: vi.fn(), ignored: vi.fn() } }
+        const two = { namespaced, actions: { start: vi.fn(), ignored: vi.fn() } }
+        const modules = nested ? { one: { ...one, modules: { two } } } : { one, two }
+        dispatchActionForAllModules(createStore({ modules }), modules, 'start')
+        for (const module of [one, two]) {
+          expect(module.actions.start).toHaveBeenCalledTimes(1)
+          expect(module.actions.ignored).not.toHaveBeenCalled()
+        }
+      })
+    }
+  }
 })

@@ -218,7 +218,7 @@ export default {
         </form>
         <p class="help">Falls der Benutzer deaktiviert ist, anschließend wieder aktivieren.</p>
       </div>
-      <b-table :data="users" hoverable mobile-cards detail-key="id" paginated per-page="10" :row-class="(row, index) => row.isDisabled && 'is-disabled'">
+      <b-table :data="users" hoverable mobile-cards detail-key="id" paginated :per-page="10" :row-class="(row, index) => row.isDisabled && 'is-disabled'">
         <b-table-column v-slot="props" field="name" label="Name">
           {{ `${props.row.name}` }} <template v-if="props.row.id === user.id">(You)</template>
         </b-table-column>

@@ -84,7 +84,7 @@ export default {
       <div><p class="hm-eyebrow">ÜBERSICHT</p><h1 class="title hm-page-title">Dein Dashboard</h1><p class="hm-page-description">Fahrzeuge, Kosten und Tankvorgänge auf einen Blick.</p></div>
       <b-button v-if="myVehicles.length === 1" type="is-primary" tag="router-link" :to="'/vehicles/' + firstVehicleId + '/fillup'">＋ Tankung hinzufügen</b-button>
       <b-dropdown v-else-if="myVehicles.length > 1" position="is-bottom-left" aria-role="list">
-        <template slot="trigger">
+        <template #trigger>
           <b-button type="is-primary">＋ Tankung hinzufügen</b-button>
         </template>
         <b-dropdown-item v-for="v in myVehicles" :key="v.id" aria-role="listitem" @click="startFillup(v.id)">
@@ -134,7 +134,7 @@ export default {
             </template>
             <div v-if="(vehicle.fillups || []).length" class="card-content">
               <div class="content">
-                <table class="table">
+                <div class="table">
                   <div class="columns">
                     <div class="column is-one-third">Letzte Tankung</div>
                     <div class="column"
@@ -156,7 +156,7 @@ export default {
                       >
                     </div>
                   </div>
-                </table>
+                </div>
               </div>
             </div>
             <div class="card-content">

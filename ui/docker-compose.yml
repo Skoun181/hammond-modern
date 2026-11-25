@@ -1,5 +1,3 @@
-version: '3.7'
-
 volumes:
   dependencies:
 
@@ -13,4 +11,8 @@ services:
     volumes:
       - .:/app
       - dependencies:/app/node_modules
+    environment:
+      API_BASE_URL: ${API_BASE_URL:-http://host.docker.internal:3000}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     tty: true

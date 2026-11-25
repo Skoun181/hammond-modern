@@ -3,7 +3,7 @@
 # Application: http://192.168.0.36:3000
 services:
   hammond-modern:
-    image: skoun181/hammond-modern:1.1.11
+    image: skoun181/hammond-modern:1.2.0
     pull_policy: always
     platform: linux/amd64
     container_name: hammond-modern
@@ -11,6 +11,7 @@ services:
     environment:
       TZ: Europe/Berlin
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET fehlt}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-0}
       TANKERKOENIG_API_KEY: ${TANKERKOENIG_API_KEY:-}
     volumes:
       - /volume2/docker/Hammond/Hammond-config:/config

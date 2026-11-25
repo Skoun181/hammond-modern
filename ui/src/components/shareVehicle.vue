@@ -95,7 +95,7 @@ export default {
       <div class="columns is-mobile" v-for="model in models" :key="model.id">
         <div class="column is-one-third">
           <b-field>
-            <b-switch v-model="model.isShared" :disabled="model.isOwner" @input="changeShareStatus(model)">
+            <b-switch v-model="model.isShared" :disabled="model.isOwner" @update:model-value="changeShareStatus(model)">
               {{ model.name }}
             </b-switch>
           </b-field> </div

@@ -3,9 +3,7 @@
 - [Architecture](#architecture)
   - [`.circleci`](#circleci)
   - [`.vscode`](#vscode)
-  - [`.vuepress`](#vuepress)
   - [`docs`](#docs)
-  - [`generators`](#generators)
   - [`public`](#public)
     - [`index.html`](#indexhtml)
   - [`src`](#src)
@@ -28,17 +26,9 @@ Configuration for continuous integration with [Circle CI](https://circleci.com/)
 
 Settings and extensions specific to this project, for Visual Studio Code. See [the editors doc](editors.md#visual-studio-code) for more.
 
-## `.vuepress`
-
-[VuePress](https://vuepress.vuejs.org/) configuration for docs static site generation.
-
 ## `docs`
 
-You found me! :wink:
-
-## `generators`
-
-Generator templates to speed up development. See [the development doc](development.md#generators) for more.
+Frontend development and testing guides.
 
 ## `public`
 
@@ -46,7 +36,7 @@ Where you'll keep any static assets, to be added to the `dist` directory without
 
 ### `index.html`
 
-This one file actually _does_ get processed by our build system, allowing us to inject some information from Webpack with [EJS](http://ejs.co/), such as the title, then add our JS and CSS.
+The root `index.html` is the Vite entry point and loads `src/main.js`.
 
 ## `src`
 
@@ -54,7 +44,7 @@ Where we keep all our source files.
 
 ### `assets`
 
-This project manages assets via Vue CLI. Learn more about [its asset handling here](https://cli.vuejs.org/guide/html-and-static-assets.html).
+Vite processes assets imported from the source. Files in `public/` are copied directly to the build output.
 
 ### `components`
 

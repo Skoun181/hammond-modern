@@ -1,40 +1,17 @@
-import allModules from '@state/modules'
-import store from '@state/store'
+export default function dispatchActionForAllModules(store, modules, actionName) {
+  let hasGlobalAction = false
 
-export default function dispatchActionForAllModules(
-  actionName,
-  { modules = allModules, modulePrefix = '', flags = {} } = {}
-) {
-  // For every module...
-  for (const moduleName in modules) {
-    const moduleDefinition = modules[moduleName]
-
-    // If the action is defined on the module...
-    if (moduleDefinition.actions && moduleDefinition.actions[actionName]) {
-      // Dispatch the action if the module is namespaced. Otherwise,
-      // set a flag to dispatch the action globally at the end.
-      if (moduleDefinition.namespaced) {
-        store.dispatch(`${modulePrefix}${moduleName}/${actionName}`)
-      } else {
-        flags.dispatchGlobal = true
+  function visit(modules, namespace = '') {
+    for (const [name, definition] of Object.entries(modules)) {
+      const prefix = definition.namespaced ? namespace + name + '/' : namespace
+      if (definition.actions?.[actionName]) {
+        if (prefix) store.dispatch(prefix + actionName)
+        else hasGlobalAction = true
       }
-    }
-
-    // If there are any nested sub-modules...
-    if (moduleDefinition.modules) {
-      // Also dispatch the action for these sub-modules.
-      dispatchActionForAllModules(actionName, {
-        modules: moduleDefinition.modules,
-        modulePrefix: modulePrefix + moduleName + '/',
-        flags,
-      })
+      if (definition.modules) visit(definition.modules, prefix)
     }
   }
 
-  // If this is the root and at least one non-namespaced module
-  // was found with the action...
-  if (!modulePrefix && flags.dispatchGlobal) {
-    // Dispatch the action globally.
-    store.dispatch(actionName)
-  }
+  visit(modules)
+  if (hasGlobalAction) store.dispatch(actionName)
 }

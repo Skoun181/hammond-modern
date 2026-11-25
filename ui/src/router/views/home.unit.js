@@ -17,7 +17,7 @@ describe('@views/home', () => {
         stubs: { 'b-icon': true, 'b-button': true, 'b-collapse': true,
           'b-dropdown': true, 'b-dropdown-item': true, 'b-notification': true },
       }),
-      propsData: { user: { currency: 'EUR', vehicles: [] } },
+      props: { user: { currency: 'EUR', vehicles: [] } },
     })
     expect(element.textContent).toContain('Dein Dashboard')
   })

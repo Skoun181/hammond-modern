@@ -1,8 +1,8 @@
 import { applySavedTheme } from '@utils/theme-modern'
-import Vue from 'vue'
+import { createApp } from 'vue'
 import Buefy from 'buefy'
 import router from '@router'
-import store from '@state/store'
+import store, { initializeStore } from '@state/store'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import {
   faCheck,
@@ -27,17 +27,20 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
 import App from './app.vue'
+import appConfig from './app.config.json'
 
 // Globally register all `_base`-prefixed components
-import '@components/_globals'
+import { registerBaseComponents } from '@components/_globals'
 
-import 'buefy/dist/buefy.css'
+import 'buefy/dist/css/buefy.css'
 import 'nprogress/nprogress.css'
 import './design/modern.css'
 
 applySavedTheme()
 
-Vue.component('vue-fontawesome', FontAwesomeIcon)
+const app = createApp(App)
+app.component('vue-fontawesome', FontAwesomeIcon)
+registerBaseComponents(app)
 library.add(
   faCheck,
   faTimes,
@@ -58,31 +61,23 @@ library.add(
   faUserFriends,
   faTimesCircle
 )
-Vue.use(Buefy, {
+app.use(Buefy, {
   defaultIconComponent: 'vue-fontawesome',
   defaultIconPack: 'fas',
 })
 
-// Don't warn about using the dev version of Vue in development.
-Vue.config.productionTip = process.env.NODE_ENV === 'production'
-
-// If running inside Cypress...
-if (process.env.VUE_APP_TEST === 'e2e') {
-  // Ensure tests fail when Vue emits an error.
-  Vue.config.errorHandler = window.Cypress.cy.onUncaughtException
+function updateMetadata() {
+  const page = this.$options.page
+  if (!page) return
+  const metadata = typeof page === 'function' ? page.call(this) : page
+  document.title = metadata.title ? `${metadata.title} | ${appConfig.title}` : appConfig.title
+  const description = metadata.meta?.find(entry => entry.name === 'description')
+  document.querySelector('meta[name="description"]')
+    ?.setAttribute('content', description?.content || appConfig.description)
 }
 
-const app = new Vue({
-  router,
-  store,
-
-  render: (h) => h(App),
-}).$mount('#app')
-
-// If running e2e tests...
-if (process.env.VUE_APP_TEST === 'e2e') {
-  // Attach the app to the window, which can be useful
-  // for manually setting state in Cypress commands
-  // such as `cy.logIn()`.
-  window.__app__ = app
-}
+app.mixin({ mounted: updateMetadata, updated: updateMetadata })
+app.use(store)
+initializeStore()
+app.use(router)
+router.isReady().then(() => app.mount('#app'))

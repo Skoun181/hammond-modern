@@ -4,10 +4,8 @@ const mountBaseLink = (options = {}) => {
   return mount(BaseLink, {
     stubs: {
       RouterLink: {
-        functional: true,
-        render(h, { slots, data }) {
-          return <a data-router-link='true'>{slots().default}</a>
-        },
+        props: ['to'],
+        template: '<a data-router-link="true"><slot /></a>',
       },
     },
     slots: {
@@ -22,7 +20,7 @@ describe('@components/_base-link', () => {
   let warning
   beforeEach(() => {
     warning = undefined
-    global.console.warn = jest.fn((text) => {
+    global.console.warn = vi.fn((text) => {
       warning = text
     })
   })
@@ -42,7 +40,7 @@ describe('@components/_base-link', () => {
 
   it('warns about an invalid href', () => {
     mountBaseLink({
-      propsData: {
+      props: {
         href: '/some/local/path',
       },
     })
@@ -52,7 +50,7 @@ describe('@components/_base-link', () => {
 
   it('warns about an insecure href', () => {
     mountBaseLink({
-      propsData: {
+      props: {
         href: 'http://google.com',
       },
     })
@@ -63,7 +61,7 @@ describe('@components/_base-link', () => {
   it('renders an anchor element when passed an `href` prop', () => {
     const externalUrl = 'https://google.com/'
     const { element } = mountBaseLink({
-      propsData: {
+      props: {
         href: externalUrl,
       },
     })
@@ -77,7 +75,7 @@ describe('@components/_base-link', () => {
   it('renders a RouterLink when passed a `name` prop', () => {
     const routeName = 'home'
     const { element, vm } = mountBaseLink({
-      propsData: {
+      props: {
         name: routeName,
       },
     })
@@ -91,7 +89,7 @@ describe('@components/_base-link', () => {
     const routeName = 'home'
     const routeParams = { foo: 'bar' }
     const { element, vm } = mountBaseLink({
-      propsData: {
+      props: {
         name: routeName,
         params: routeParams,
       },
@@ -108,7 +106,7 @@ describe('@components/_base-link', () => {
   it('renders a RouterLink when passed a `to` prop', () => {
     const routeName = 'home'
     const { element, vm } = mountBaseLink({
-      propsData: {
+      props: {
         to: {
           name: routeName,
         },
@@ -124,7 +122,7 @@ describe('@components/_base-link', () => {
     const routeName = 'home'
     const routeParams = { foo: 'bar' }
     const { element, vm } = mountBaseLink({
-      propsData: {
+      props: {
         to: {
           name: routeName,
           params: routeParams,

@@ -21,7 +21,7 @@ export default {
     this.baseUrl = window.location.origin
     this.load()
   },
-  beforeDestroy() {
+  beforeUnmount() {
     this.token = ''
   },
   methods: {

@@ -28,23 +28,23 @@ export default [
             // If a user with the provided username could not be
             // found, redirect to the 404 page.
             console.log(ex)
-            next({ name: '404', params: { resource: 'User' } })
+            next({ name: '404', query: { resource: 'User' } })
           })
       },
     },
-    component: () => lazyLoadView(import('@views/home.vue')),
+    component: () => import('@views/home.vue'),
     props: (route) => ({ user: store.state.auth.currentUser || {} }),
   },
-  { path: '/recurring-costs', name: 'recurring-costs', component: () => lazyLoadView(import('@views/recurringCosts.vue')), meta: { authRequired: true } },
-  { path: '/home-assistant', name: 'home-assistant', component: () => lazyLoadView(import('@views/homeAssistant.vue')), meta: { authRequired: true } },
-  { path: '/maintenance', name: 'maintenance', component: () => lazyLoadView(import('@views/maintenance.vue')), meta: { authRequired: true } },
-  { path: '/vehicles', name: 'vehicles', component: () => lazyLoadView(import('@views/vehicles.vue')), meta: { authRequired: true } },
-  { path: '/tires', name: 'tires', component: () => lazyLoadView(import('@views/tires.vue')), meta: { authRequired: true } },
-  { path: '/drivers', name: 'drivers', component: () => lazyLoadView(import('@views/drivers.vue')), meta: { authRequired: true } },
+  { path: '/recurring-costs', name: 'recurring-costs', component: () => import('@views/recurringCosts.vue'), meta: { authRequired: true } },
+  { path: '/home-assistant', name: 'home-assistant', component: () => import('@views/homeAssistant.vue'), meta: { authRequired: true } },
+  { path: '/maintenance', name: 'maintenance', component: () => import('@views/maintenance.vue'), meta: { authRequired: true } },
+  { path: '/vehicles', name: 'vehicles', component: () => import('@views/vehicles.vue'), meta: { authRequired: true } },
+  { path: '/tires', name: 'tires', component: () => import('@views/tires.vue'), meta: { authRequired: true } },
+  { path: '/drivers', name: 'drivers', component: () => import('@views/drivers.vue'), meta: { authRequired: true } },
   {
     path: '/initialize',
     name: 'initialize',
-    component: () => lazyLoadView(import('@views/initialize.vue')),
+    component: () => import('@views/initialize.vue'),
     meta: {
       async beforeResolve(routeTo, routeFrom, next) {
         const system = await store.dispatch('auth/systemInitialized')
@@ -56,7 +56,7 @@ export default [
   {
     path: '/login',
     name: 'login',
-    component: () => lazyLoadView(import('@views/login.vue')),
+    component: () => import('@views/login.vue'),
     meta: {
       async beforeResolve(routeTo, routeFrom, next) {
         const system = await store.dispatch('auth/systemInitialized')
@@ -72,7 +72,7 @@ export default [
   {
     path: '/profile',
     name: 'profile',
-    component: () => lazyLoadView(import('@views/profile.vue')),
+    component: () => import('@views/profile.vue'),
     meta: {
       authRequired: true,
       roles: ['ADMIN'],
@@ -82,7 +82,7 @@ export default [
   {
     path: '/admin/settings',
     name: 'site-settings',
-    component: () => lazyLoadView(import('@/src/router/views/siteSettings.vue')),
+    component: () => import('@/src/router/views/siteSettings.vue'),
     meta: {
       authRequired: true,
       roles: ['ADMIN'],
@@ -95,7 +95,7 @@ export default [
   {
     path: '/admin/users',
     name: 'users',
-    component: () => lazyLoadView(import('@/src/router/views/users.vue')),
+    component: () => import('@/src/router/views/users.vue'),
     meta: {
       authRequired: true,
       roles: ['ADMIN'],
@@ -108,7 +108,7 @@ export default [
   {
     path: '/settings',
     name: 'settings',
-    component: () => lazyLoadView(import('@/src/router/views/settings.vue')),
+    component: () => import('@/src/router/views/settings.vue'),
     meta: {
       authRequired: true,
     },
@@ -120,7 +120,7 @@ export default [
   {
     path: '/profile/:username',
     name: 'username-profile',
-    component: () => lazyLoadView(import('@views/profile.vue')),
+    component: () => import('@views/profile.vue'),
     meta: {
       authRequired: true,
       // HACK: In order to share data between the `beforeResolve` hook
@@ -141,7 +141,7 @@ export default [
           .catch(() => {
             // If a user with the provided username could not be
             // found, redirect to the 404 page.
-            next({ name: '404', params: { resource: 'User' } })
+            next({ name: '404', query: { resource: 'User' } })
           })
       },
     },
@@ -153,7 +153,7 @@ export default [
   {
     path: '/vehicles/create',
     name: 'vehicle-create',
-    component: () => lazyLoadView(import('@views/createVehicle.vue')),
+    component: () => import('@views/createVehicle.vue'),
     meta: {
       authRequired: true,
       // HACK: In order to share data between the `beforeResolve` hook
@@ -164,7 +164,7 @@ export default [
   {
     path: '/vehicles/:vehicleId',
     name: 'vehicle-detail',
-    component: () => lazyLoadView(import('@views/vehicle.vue')),
+    component: () => import('@views/vehicle.vue'),
     meta: {
       authRequired: true,
       // HACK: In order to share data between the `beforeResolve` hook
@@ -187,7 +187,7 @@ export default [
           .catch(() => {
             // If a user with the provided username could not be
             // found, redirect to the 404 page.
-            next({ name: '404', params: { resource: 'User' } })
+            next({ name: '404', query: { resource: 'User' } })
           })
       },
     },
@@ -198,7 +198,7 @@ export default [
   {
     path: '/vehicles/:vehicleId/edit',
     name: 'vehicle-edit',
-    component: () => lazyLoadView(import('@views/createVehicle.vue')),
+    component: () => import('@views/createVehicle.vue'),
     meta: {
       authRequired: true,
       // HACK: In order to share data between the `beforeResolve` hook
@@ -221,7 +221,7 @@ export default [
           .catch(() => {
             // If a user with the provided username could not be
             // found, redirect to the 404 page.
-            next({ name: '404', params: { resource: 'User' } })
+            next({ name: '404', query: { resource: 'User' } })
           })
       },
     },
@@ -232,7 +232,7 @@ export default [
   {
     path: '/vehicles/:vehicleId/fillup',
     name: 'vehicle-create-fillup',
-    component: () => lazyLoadView(import('@views/createFillup.vue')),
+    component: () => import('@views/createFillup.vue'),
     meta: {
       authRequired: true,
       // HACK: In order to share data between the `beforeResolve` hook
@@ -255,7 +255,7 @@ export default [
           .catch(() => {
             // If a user with the provided username could not be
             // found, redirect to the 404 page.
-            next({ name: '404', params: { resource: 'User' } })
+            next({ name: '404', query: { resource: 'User' } })
           })
       },
     },
@@ -266,7 +266,7 @@ export default [
   {
     path: '/vehicles/:vehicleId/fillup/:fillupId/edit',
     name: 'vehicle-edit-fillup',
-    component: () => lazyLoadView(import('@views/createFillup.vue')),
+    component: () => import('@views/createFillup.vue'),
     meta: {
       authRequired: true,
 
@@ -292,7 +292,7 @@ export default [
               })
           })
           .catch(() => {
-            next({ name: '404', params: { resource: 'User' } })
+            next({ name: '404', query: { resource: 'User' } })
           })
       },
     },
@@ -303,7 +303,7 @@ export default [
   {
     path: '/vehicles/:vehicleId/expense',
     name: 'vehicle-create-expense',
-    component: () => lazyLoadView(import('@views/createExpense.vue')),
+    component: () => import('@views/createExpense.vue'),
     meta: {
       authRequired: true,
       // HACK: In order to share data between the `beforeResolve` hook
@@ -326,7 +326,7 @@ export default [
           .catch(() => {
             // If a user with the provided username could not be
             // found, redirect to the 404 page.
-            next({ name: '404', params: { resource: 'User' } })
+            next({ name: '404', query: { resource: 'User' } })
           })
       },
     },
@@ -337,7 +337,7 @@ export default [
   {
     path: '/vehicles/:vehicleId/expense/:expenseId/edit',
     name: 'vehicle-edit-expense',
-    component: () => lazyLoadView(import('@views/createExpense.vue')),
+    component: () => import('@views/createExpense.vue'),
     meta: {
       authRequired: true,
 
@@ -363,7 +363,7 @@ export default [
               })
           })
           .catch(() => {
-            next({ name: '404', params: { resource: 'User' } })
+            next({ name: '404', query: { resource: 'User' } })
           })
       },
     },
@@ -374,13 +374,13 @@ export default [
   {
     path: '/admin/backup',
     name: 'backup',
-    component: () => lazyLoadView(import('@views/backup.vue')),
+    component: () => import('@views/backup.vue'),
     meta: { authRequired: true, roles: ['ADMIN'] },
   },
   {
     path: '/import',
     name: 'import',
-    component: () => lazyLoadView(import('@views/import.vue')),
+    component: () => import('@views/import.vue'),
     meta: {
       authRequired: true,
     },
@@ -389,13 +389,13 @@ export default [
   {
     path: '/import/hammond',
     name: 'import-hammond',
-    component: () => lazyLoadView(import('@views/importHammond.vue')),
+    component: () => import('@views/importHammond.vue'),
     meta: { authRequired: true },
   },
   {
     path: '/import/fuelly',
     name: 'import-fuelly',
-    component: () => lazyLoadView(import('@views/import-fuelly.vue')),
+    component: () => import('@views/import-fuelly.vue'),
     meta: {
       authRequired: true,
     },
@@ -404,13 +404,14 @@ export default [
   {
     path: '/logout',
     name: 'logout',
+    component: () => import('@views/_loading.vue'),
     meta: {
       authRequired: true,
       beforeResolve(routeTo, routeFrom, next) {
         store.dispatch('auth/logOut').then((data) => {
           const authRequiredOnPreviousRoute = routeFrom.matched.some((route) => route.meta.authRequired)
           // Navigate back to previous page, or home as a fallback
-          next(authRequiredOnPreviousRoute ? { name: 'login' } : { ...routeFrom })
+          next(authRequiredOnPreviousRoute || !routeFrom.name ? { name: 'login' } : routeFrom.fullPath)
         })
       },
     },
@@ -418,56 +419,16 @@ export default [
   {
     path: '/404',
     name: '404',
-    component: require('@views/_404.vue').default,
+    component: () => import('@views/_404.vue'),
     // Allows props to be passed to the 404 page through route
     // params, such as `resource` to define what wasn't found.
-    props: true,
+    props: (route) => ({ resource: route.query.resource }),
   },
   // Redirect any unmatched routes to the 404 page. This may
   // require some server configuration to work in production:
   // https://router.vuejs.org/en/essentials/history-mode.html#example-server-configurations
   {
-    path: '*',
-    redirect: '404',
+    path: '/:pathMatch(.*)*',
+    redirect: { name: '404' },
   },
 ]
-
-// Lazy-loads view components, but with better UX. A loading view
-// will be used if the component takes a while to load, falling
-// back to a timeout view in case the page fails to load. You can
-// use this component to lazy-load a route with:
-//
-// component: () => lazyLoadView(import('@views/my-view'))
-//
-// NOTE: Components loaded with this strategy DO NOT have access
-// to in-component guards, such as beforeRouteEnter,
-// beforeRouteUpdate, and beforeRouteLeave. You must either use
-// route-level guards instead or lazy-load the component directly:
-//
-// component: () => import('@views/my-view')
-//
-function lazyLoadView(AsyncView) {
-  const AsyncHandler = () => ({
-    component: AsyncView,
-    // A component to use while the component is loading.
-    loading: require('@views/_loading.vue').default,
-    // Delay before showing the loading component.
-    // Default: 200 (milliseconds).
-    delay: 400,
-    // A fallback component in case the timeout is exceeded
-    // when loading the component.
-    error: require('@views/_timeout.vue').default,
-    // Time before giving up trying to load the component.
-    // Default: Infinity (milliseconds).
-    timeout: 10000,
-  })
-
-  return Promise.resolve({
-    functional: true,
-    render(h, { data, children }) {
-      // Transparently pass any props or children
-      // to the view component.
-      return h(AsyncHandler, data, children)
-    },
-  })
-}

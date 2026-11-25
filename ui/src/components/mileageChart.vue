@@ -1,54 +1,60 @@
 <script>
+import axios from 'axios'
+import { Chart, CategoryScale, LinearScale, LineElement, PointElement, Filler, Legend, Tooltip } from 'chart.js'
 import { Line } from 'vue-chartjs'
 
-import axios from 'axios'
-import { mapState } from 'vuex'
+Chart.register(CategoryScale, LinearScale, LineElement, PointElement, Filler, Legend, Tooltip)
+
 export default {
-  extends: Line,
-  props: { vehicle: { type: Object, required: true }, since: { type: Date, default: '' }, user: { type: Object, required: true } },
-  computed: {
-    ...mapState('utils', ['isMobile']),
+  components: { Line },
+  props: {
+    vehicle: { type: Object, required: true },
+    since: { type: [Date, String], default: '' },
+    user: { type: Object, required: true },
   },
-  watch: {
-    since(newOne, old) {
-      if (newOne === old) {
-        return
+  data() {
+    return { rows: [], request: null, options: { maintainAspectRatio: false } }
+  },
+  computed: {
+    data() {
+      return {
+        labels: this.rows.map(row => row.date.slice(0, 10)),
+        datasets: [{
+          stepped: true,
+          label: `Verbrauch (${this.user.distanceUnitDetail.short}/${this.vehicle.fuelUnitDetail.short})`,
+          fill: true,
+          data: this.rows.map(row => row.mileage),
+        }],
       }
-      this.fetchMileage()
     },
   },
-  data: function() {
-    return {
-      chartData: [],
-    }
+  watch: {
+    since() { this.fetchMileage() },
   },
   mounted() {
     this.fetchMileage()
   },
+  beforeUnmount() {
+    this.request?.abort()
+  },
   methods: {
-    showChart() {
-      var labels = this.chartData.map((x) => x.date.substr(0, 10))
-      var dataset = {
-        steppedLine: true,
-        label: `Mileage (${this.user.distanceUnitDetail.short}/${this.vehicle.fuelUnitDetail.short})`,
-        fill: true,
-        data: this.chartData.map((x) => x.mileage),
+    async fetchMileage() {
+      this.request?.abort()
+      this.request = new AbortController()
+      try {
+        const response = await axios.get(`/api/vehicles/${this.vehicle.id}/mileage`, {
+          params: { since: this.since },
+          signal: this.request.signal,
+        })
+        this.rows = response.data || []
+      } catch (error) {
+        if (!axios.isCancel(error)) this.rows = []
       }
-      this.renderChart({ labels, datasets: [dataset] }, { maintainAspectRatio: false })
-    },
-    fetchMileage() {
-      axios
-        .get(`/api/vehicles/${this.vehicle.id}/mileage`, {
-          params: {
-            since: this.since,
-          },
-        })
-        .then((response) => {
-          this.chartData = response.data
-          this.showChart()
-        })
-        .catch((err) => console.log(err))
     },
   },
 }
 </script>
+
+<template>
+  <Line :data="data" :options="options" />
+</template>

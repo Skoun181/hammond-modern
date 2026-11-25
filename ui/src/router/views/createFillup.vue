@@ -391,7 +391,7 @@ export default {
         </b-field>
         <p v-if="stationError" class="help is-danger">{{ stationError }}</p>
         <b-field v-if="stations.length" label="Tankstelle übernehmen">
-          <b-select expanded placeholder="Tankstelle wählen" @input="chooseStation">
+          <b-select expanded placeholder="Tankstelle wählen" @update:model-value="chooseStation">
             <option v-for="station in stations" :key="station.id" :value="station">{{ station.brand || station.name }} – {{ station.street }}, {{ station.place }} ({{ station.dist }} km)</option>
           </b-select>
         </b-field>

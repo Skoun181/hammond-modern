@@ -52,10 +52,10 @@ export default {
     </header>
     <div v-if="mobileOpen" class="hm-sidebar-backdrop" @click="closeMenu"></div>
     <aside class="hm-sidebar" :class="{ 'hm-sidebar-open': mobileOpen }" aria-label="Hauptnavigation">
-      <router-link class="hm-brand hm-desktop-brand" :to="{ name: 'home' }" @click.native="closeMenu">HAMMOND <span>MODERN</span></router-link>
+      <router-link class="hm-brand hm-desktop-brand" :to="{ name: 'home' }" @click="closeMenu">HAMMOND <span>MODERN</span></router-link>
       <p class="hm-nav-heading">WORKSPACE</p>
       <nav class="hm-nav-links">
-        <router-link v-for="link in links" :key="link.name" :to="{ name: link.name }" class="hm-nav-link" :class="{ 'hm-nav-active': activeLink(link) }" @click.native="closeMenu">
+        <router-link v-for="link in links" :key="link.name" :to="{ name: link.name }" class="hm-nav-link" :class="{ 'hm-nav-active': activeLink(link) }" @click="closeMenu">
           <span class="hm-nav-icon" aria-hidden="true">{{ link.icon }}</span>
           <span>{{ link.title }}</span>
           <span v-if="link.badge" class="hm-nav-badge">{{ link.badge }}</span>

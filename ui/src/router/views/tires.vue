@@ -172,7 +172,7 @@ export default {
       <p class="help">Kilometerstand einmal eingeben. Die bisherigen Reifen werden eingelagert und ihre Laufleistung abgeschlossen. Neu montierte Reifen zählen ab diesem Stand weiter. Nur ausgewählte Radpositionen ändern sich.</p>
       <form @submit.prevent="saveSwap">
         <div class="columns is-multiline">
-          <div class="column is-half"><b-field label="Fahrzeug"><b-select v-model="changeVehicle" expanded required @input="resetSwap"><option v-for="v in vehicles" :key="v.id" :value="v.id">{{ vehicleName(v.id) }}</option></b-select></b-field></div>
+          <div class="column is-half"><b-field label="Fahrzeug"><b-select v-model="changeVehicle" expanded required @update:model-value="resetSwap"><option v-for="v in vehicles" :key="v.id" :value="v.id">{{ vehicleName(v.id) }}</option></b-select></b-field></div>
           <div class="column is-half"><b-field label="Aktueller Kilometerstand (km) *" message="Vorschlag aus Tankungen bitte am Tacho prüfen."><b-input v-model="swapOdo" type="number" min="0" max="10000000" step="1" required /></b-field></div>
           <div class="column is-half"><b-field label="Wechseldatum"><input v-model="swapDate" class="input" type="date" :max="today()" required /></b-field></div>
         </div>
@@ -205,7 +205,7 @@ export default {
           <div class="column is-half"><b-field label="Reifensatz / Bezeichnung"><b-input v-model="form.setName" maxlength="150" placeholder="Winterradsatz 2025" /></b-field></div>
           <div class="column is-half"><b-field label="Traglastindex"><b-input v-model="form.loadIndex" maxlength="12" placeholder="91" /></b-field></div>
           <div class="column is-half"><b-field label="Geschwindigkeitsindex"><b-input v-model="form.speedIndex" maxlength="12" placeholder="V" /></b-field></div>
-          <div class="column is-half"><b-field label="Fahrzeug"><b-select v-model="form.vehicleId" expanded @input="updateVehicle"><option value="">Nicht zugeordnet</option><option v-if="unavailableLink" :value="form.vehicleId" disabled>Nicht mehr verfügbar – bitte neu zuordnen</option><option v-for="v in vehicles" :key="v.id" :value="v.id">{{ vehicleName(v.id) }}</option></b-select></b-field></div>
+          <div class="column is-half"><b-field label="Fahrzeug"><b-select v-model="form.vehicleId" expanded @update:model-value="updateVehicle"><option value="">Nicht zugeordnet</option><option v-if="unavailableLink" :value="form.vehicleId" disabled>Nicht mehr verfügbar – bitte neu zuordnen</option><option v-for="v in vehicles" :key="v.id" :value="v.id">{{ vehicleName(v.id) }}</option></b-select></b-field></div>
           <div class="column is-half"><b-field label="Status"><b-select v-model="form.status" expanded><option v-for="(label,key) in statuses" :key="key" :value="key">{{ label }}</option></b-select></b-field></div>
           <div v-if="form.status === 'mounted' && !batchMounted" class="column is-half"><b-field label="Einbauposition *"><b-select v-model="form.position" expanded required><option v-for="(label,key) in positions" :key="key" :value="key">{{ label }}</option></b-select></b-field></div>
           <div v-if="batchMounted" class="column is-full">

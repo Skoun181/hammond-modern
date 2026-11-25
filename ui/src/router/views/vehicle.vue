@@ -386,7 +386,7 @@ export default {
     <div class="box">
       <h1 class="title is-4">Tankvorgänge</h1>
 
-      <b-table class="hm-vehicle-table" :data="fillups" hoverable mobile-cards paginated per-page="10">
+      <b-table class="hm-vehicle-table" :data="fillups" hoverable mobile-cards paginated :per-page="10">
         <b-table-column v-slot="props" field="date" label="Datum" :td-attrs="columnTdAttrs" sortable date>
           {{ formatDate(props.row.date) }}
         </b-table-column>
@@ -447,7 +447,7 @@ export default {
     <div class="box">
       <h1 class="title is-4">Werkstatt & Ausgaben</h1>
 
-      <b-table class="hm-vehicle-table" :data="expenses" hoverable mobile-cards paginated per-page="10">
+      <b-table class="hm-vehicle-table" :data="expenses" hoverable mobile-cards paginated :per-page="10">
         <b-table-column v-slot="props" field="date" label="Datum" :td-attrs="columnTdAttrs" date>
           {{ formatDate(props.row.date) }}
         </b-table-column>

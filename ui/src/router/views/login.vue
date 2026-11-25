@@ -20,16 +20,13 @@ export default {
   },
   computed: {
     placeholders() {
-      return process.env.NODE_ENV === 'production'
+      return import.meta.env.PROD
         ? {}
         : {
             username: 'Enter your username',
             password: 'Enter your password',
           }
     },
-  },
-  mounted() {
-    // console.log(process.env.API_BASE_URL)
   },
   methods: {
     ...authMethods,

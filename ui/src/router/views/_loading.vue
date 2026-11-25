@@ -18,21 +18,18 @@ export default {
   </Layout>
 </template>
 
-<style lang="scss" module>
-@import '@design';
+<style module>
 
 .loadingIcon {
-  @extend %typography-xxlarge;
+  font-size: 2rem;
 
   display: block;
   margin: 0 auto;
 
-  // stylelint-disable-next-line selector-class-pattern
   &:global(.v-enter-active) {
     transition: opacity 1s;
   }
-  // stylelint-disable-next-line selector-class-pattern
-  &:global(.v-enter) {
+  &:global(.v-enter-from) {
     opacity: 0;
   }
 }

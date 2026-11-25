@@ -1,35 +1,16 @@
 import NavBarRoutes from './nav-bar-routes.vue'
 
 const mountRoutes = (options) => {
-  return mount(
-    {
-      render(h) {
-        return (
-          <ul>
-            <NavBarRoutes {...{ props: options.propsData }} />
-          </ul>
-        )
-      },
-    },
-    {
-      stubs: {
-        BaseLink: {
-          functional: true,
-          render(h, { slots }) {
-            return <a>{slots().default}</a>
-          },
-        },
-        ...options.stubs,
-      },
-      ...options,
-    }
-  )
+  return mount(NavBarRoutes, {
+    ...options,
+    stubs: { BaseLink: { template: '<a><slot /></a>' }, ...options.stubs },
+  })
 }
 
 describe('@components/nav-bar-routes', () => {
   it('correctly renders routes with text titles', () => {
     const { element } = mountRoutes({
-      propsData: {
+      props: {
         routes: [
           {
             name: 'aaa',
@@ -38,12 +19,12 @@ describe('@components/nav-bar-routes', () => {
         ],
       },
     })
-    expect(element.textContent).toEqual('bbb')
+    expect(element.textContent.trim()).toEqual('bbb')
   })
 
   it('correctly renders routes with function titles', () => {
     const { element } = mountRoutes({
-      propsData: {
+      props: {
         routes: [
           {
             name: 'aaa',
@@ -52,6 +33,6 @@ describe('@components/nav-bar-routes', () => {
         ],
       },
     })
-    expect(element.textContent).toEqual('bbb')
+    expect(element.textContent.trim()).toEqual('bbb')
   })
 })

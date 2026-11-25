@@ -1,11 +1,11 @@
-# Hammond Modern v1.1.11 local build with portable export/restore.
+# Hammond Modern v1.2.0 local build with portable export/restore.
 # This creates Docker-managed named volumes (not bind mounts).
 # For fresh installations; keep existing data mounts when upgrading.
 # Requires a local clone and a .env containing JWT_SECRET.
 services:
   hammond-modern:
     build: .
-    image: hammond-modern:1.1.11
+    image: hammond-modern:1.2.0
     container_name: hammond-modern
     restart: unless-stopped
     ports:
@@ -13,6 +13,7 @@ services:
     environment:
       TZ: ${TZ:-Europe/Berlin}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET fehlt}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-0}
       TANKERKOENIG_API_KEY: ${TANKERKOENIG_API_KEY:-}
     volumes:
       - hammond_config:/config

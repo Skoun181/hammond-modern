@@ -3,14 +3,14 @@ import BaseInputText from './_base-input-text.vue'
 const options = {
   mocks: { $style: {} },
   stubs: { 'b-input': {
-    props: ['value', 'type'],
-    template: `<input :value="value" :type="type" @input="$emit('input', $event.target.value)">`,
+    props: ['modelValue', 'type'],
+    template: `<input :value="modelValue" :type="type" @input="$emit('update:modelValue', $event.target.value)">`,
   } },
 }
 
 describe('@components/_base-input-text', () => {
   it('works with v-model', async () => {
-    const wrapper = mount(BaseInputText, { ...options, propsData: { value: 'aaa' } })
+    const wrapper = mount(BaseInputText, { ...options, props: { modelValue: 'aaa' } })
     const inputWrapper = wrapper.find('input')
     const inputEl = inputWrapper.element
 
@@ -20,32 +20,32 @@ describe('@components/_base-input-text', () => {
     // Emits an update event with the correct value when edited
     inputEl.value = 'bbb'
     await inputWrapper.trigger('input')
-    expect(wrapper.emitted().update).toEqual([['bbb']])
+    expect(wrapper.emitted()['update:modelValue']).toEqual([['bbb']])
 
     // Sets the input to the correct value when props change
-    await wrapper.setProps({ value: 'ccc' })
+    await wrapper.setProps({ modelValue: 'ccc' })
     expect(inputEl.value).toEqual('ccc')
   })
 
   it('allows a type of "password"', () => {
-    const consoleError = jest
-      .spyOn(console, 'error')
+    const consoleError = vi
+      .spyOn(console, 'warn')
       .mockImplementation(() => {})
     mount(BaseInputText, {
       ...options,
-      propsData: { value: 'aaa', type: 'password' },
+      props: { modelValue: 'aaa', type: 'password' },
     })
-    expect(consoleError).not.toBeCalled()
+    expect(consoleError).not.toHaveBeenCalled()
     consoleError.mockRestore()
   })
 
   it('does NOT allow a type of "checkbox"', () => {
-    const consoleError = jest
-      .spyOn(console, 'error')
+    const consoleError = vi
+      .spyOn(console, 'warn')
       .mockImplementation(() => {})
     mount(BaseInputText, {
       ...options,
-      propsData: { value: 'aaa', type: 'checkbox' },
+      props: { modelValue: 'aaa', type: 'checkbox' },
     })
     expect(consoleError.mock.calls[0][0]).toContain(
       'custom validator check failed for prop "type"'
